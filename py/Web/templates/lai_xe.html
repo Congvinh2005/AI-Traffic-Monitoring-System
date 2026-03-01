@@ -772,6 +772,10 @@
           <div id="sign-warning-traffic" class="warning-item no-warning">
             Biển báo: Không có
           </div>
+          <div id="sign-image-container" class="sign-image-container" style="display: none; margin-top: 15px; text-align: center;">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #e74c3c;">Hình ảnh biển báo phát hiện:</div>
+            <img id="detected-sign-img" class="detected-sign-img" src="" alt="Biển báo phát hiện" style="max-width: 200px; max-height: 200px; border: 3px solid #007bff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"/>
+          </div>
         </div>
       </div>
       <div class="status-panel">
@@ -1216,6 +1220,7 @@
         fetch("/get_warnings")
           .then((response) => response.json())
           .then((warnings) => {
+            console.log("Received warnings:", warnings);
             if (sectionId === "driver") {
               updateWarningItem(
                 `eye-warning-${sectionId}`,
@@ -1264,6 +1269,8 @@
                 warnings.sign,
                 "Biển báo"
               );
+              // Xử lý hiển thị hình ảnh biển báo
+              updateSignImage(warnings.sign_image, warnings.sign_label);
             } else if (sectionId === "vacham") {
               updateWarningItem(
                 `collision-warning-${sectionId}`,
@@ -1307,6 +1314,26 @@
             element.style.animation = "none";
             element.style.backgroundColor = "";
           }
+        }
+      }
+
+      function updateSignImage(imagePath, signLabel) {
+        const imageContainer = document.getElementById("sign-image-container");
+        const signImg = document.getElementById("detected-sign-img");
+        
+        console.log("updateSignImage called:", { imagePath, signLabel });
+        
+        // Kiểm tra nếu có biển báo được phát hiện
+        if (signLabel && signLabel.trim() !== "" && signLabel !== "Không có") {
+          // Hiển thị hình ảnh biển báo với timestamp để tránh cache
+          const timestamp = new Date().getTime();
+          signImg.src = "/get_latest_sign_image?t=" + timestamp;
+          imageContainer.style.display = "block";
+          console.log("Showing sign image");
+        } else {
+          // Ẩn hình ảnh nếu không có biển báo
+          imageContainer.style.display = "none";
+          console.log("Hiding sign image - no sign detected");
         }
       }
 

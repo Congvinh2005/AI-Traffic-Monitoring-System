@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, jsonify, request
+from flask import Flask, render_template, Response, jsonify, request, send_file
 import cv2
 import dlib
 import numpy as np
@@ -391,16 +391,26 @@ def driver_monitor():
         cap.release()
         active_video_stream = None
 
+# ======================= Biến toàn cục cho biển báo ===========================
+# Đường dẫn tuyệt đối cho thư mục pictures
+PICTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pictures')
+latest_sign_image_path = None
+latest_sign_label = ""
+
+# Đảm bảo thư mục pictures tồn tại
+if not os.path.exists(PICTURES_DIR):
+    os.makedirs(PICTURES_DIR)
+
 # ======================= Video cảnh báo biển báo ===========================
 def traffic_sign_monitor():
-    global warnings, video_writer, is_recording, active_video_stream
+    global warnings, video_writer, is_recording, active_video_stream, latest_sign_image_path, latest_sign_label
     try:
         active_video_stream = 'sign'
         cap = cv2.VideoCapture("py/video_input/bien_bao.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
-        
+
         last_sign_time = None
 
         while active_video_stream == 'sign':
@@ -415,17 +425,10 @@ def traffic_sign_monitor():
             cv2.putText(annotated, f'So bien bao: {num_detections}', (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-            if boxes is not None:
-                for i in range(len(boxes)):
-                    cls_id = int(boxes.cls[i])
-                    conf = float(boxes.conf[i])
-                    label = bienbao_model.names[cls_id]
-                    x1, y1, _, _ = map(int, boxes.xyxy[i])
-                    
-
             # Reset warnings
             warnings["speed"] = ""
             warnings["sign"] = ""
+            latest_sign_label = ""
 
             # Cập nhật cảnh báo
             current_time = time.time()
@@ -433,20 +436,44 @@ def traffic_sign_monitor():
                 for i in range(len(boxes)):
                     cls_id = int(boxes.cls[i])
                     label = bienbao_model.names[cls_id]
-                    
+                    x1, y1, x2, y2 = map(int, boxes.xyxy[i])
+
                     # Xử lý biển báo tốc độ
                     if "speed" in label.lower():
                         warnings["speed"] = f"BIỂN BÁO TỐC ĐỘ: {label}"
+                        latest_sign_label = label
                         # Phát âm thanh nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
                             bienbao_sound.play()
                             last_sign_time = current_time
                     else:
                         warnings["sign"] = f"{label}"
+                        latest_sign_label = label
                         # Phát âm thanh nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
                             bienbao_sound.play()
                             last_sign_time = current_time
+
+                    # Cắt và lưu hình ảnh biển báo
+                    try:
+                        # Đảm bảo tọa độ không vượt ra ngoài khung hình
+                        h, w = frame.shape[:2]
+                        x1 = max(0, min(x1, w))
+                        y1 = max(0, min(y1, h))
+                        x2 = max(0, min(x2, w))
+                        y2 = max(0, min(y2, h))
+
+                        # Chỉ cắt nếu vùng hợp lệ
+                        if x2 > x1 and y2 > y1:
+                            sign_crop = frame[y1:y2, x1:x2]
+                            # Resize để dễ nhìn hơn
+                            sign_crop = cv2.resize(sign_crop, (200, 200))
+                            # Lưu vào thư mục pictures với đường dẫn tuyệt đối
+                            latest_sign_image_path = os.path.join(PICTURES_DIR, 'latest_sign.jpg')
+                            cv2.imwrite(latest_sign_image_path, sign_crop)
+                            print(f"Saved sign image to: {latest_sign_image_path}")
+                    except Exception as e:
+                        print(f"Error cropping sign image: {e}")
 
             # Resize frame trước khi ghi
             annotated = cv2.resize(annotated, (frame_width, frame_height))
@@ -1705,7 +1732,20 @@ def video_vacham():
 
 @app.route('/get_warnings')
 def get_warnings():
-    return jsonify(warnings)
+    # Thêm thông tin hình ảnh biển báo vào warnings
+    warnings_with_image = warnings.copy()
+    warnings_with_image['sign_image'] = latest_sign_image_path
+    warnings_with_image['sign_label'] = latest_sign_label
+    return jsonify(warnings_with_image)
+
+@app.route('/get_latest_sign_image')
+def get_latest_sign_image():
+    """Trả về hình ảnh biển báo mới nhất"""
+    global latest_sign_image_path
+    if latest_sign_image_path and os.path.exists(latest_sign_image_path):
+        return send_file(latest_sign_image_path, mimetype='image/jpeg')
+    # Trả về ảnh placeholder nếu không có ảnh
+    return "", 404
 
 @app.route('/get_stats')
 def get_stats():
