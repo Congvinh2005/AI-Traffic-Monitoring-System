@@ -130,7 +130,29 @@ def get_head_pose(points, frame_size):
     rmat, _ = cv2.Rodrigues(rvec)
     proj_matrix = np.hstack((rmat, tvec))
     eulerAngles = cv2.decomposeProjectionMatrix(proj_matrix)[6]
-    return [float(x) for x in eulerAngles]
+    
+    # Chuẩn hóa góc về khoảng -90 đến 90 độ
+    pitch = eulerAngles[0]
+    yaw = eulerAngles[1]
+    roll = eulerAngles[2]
+    
+    # Chuyển đổi góc từ độ Euler sang khoảng -90 đến 90
+    if pitch > 90:
+        pitch = pitch - 180
+    elif pitch < -90:
+        pitch = pitch + 180
+    
+    if yaw > 90:
+        yaw = yaw - 180
+    elif yaw < -90:
+        yaw = yaw + 180
+    
+    if roll > 90:
+        roll = roll - 180
+    elif roll < -90:
+        roll = roll + 180
+    
+    return [float(pitch), float(yaw), float(roll)]
 
 # ======================= Giám sát tay lái ===========================
 class HandAndArmTracking:
@@ -396,6 +418,15 @@ def driver_monitor():
                         if can_play_warning("head"):
                             dau_quay_sound.play()
                         warnings["head"] = "MẤT TẬP TRUNG !"
+                    
+                    # Hiển thị thông số pitch, yaw và roll ở góc camera (màu vàng)
+                    cv2.rectangle(frame, (10, 10), (200, 75), (0, 0, 0), cv2.FILLED)
+                    cv2.putText(frame, f"Pitch: {pitch:.1f}", (10, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                    cv2.putText(frame, f"Yaw: {yaw:.1f}", (10, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                    cv2.putText(frame, f"Roll: {roll:.1f}", (10, 70),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
             
 
