@@ -678,7 +678,7 @@ else:
     WINDOWS_AUDIO_AVAILABLE = False
     WINDOWS_BRIGHTNESS_AVAILABLE = False
     try:
-        import screen_brightness_control as sbc
+        import screen_brightness_control as sbc  # type: ignore
         WINDOWS_BRIGHTNESS_AVAILABLE = True
         print("Note: Using cross-platform brightness control")
     except ImportError:
@@ -724,9 +724,9 @@ brightnessPer = 0
 # Khởi tạo điều khiển âm thanh (chỉ trên Windows)
 if WINDOWS_AUDIO_AVAILABLE:
     try:
-        devices = AudioUtilities.GetSpeakers()
-        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        volume = cast(interface, POINTER(IAudioEndpointVolume))
+        devices = AudioUtilities.GetSpeakers()  # type: ignore
+        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)  # type: ignore
+        volume = cast(interface, POINTER(IAudioEndpointVolume))  # type: ignore
         volScope = volume.GetVolumeRange()
         minVol = volScope[0]
         maxVol = volScope[1]
