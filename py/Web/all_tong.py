@@ -984,32 +984,39 @@ def generate_camera_frames():
                                     prev_index_pos = index_finger_pos
 
                                     # Điều khiển ánh sáng bằng ngón giữa
-                                    # middle_finger_pos = (lmList[12][1], lmList[12][2])
-                                    # middle_center = (lmList[10][1], lmList[10][2])
-                                    
-                                    # # Vẽ đường tròn và điểm cho ngón giữa
-                                    # cv2.circle(img, middle_center, 30, (0, 165, 255), 2)
-                                    # cv2.circle(img, middle_finger_pos, 5, (255, 192, 203), -1)
-                                    
-                                    # if prev_middle_pos is not None:
-                                    #     cv2.line(img, prev_middle_pos, middle_finger_pos, (0, 165, 255), 2)
-                                    #     rotation = calculate_rotation(prev_middle_pos, middle_finger_pos, middle_center)
-                                        
-                                    #     if abs(rotation) > 5:
-                                    #         brightness_change = rotation * 0.5
-                                    #         brightnessPer = max(0, min(100, brightnessPer + brightness_change))
-                                            
-                                    #         if brightness_change > 0:
-                                    #             cv2.putText(img, f"Tang do sang: {int(brightness_change)}%", (100, 150), 
-                                    #                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
-                                    #         else:
-                                    #             cv2.putText(img, f"Giam do sang: {int(abs(brightness_change))}%", (100, 150), 
-                                    #                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
-                                            
-                                    #         brightBar = np.interp(brightnessPer, [0, 100], [400, 150])
-                                    #         sbc.set_brightness(int(brightnessPer))
-                                    
-                                    # prev_middle_pos = middle_finger_pos
+                                    middle_finger_pos = (lmList[12][1], lmList[12][2])
+                                    middle_center = (lmList[10][1], lmList[10][2])
+
+                                    # Vẽ đường tròn và điểm cho ngón giữa
+                                    cv2.circle(img, middle_center, 30, (0, 165, 255), 2)
+                                    cv2.circle(img, middle_finger_pos, 5, (255, 192, 203), -1)
+
+                                    if prev_middle_pos is not None:
+                                        cv2.line(img, prev_middle_pos, middle_finger_pos, (0, 165, 255), 2)
+                                        rotation = calculate_rotation(prev_middle_pos, middle_finger_pos, middle_center)
+
+                                        if abs(rotation) > 5:
+                                            brightness_change = rotation * 0.5
+                                            brightnessPer = max(0, min(100, brightnessPer + brightness_change))
+
+                                            if brightness_change > 0:
+                                                cv2.putText(img, f"Tang do sang: {int(brightness_change)}%", (100, 150),
+                                                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
+                                            else:
+                                                cv2.putText(img, f"Giam do sang: {int(abs(brightness_change))}%", (100, 150),
+                                                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
+
+                                            brightBar = np.interp(brightnessPer, [0, 100], [400, 150])
+                                            if WINDOWS_BRIGHTNESS_AVAILABLE:
+                                                try:
+                                                    sbc.set_brightness(int(brightnessPer))
+                                                except Exception as e:
+                                                    print(f"Error setting brightness: {e}")
+                                            else:
+                                                # Chỉ hiển thị giá trị, không thực sự thay đổi độ sáng trên macOS
+                                                pass
+
+                                    prev_middle_pos = middle_finger_pos
 
                                 except Exception as e:
                                     print(f"Error in volume/brightness control: {e}")
