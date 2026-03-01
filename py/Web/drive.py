@@ -297,6 +297,68 @@ def driver_monitor():
                     x, y = points[idx]
                     cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
 
+                
+                # Vẽ toàn bộ 68 điểm landmark trên khuôn mặt (màu trắng)
+                # 1. Đường viền hàm (0-16)
+                for i in range(0, 17):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(0, 16):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+
+                # 2. Lông mày trái (17-21)
+                for i in range(17, 22):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(17, 21):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+
+                # 3. Lông mày phải (22-26)
+                for i in range(22, 27):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(22, 26):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+
+                # 4. Sống mũi (27-35)
+                for i in range(27, 36):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(27, 35):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+
+                # 5. Mắt trái (36-41)
+                for i in range(36, 42):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(36, 41):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+                cv2.line(frame, points[41], points[36], (255, 255, 255), 1)
+
+                # 6. Mắt phải (42-47)
+                for i in range(42, 48):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(42, 47):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+                cv2.line(frame, points[47], points[42], (255, 255, 255), 1)
+
+                # 7. Miệngoài (48-59)
+                for i in range(48, 60):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(48, 59):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+                cv2.line(frame, points[59], points[48], (255, 255, 255), 1)
+
+                # 8. Miệng trong (60-67)
+                for i in range(60, 68):
+                    x, y = points[i]
+                    cv2.circle(frame, (x, y), 1, (255, 255, 255), -1)
+                for i in range(60, 67):
+                    cv2.line(frame, points[i], points[i + 1], (255, 255, 255), 1)
+                cv2.line(frame, points[67], points[60], (255, 255, 255), 1)
+
                 # Ngủ gật - chỉ kiểm tra nếu cảnh báo mắt được bật
                 if warning_states["eye"]:
                     left_eye = [points[i] for i in left_eye_indexes]
