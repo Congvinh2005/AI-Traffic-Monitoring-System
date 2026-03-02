@@ -29,6 +29,133 @@ tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
 lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
 va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
 
+# Khởi tạo text-to-speech cho đọc biển báo
+import subprocess
+
+# Mapping các label tiếng Anh sang tiếng Việt
+SIGN_LABEL_VI = {
+    # Biển cấm
+    "no_u_turn": "Cấm quay đầu",
+    "camquaydau": "Cấm quay đầu",
+    "no_left_turn": "Cấm rẽ trái",
+    "camretrai": "Cấm rẽ trái",
+    "no_right_turn": "Cấm rẽ phải",
+    "camrephai": "Cấm rẽ phải",
+    "no_entry": "Cấm vào",
+    "camvao": "Cấm vào",
+    "no_parking": "Cấm đỗ xe",
+    "camparking": "Cấm đỗ xe",
+    "no_stopping": "Cấm dừng xe",
+    "camdungxe": "Cấm dừng xe",
+    "no_horn": "Cấm bấm còi",
+    "camhoi": "Cấm bấm còi",
+    
+    # Biển tốc độ
+    "speed_limit_20": "Tốc độ 20",
+    "speed_limit_30": "Tốc độ 30",
+    "speed_limit_40": "Tốc độ 40",
+    "speed_limit_50": "Tốc độ 50",
+    "speed_limit_60": "Tốc độ 60",
+    "speed_limit_70": "Tốc độ 70",
+    "speed_limit_80": "Tốc độ 80",
+    "speed_limit_90": "Tốc độ 90",
+    "speed_limit_100": "Tốc độ 100",
+    "speed_limit_120": "Tốc độ 120",
+    
+    # Biển cảnh báo
+    "warning_pedestrian": "Chú ý người đi bộ",
+    "warning_children": "Chú ý trẻ em",
+    "warning_bump": "Chú ý đường xóc",
+    "warning_curve_left": "Chú ý đường cong trái",
+    "warning_curve_right": "Chú ý đường cong phải",
+    "warning_intersection": "Chú ý giao lộ",
+    "warning_traffic_light": "Chú ý đèn tín hiệu",
+    "warning_slippery": "Chú ý đường trơn",
+    "warning_narrow_road": "Chú ý đường hẹp",
+    
+    # Biển khác
+    "stop": "Dừng lại",
+    "yield": "Nhường đường",
+    "one_way": "Đường một chiều",
+    "oneway": "Đường một chiều",
+    "hospital": "Bệnh viện",
+    "school": "Trường học",
+    "bus_stop": "Trạm xe buýt",
+    "gas_station": "Trạm xăng",
+    "parking": "Được phép đỗ xe",
+    "crosswalk": "Vạch sang đường",
+}
+
+def speak_traffic_sign(label):
+    """Đọc tên biển báo bằng text-to-speech sử dụng lệnh say của macOS"""
+    try:
+        # Chuyển label thành câu đọc dễ hiểu hơn
+        label_lower = label.lower().replace('-', '_').replace(' ', '_')
+        
+        # Tìm trong mapping tiếng Việt
+        speech_text = SIGN_LABEL_VI.get(label_lower, None)
+        
+        # Nếu không có trong mapping, xử lý theo pattern
+        if speech_text is None:
+            if "speed" in label_lower or "tocdo" in label_lower or "tốc độ" in label_lower:
+                # Biển báo tốc độ - đọc rõ ràng
+                speed_num = label_lower.replace('speed_limit_', '').replace('tocdo_', '').replace('_', ' ')
+                speech_text = f"Biển báo tốc độ {speed_num} kilômét trên giờ"
+            elif "camquaydau" in label_lower or "no_u_turn" in label_lower:
+                speech_text = "Cấm quay đầu"
+            elif "camre" in label_lower or "no_turn" in label_lower:
+                if "trai" in label_lower or "left" in label_lower:
+                    speech_text = "Cấm rẽ trái"
+                elif "phai" in label_lower or "right" in label_lower:
+                    speech_text = "Cấm rẽ phải"
+            elif "warning" in label_lower or "danger" in label_lower:
+                speech_text = f"Chú ý {label.replace('_', ' ')}"
+            elif "prohibitory" in label_lower or "forbidden" in label_lower:
+                speech_text = f"Biển cấm {label.replace('_', ' ')}"
+            elif "mandatory" in label_lower or "must" in label_lower:
+                speech_text = f"Biển hiệu lệnh {label.replace('_', ' ')}"
+            elif "information" in label_lower or "info" in label_lower:
+                speech_text = f"Biển chỉ dẫn {label.replace('_', ' ')}"
+            elif "curve" in label_lower:
+                speech_text = f"Chú ý đường cong {label.replace('_', ' ')}"
+            elif "intersection" in label_lower or "cross" in label_lower:
+                speech_text = f"Chú ý giao lộ {label.replace('_', ' ')}"
+            elif "pedestrian" in label_lower or "people" in label_lower:
+                speech_text = f"Chú ý người đi bộ {label.replace('_', ' ')}"
+            elif "stop" in label_lower:
+                speech_text = "Biển dừng lại"
+            elif "yield" in label_lower:
+                speech_text = "Biển nhường đường"
+            else:
+                # Mặc định đọc label gốc
+                speech_text = label.replace('_', ' ')
+        
+        # Đọc không đồng bộ để không làm gián đoạn video
+        def speak_thread():
+            try:
+                # Sử dụng lệnh say của macOS với giọng tiếng Việt nếu có
+                # Kiểm tra xem có giọng tiếng Việt không
+                result = subprocess.run(
+                    ['say', '-v', 'Linh', speech_text],
+                    capture_output=True,
+                    timeout=10
+                )
+                # Nếu giọng Linh không có, thử giọng mặc định
+                if result.returncode != 0:
+                    subprocess.run(
+                        ['say', speech_text],
+                        capture_output=True,
+                        timeout=10
+                    )
+            except subprocess.TimeoutExpired:
+                print(f"Speech timeout for: {speech_text}")
+            except Exception as e:
+                print(f"Error in speech thread: {e}")
+        
+        threading.Thread(target=speak_thread, daemon=True).start()
+    except Exception as e:
+        print(f"Error speaking sign: {e}")
+
 # Thời gian tối thiểu giữa các cảnh báo (giây)
 WARNING_INTERVALS = {
     "eye": 2,
@@ -443,16 +570,18 @@ def traffic_sign_monitor():
                     if "speed" in label.lower():
                         warnings["speed"] = f"BIỂN BÁO TỐC ĐỘ: {label}"
                         latest_sign_label = label
-                        # Phát âm thanh nếu chưa phát trong 3 giây qua
+                        # Phát âm thanh và đọc tên biển báo nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
                             bienbao_sound.play()
+                            speak_traffic_sign(label)  # Đọc tên biển báo
                             last_sign_time = current_time
                     else:
                         warnings["sign"] = f"{label}"
                         latest_sign_label = label
-                        # Phát âm thanh nếu chưa phát trong 3 giây qua
+                        # Phát âm thanh và đọc tên biển báo nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
                             bienbao_sound.play()
+                            speak_traffic_sign(label)  # Đọc tên biển báo
                             last_sign_time = current_time
 
                     # Cắt và lưu hình ảnh biển báo
