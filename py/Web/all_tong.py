@@ -18,16 +18,39 @@ app = Flask(__name__)
 # ======================= Âm thanh & Cảnh báo ===========================
 latest_warning = ""
 lock = threading.Lock()
-pygame.init()
-chopmat_sound = pygame.mixer.Sound("py/Sound/nham_mat.wav")
-ngap_sound = pygame.mixer.Sound("py/Sound/buon_ngu.wav")
-phone_baodong = pygame.mixer.Sound("py/Sound/not_phone.wav")
-seatbelt_baodong = pygame.mixer.Sound("py/Sound/seatbelt_alert.wav")
-dau_quay_sound = pygame.mixer.Sound("py/Sound/chuylaixe.wav")
-bienbao_sound = pygame.mixer.Sound("py/Sound/chu_y_bien_bao.wav")
-tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
-lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
-va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
+
+# Initialize pygame audio only if ENABLE_SOUND environment variable is set
+# In Docker headless mode, audio is disabled by default
+import os
+ENABLE_SOUND = os.environ.get("ENABLE_SOUND", "0") == "1"
+
+if ENABLE_SOUND:
+    try:
+        pygame.init()
+        pygame.mixer.init()
+        chopmat_sound = pygame.mixer.Sound("py/Sound/nham_mat.wav")
+        ngap_sound = pygame.mixer.Sound("py/Sound/buon_ngu.wav")
+        phone_baodong = pygame.mixer.Sound("py/Sound/not_phone.wav")
+        seatbelt_baodong = pygame.mixer.Sound("py/Sound/seatbelt_alert.wav")
+        dau_quay_sound = pygame.mixer.Sound("py/Sound/chuylaixe.wav")
+        bienbao_sound = pygame.mixer.Sound("py/Sound/chu_y_bien_bao.wav")
+        tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
+        lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
+        va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
+    except Exception as e:
+        print(f"Warning: Failed to initialize audio: {e}")
+        ENABLE_SOUND = False
+else:
+    # Set all sound variables to None when audio is disabled
+    chopmat_sound = None
+    ngap_sound = None
+    phone_baodong = None
+    seatbelt_baodong = None
+    dau_quay_sound = None
+    bienbao_sound = None
+    tay_lai_sound = None
+    lech_lan_sounds = None
+    va_cham_sound = None
 
 # Thời gian tối thiểu giữa các cảnh báo (giây)
 WARNING_INTERVALS = {
@@ -208,10 +231,11 @@ class HandAndArmTracking:
             elif current_time - self.no_fist_start_time > self.warning_duration:
                 cv2.putText(img, "WARNING: Khong cam vo lang xe !", (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-                
-                
+
+
                 if self.last_warning_time is None or current_time - self.last_warning_time >= self.warning_interval:
-                    tay_lai_sound.play()
+                    if tay_lai_sound is not None:
+                        tay_lai_sound.play()
                     self.last_warning_time = current_time
                     warnings["hand"] = "CẢNH BÁO: KHÔNG CẦM VÔ LĂNG!"
         else:
@@ -306,7 +330,8 @@ def driver_monitor():
                             eye_closed_time = time.time()
                         elif time.time() - eye_closed_time > EAR_MIN_DURATION:
                             if can_play_warning("eye"):
-                                chopmat_sound.play()
+                                if chopmat_sound is not None:
+                                    chopmat_sound.play()
                             warnings["eye"] = "NHẮM MẮT QUÁ LÂU!"
                     else:
                         eye_closed_time = None
@@ -319,7 +344,8 @@ def driver_monitor():
                         if counter_yawn >= YAWN_CONSEC_FRAMES:
                             if not alarm_yawn_on and can_play_warning("yawn"):
                                 alarm_yawn_on = True
-                                ngap_sound.play()
+                                if ngap_sound is not None:
+                                    ngap_sound.play()
                             warnings["yawn"] = "NGÁP NGỦ!"
                     else:
                         counter_yawn = 0
@@ -331,7 +357,8 @@ def driver_monitor():
                     # Cảnh báo nếu quay trái/phải (yaw) lớn hơn 35 độ hoặc cúi xuống (pitch) lớn hơn 25 độ
                     if abs(yaw) > 40 or pitch > 35:
                         if can_play_warning("head"):
-                            dau_quay_sound.play()
+                            if dau_quay_sound is not None:
+                                dau_quay_sound.play()
                         warnings["head"] = "MẤT TẬP TRUNG !"
 
             # Phát hiện dùng điện thoại - chỉ kiểm tra nếu cảnh báo điện thoại được bật
@@ -344,7 +371,8 @@ def driver_monitor():
                         label = phone_mau.names[int(cls)]
                         if "phone" in label.lower() and conf > 0.5:
                             if can_play_warning("phone"):
-                                phone_baodong.play()
+                                if phone_baodong is not None:
+                                    phone_baodong.play()
                             warnings["phone"] = "DÙNG ĐIỆN THOẠI!"
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                             cv2.putText(frame, label, (x1, y1 - 10),
@@ -367,7 +395,8 @@ def driver_monitor():
 
                 if not seatbelt_detected:
                     if can_play_warning("seatbelt"):
-                        seatbelt_baodong.play()
+                        if seatbelt_baodong is not None:
+                            seatbelt_baodong.play()
                     warnings["seatbelt"] = "KHÔNG ĐEO DÂY AN TOÀN!"
 
             # Giám sát tay lái - chỉ kiểm tra nếu cảnh báo tay lái được bật
@@ -444,14 +473,16 @@ def traffic_sign_monitor():
                         latest_sign_label = label
                         # Phát âm thanh nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
-                            bienbao_sound.play()
+                            if bienbao_sound is not None:
+                                bienbao_sound.play()
                             last_sign_time = current_time
                     else:
                         warnings["sign"] = f"{label}"
                         latest_sign_label = label
                         # Phát âm thanh nếu chưa phát trong 3 giây qua
                         if last_sign_time is None or current_time - last_sign_time > 3:
-                            bienbao_sound.play()
+                            if bienbao_sound is not None:
+                                bienbao_sound.play()
                             last_sign_time = current_time
 
                     # Cắt và lưu hình ảnh biển báo
@@ -549,11 +580,12 @@ warning_interval = 1.0  # Khoảng thời gian giữa các cảnh báo (giây)
 
 def process_collision_warning(frame, distance, current_time):
     global last_collision_warning, warnings
-    
+
     if distance < 8:
         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
         if current_time - last_collision_warning >= warning_interval:
-            va_cham_sound.play()
+            if va_cham_sound is not None:
+                va_cham_sound.play()
             last_collision_warning = current_time
     elif distance < 15:
         warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
@@ -562,11 +594,12 @@ def process_collision_warning(frame, distance, current_time):
 
 def process_lane_warning(frame, left_found, right_found):
     global warnings
-    
+
     if not (left_found and right_found):
         warnings["lane"] = "CẢNH BÁO LỆCH LÀN!"
-        if not pygame.mixer.get_busy():
-            lech_lan_sounds.play()
+        if ENABLE_SOUND and not pygame.mixer.get_busy():
+            if lech_lan_sounds is not None:
+                lech_lan_sounds.play()
     else:
         warnings["lane"] = ""
 

@@ -1,43 +1,58 @@
-# 🍎 Build cho arm64 (M1/M2/M3 Mac) + amd64 (Intel/Linux)
-FROM python:3.10-slim-bullseye
+# Multi-platform Dockerfile for AI Traffic Monitoring System
+# Supports both arm64 (M1/M2/M3 Mac) and amd64 (Intel/Linux)
 
-# System packages required for OpenCV, audio, building some Python extensions
-# Tối ưu cho M1 Mac: sử dụng native arm64 build
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies required for OpenCV, dlib, mediapipe, and audio
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
     pkg-config \
-    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
     libsm6 \
     libxrender1 \
     libxext6 \
-    libgl1 \
-    libsndfile1 \
-    libasound2-dev \
-    libpulse-dev \
-    pulseaudio \
-    ca-certificates \
+    libgtk-3-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    libopenblas-dev \
+    liblapack-dev \
+    libblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Set CMake policy minimum to avoid version conflicts with dlib
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
 
-# Copy dependency list first to leverage Docker cache
+# Set SDL audio driver to dummy (required for headless Docker)
+ENV SDL_AUDIODRIVER=dummy
+
+# Copy requirements first for better Docker caching
 COPY requirements.txt /app/requirements.txt
 
-# Install Python packages
+# Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy application code
+# Copy application code (excluding ignored files via .dockerignore)
 COPY . /app
 
-# Default FLASK app (override with -e FLASK_APP=...) and port
+# Set environment variables
 ENV FLASK_APP=py/Web/all_tong.py
+ENV FLASK_ENV=development
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 
+# Expose Flask port
 EXPOSE 5000
 
-# Default command: run Flask development server. For production, replace with gunicorn or uvicorn as needed.
+# Default command to run Flask development server
 CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

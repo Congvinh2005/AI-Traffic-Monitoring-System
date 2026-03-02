@@ -1,290 +1,367 @@
-# 🐳 Hướng dẫn chạy AI Traffic Monitoring System trên macOS M1 với Docker
+# 🐳 Hướng Dẫn Chạy AI Traffic Monitoring System Với Docker
 
-## Yêu cầu trước khi bắt đầu
+## 🚀 Chạy Nhanh (Quick Start)
 
-### 1. Cài đặt Docker Desktop trên Mac M1
+```bash
+# Bước 1: Chuyển đến thư mục project
+cd /Users/vinhdv/Documents/Clone/AI-Traffic-Monitoring-System
 
-1. Tải **Docker Desktop for Mac** từ https://www.docker.com/products/docker-desktop
-2. Chọn phiên bản **Apple Silicon (M1/M2/M3)** (không phải Intel)
-3. Cài đặt và khởi động Docker Desktop
-4. Mở Terminal và kiểm tra:
-   ```bash
-   docker --version
-   docker compose version
-   ```
+# Bước 2: Build và chạy (lần đầu mất 10-30 phút)
+docker compose up --build
 
-### 2. Chuẩn bị dự án
-
-Đảm bảo bạn có thư mục gốc dự án:
-
+# Bước 3: Mở browser và truy cập
+# 👉 http://localhost:5001
 ```
-/Users/vinhdv/Documents/clone/AI-Traffic-Monitoring-System/
-```
-
-Với các thư mục con:
-
-- `py/` — Source code chính
-- `py/weights/` — Model YOLO (.pt files)
-- `py/Sound/` — File âm thanh cảnh báo
-- `py/video_input/` — Video test (tùy chọn)
-- `requirements.txt` — Dependencies Python
-- `Dockerfile` — Config Docker
-- `docker-compose.yml` — Config compose
 
 ---
 
-## Hướng dẫn chạy (Step by step)
+## 📋 Mục Lục
 
-### Bước 1: Mở Terminal
+- [Yêu Cầu Hệ Thống](#yêu-cầu-hệ-thống)
+- [Cài Đặt](#cài-đặt)
+- [Các Lệnh Cơ Bản](#các-lệnh-cơ-bản)
+- [Cấu Hình](#cấu-hình)
+- [Xử Lý Lỗi](#xử-lý-lỗi)
+- [Lưu Ý Quan Trọng](#lưu-ý-quan-trọng)
 
-Trong Terminal trên Mac, chuyển đến thư mục gốc dự án:
+---
+
+## 🖥️ Yêu Cầu Hệ Thống
+
+| Thành phần | Yêu cầu |
+|------------|---------|
+| **Docker** | Docker Desktop 4.0+ |
+| **RAM** | Tối thiểu 4GB (khuyến nghị 8GB+) |
+| **CPU** | Intel hoặc Apple Silicon (M1/M2/M3) |
+| **Dung lượng** | ~5GB cho image và container |
+
+### Kiểm tra Docker đã cài chưa:
 
 ```bash
-cd /Users/vinhdv/Documents/clone/AI-Traffic-Monitoring-System
+docker --version
+docker compose version
 ```
 
-### Bước 2: Build Docker image
+### Cài Docker Desktop:
 
-Lệnh này sẽ tạo image từ Dockerfile (lần đầu sẽ mất 10-30 phút tùy tốc độ mạng):
+- **Mac M1/M2/M3**: https://desktop.docker.com/mac/main/arm64/Docker.dmg
+- **Mac Intel**: https://desktop.docker.com/mac/main/amd64/Docker.dmg
+- **Windows**: https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe
+
+---
+
+## 📦 Cài Đặt
+
+### Bước 1: Chuẩn bị
+
+Đảm bảo các file model đã có trong `py/weights/`:
+
+```bash
+ls py/weights/
+# Phải có ít nhất 1 file .pt (best.pt, yolov8n.pt, ...)
+```
+
+### Bước 2: Build Image
 
 ```bash
 docker compose build
 ```
 
-**Output mong đợi**: Kết thúc bằng `Successfully tagged ...` hoặc `BUILD SUCCESS`
+**Thời gian dự kiến:**
+- Lần đầu: 15-30 phút (tùy tốc độ mạng)
+- Lần sau: 1-2 phút (do cache)
 
-Nếu gặp lỗi:
-
-- Đảm bảo Docker Desktop đang chạy (kiểm tra menu Mac)
-- Thử lại: `docker compose build --no-cache` (build lại từ đầu)
-
-### Bước 3: Chạy container
+### Bước 3: Chạy Container
 
 ```bash
+# Chạy và xem logs
 docker compose up
-```
 
-**Output mong đợi**:
-
-```
-ai-traffic-monitor  | * Running on http://0.0.0.0:5000
-ai-traffic-monitor  | * Debugger is active!
-ai-traffic-monitor  | * Debugger PIN: ...
-```
-
-**Truy cập ứng dụng**: Mở browser và vào http://localhost:5000
-
-### Bước 4: Dừng container
-
-Trong Terminal, nhấn `Ctrl+C`
-
----
-
-## Các lệnh hữu ích
-
-### Chạy container ở background (không hiển thị logs)
-
-```bash
+# HOẶC chạy nền (không thấy logs)
 docker compose up -d
 ```
 
-### Xem logs của container đang chạy
+### Bước 4: Truy Cập Ứng Dụng
 
-```bash
-docker compose logs -f ai-traffic-monitor
-```
+Mở browser và vào: **http://localhost:5001**
 
-### Dừng container background
+---
 
-```bash
-docker compose down
-```
+## ⌨️ Các Lệnh Cơ Bản
 
-### Xóa image (giải phóng dung lượng)
+| Lệnh | Mô tả |
+|------|-------|
+| `docker compose up --build` | Build và chạy |
+| `docker compose up -d` | Chạy nền (detached) |
+| `docker compose down` | Dừng và xóa container |
+| `docker compose logs -f` | Xem logs |
+| `docker compose ps` | Xem container đang chạy |
+| `docker compose exec ai-traffic-monitor bash` | Truy cập shell trong container |
+| `docker compose build --no-cache` | Build lại từ đầu |
+| `docker compose down --rmi all` | Xóa cả container và image |
 
-```bash
-docker image rm ai-traffic-monitoring-system-ai-traffic-monitor
-```
+---
 
-hoặc
+## ⚙️ Cấu Hình
 
-```bash
-docker compose down --rmi all
-```
-
-### Chạy container với script khác (ví dụ: `drive.py` thay vì `all_tong.py`)
+### Đổi Port
 
 Sửa file `docker-compose.yml`:
 
 ```yaml
-environment:
-  - FLASK_APP=py/Web/drive.py
+ports:
+  - "8080:5000"  # Đổi thành port bạn muốn
 ```
 
-Sau đó:
+Sau đó chạy lại:
+```bash
+docker compose up -d
+```
 
+### Chạy File Flask Khác
+
+Sửa `FLASK_APP` trong `docker-compose.yml`:
+
+```yaml
+environment:
+  - FLASK_APP=py/Web/drive.py  # Thay đổi file chạy
+```
+
+Build lại:
 ```bash
 docker compose up --build
 ```
 
-### Chạy command tùy chỉnh trong container
+### Tăng RAM Cho Container
 
-```bash
-docker compose exec ai-traffic-monitor python -c "import cv2; print(cv2.__version__)"
-```
+Sửa `docker-compose.yml`, thêm:
 
-### Truy cập shell của container (debug)
-
-```bash
-docker compose exec ai-traffic-monitor bash
+```yaml
+services:
+  ai-traffic-monitor:
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 ```
 
 ---
 
-## ⚠️ Những điều cần biết trên macOS
+## 🔧 Xử Lý Lỗi
 
-### 1. **Webcam không hoạt động trong Docker**
+### ❌ Lỗi: "Cannot connect to the Docker daemon"
 
-**Lý do**: Docker Desktop trên Mac chạy trong Linux VM — không thể truy cập trực tiếp webcam của Mac.
+**Nguyên nhân:** Docker Desktop chưa chạy.
 
-**Giải pháp**:
+**Giải pháp:**
+1. Mở Docker Desktop từ Applications
+2. Đợi đến khi biểu tượng Docker ngừng nhấp nháy
+3. Chạy lại lệnh
 
-- ✅ **Cách đơn giản**: Chạy ứng dụng trực tiếp trên macOS (không dùng Docker):
+---
 
+### ❌ Lỗi: "Bind for 0.0.0.0:5000 failed: port is already allocated"
+
+**Nguyên nhân:** Port 5000 hoặc 5001 đã được dùng.
+
+**Giải pháp:**
+```bash
+# Kiểm tra port đang dùng
+lsof -i :5001
+
+# Đổi port trong docker-compose.yml
+ports:
+  - "5002:5000"
+```
+
+---
+
+### ❌ Lỗi: "No such file or directory: 'py/weights/*.pt'"
+
+**Nguyên nhân:** Thiếu file model YOLO.
+
+**Giải pháp:**
+```bash
+# Kiểm tra thư mục weights
+ls -la py/weights/
+
+# Nếu trống, cần tải model về
+# (Liên hệ admin hoặc tải từ Hugging Face)
+```
+
+---
+
+### ❌ Lỗi: "ModuleNotFoundError: No module named 'xxx'"
+
+**Nguyên nhân:** Thiếu package trong requirements.txt.
+
+**Giải pháp:**
+```bash
+# Thêm package vào requirements.txt
+echo "tên-package==version" >> requirements.txt
+
+# Build lại
+docker compose build --no-cache
+docker compose up
+```
+
+---
+
+### ❌ Container crash liên tục
+
+**Kiểm tra logs:**
+```bash
+docker compose logs ai-traffic-monitor | tail -50
+```
+
+**Truy cập container để debug:**
+```bash
+docker compose run --rm ai-traffic-monitor bash
+# Trong container:
+python -c "import torch; print(torch.__version__)"
+```
+
+---
+
+### ❌ Build bị treo hoặc lỗi giữa chừng
+
+**Giải pháp:**
+```bash
+# Tăng resource trong Docker Desktop:
+# 1. Mở Docker Desktop Settings
+# 2. Vào Resources
+# 3. Tăng RAM lên 4GB+, CPU lên 4 cores
+
+# Build lại với no-cache
+docker compose build --no-cache
+```
+
+---
+
+## ⚠️ Lưu Ý Quan Trọng
+
+### 1. Webcam Không Hoạt Động Trên Mac
+
+**Lý do:** Docker Desktop trên macOS không thể truy cập webcam do hạn chế bảo mật.
+
+**Giải pháp:**
+- ✅ Dùng video file có sẵn trong `py/video_input/`
+- ✅ Hoặc chạy native (không dùng Docker):
   ```bash
+  python3 -m venv venv
+  source venv/bin/activate
   pip install -r requirements.txt
   flask --app=py/Web/all_tong.py run
   ```
 
-- ✅ **Hoặc**: Sử dụng video file thay vì webcam:
-  - Đặt video vào `py/video_input/`
-  - Sửa code để dùng video file thay vì `cv2.VideoCapture(0)`
+---
 
-### 2. **Audio/Sound hạn chế**
+### 2. Âm Thanh Hạn Chế
 
-- Nghe âm thanh từ container Docker trên Mac rất khó.
-- **Giải pháp**: Chạy trực tiếp trên macOS để có âm thanh đầy đủ.
+**Lý do:** Container Linux không có access đến audio driver của macOS.
 
-### 3. **Dung lượng image lớn**
-
-- Image có thể 2-4 GB vì chứa OpenCV, dlib, mediapipe, torch, v.v.
-- **Giải pháp**: Dùng câu lệnh `docker compose down --rmi all` để xóa khi không dùng.
-
-### 4. **Performance chậm hơn**
-
-- Docker Desktop trên M1 Mac nhanh hơn Intel nhưng vẫn chậm hơn native.
-- Model inference có thể mất thêm 20-30% thời gian.
-- **Giải pháp**: Nếu cần tốc độ, chạy native trên Mac hoặc sử dụng Linux VM/server.
-
-### 5. **`pycaw` / `comtypes` không hoạt động**
-
-- Đây là Windows-only libs.
-- Trong container Linux, không thể điều khiển âm thanh Windows.
-- Code sẽ skip hoặc error — không ảnh hưởng chức năng chính.
-
-### 6. **File models (`py/weights/*.pt`) không copy vào image**
-
-- Để tiết kiệm dung lượng, `.dockerignore` loại trừ `py/weights/`.
-- Container mount `py/weights/` từ host → không cần copy.
-- ✅ Đảm bảo file `.pt` tồn tại trên host trước khi chạy.
+**Giải pháp:** Chạy native nếu cần âm thanh đầy đủ.
 
 ---
 
-## Troubleshooting
+### 3. Performance Chậm Hơn Native
 
-### ❌ Lỗi: "docker: command not found"
+| Nền tảng | Hiệu năng |
+|----------|-----------|
+| Native (pip install) | 100% |
+| Docker trên M1 Mac | ~70-80% |
+| Docker trên Intel Mac | ~60-70% |
 
-- Docker Desktop chưa được cài hoặc không chạy.
-- **Fix**: Cài Docker Desktop từ https://www.docker.com/products/docker-desktop (chọn Apple Silicon).
+**Mẹo:** Lần chạy đầu chậm do load model, các lần sau sẽ nhanh hơn.
 
-### ❌ Lỗi: "Cannot connect to Docker daemon"
+---
 
-- Docker Desktop không running.
-- **Fix**: Mở Docker Desktop từ Applications.
+### 4. Dung Lượng Image Lớn
 
-### ❌ Lỗi: "No such file or directory: 'py/shape_predictor_68_face_landmarks.dat'"
+Image có thể chiếm **3-5GB** dung lượng.
 
-- File `py/shape_predictor_68_face_landmarks.dat` không tồn tại.
-- **Fix**: Tải file từ https://github.com/davisking/dlib-models hoặc yêu cầu từ maintainer.
-
-### ❌ Lỗi: "ModuleNotFoundError: No module named 'comtypes'"
-
-- Lỗi đó không ảnh hưởng trên container Linux (Windows-only).
-- **Fix**: Không cần lo — code sẽ bỏ qua.
-
-### ❌ Flask crash hoặc không start
-
-Xem logs:
-
+**Giải phóng dung lượng:**
 ```bash
-docker compose logs ai-traffic-monitor
+# Xóa image khi không dùng
+docker compose down --rmi all
+
+# Xóa container dừng
+docker container prune
+
+# Xóa tất cả unused images
+docker image prune -a
 ```
 
-Nếu model YOLO không tìm thấy:
+---
 
-- Đảm bảo `py/weights/` có chứa `.pt` files.
-- Hoặc sửa đường dẫn trong code (ví dụ: `py/weights/yolov8n.pt`).
+## 📊 So Sánh: Docker vs Native
 
-### ❌ Container khởi động nhưng không thể truy cập http://localhost:5000
-
-- Kiểm tra port 5000 không bị dùng:
-  ```bash
-  lsof -i :5000
-  ```
-- Nếu port đang dùng, đổi port trong `docker-compose.yml`:
-  ```yaml
-  ports:
-    - "5001:5000" # Localhost 5001 -> Container 5000
-  ```
+| Tính năng | Docker | Native |
+|-----------|--------|--------|
+| Cài đặt | ✅ 1 lệnh | ⚠️ Nhiều bước |
+| Webcam | ❌ Không (Mac) | ✅ Có |
+| Audio | ⚠️ Hạn chế | ✅ Đầy đủ |
+| Performance | ⚠️ 70-80% | ✅ 100% |
+| Portability | ✅ Mọi máy | ⚠️ Phụ thuộc máy |
+| Cô lập | ✅ An toàn | ⚠️ Ảnh hưởng system |
 
 ---
 
-## So sánh: Docker vs Native trên macOS
+## 💡 Khuyến Nghị
 
-| Tính năng       | Docker                                 | Native (pip install)       |
-| --------------- | -------------------------------------- | -------------------------- |
-| **Setup**       | Dễ, mọi gói đã đầy đủ                  | Cần cài tay từng gói       |
-| **Webcam**      | ❌ Không hoạt động                     | ✅ Hoạt động               |
-| **Audio**       | ❌ Khó                                 | ✅ Hoạt động tốt           |
-| **Performance** | Chậm hơn ~20-30%                       | 🚀 Tối ưu                  |
-| **Portability** | ✅ Chạy được trên bất kì máy có Docker | ❌ Phụ thuộc setup         |
-| **Isolation**   | ✅ Không ảnh hưởng system              | ❌ Có thể conflict version |
+### 🎯 Cho Development (Mac)
 
----
+```bash
+# Chạy native để có webcam + audio đầy đủ
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+flask --app=py/Web/all_tong.py run
+```
 
-## Lời khuyên
+### 🎯 Cho Deployment (Linux Server)
 
-### 🎯 Nếu bạn cần **test nhanh & đơn giản**
+```bash
+# Dùng Docker để đồng bộ môi trường
+docker compose up -d
+```
 
-1. Chạy native:
-   ```bash
-   pip install -r requirements.txt
-   python -m flask --app=py/Web/all_tong.py run
-   ```
-2. Mở http://localhost:5000
+### 🎯 Cho Testing Nhanh
 
-### 🎯 Nếu bạn cần **deploy sang máy khác (Linux server)**
-
-1. Dùng Docker (container giống nhau trên bất kỳ máy).
-2. Chỉ cần `Dockerfile`, `docker-compose.yml`, và source code.
-3. Chạy `docker compose up` — xong!
-
-### 🎯 Nếu bạn cần **cả webcam + audio + Docker**
-
-1. Chạy Flask trong container.
-2. Chạy webcam/audio capture trên native macOS.
-3. Stream video HTTP từ native sang container (dùng ffmpeg).
-   → Phức tạp hơn — nên chạy full native nếu có thể.
+```bash
+# Dùng Docker, không cần cài đặt phức tạp
+docker compose up --build
+```
 
 ---
 
-## Thêm tài liệu
+## 📚 Tài Liệu Tham Khảo
 
-- Docker docs: https://docs.docker.com
-- Docker Compose: https://docs.docker.com/compose
-- Flask on Docker: https://docs.docker.com/language/python
-- Apple Silicon (M1): https://www.docker.com/blog/apple-silicon-support/
+- [Docker Documentation](https://docs.docker.com)
+- [Docker Compose](https://docs.docker.com/compose)
+- [Flask Documentation](https://flask.palletsprojects.com)
+- [Ultralytics YOLOv8](https://docs.ultralytics.com)
 
 ---
 
-**Bạn có câu hỏi gì? Hãy check lại logs hoặc liên hệ!** 🚀
+## 🆘 Cần Trợ Giúp?
+
+```bash
+# 1. Kiểm tra container có chạy không
+docker ps
+
+# 2. Xem logs chi tiết
+docker compose logs -f ai-traffic-monitor
+
+# 3. Truy cập container debug
+docker compose exec ai-traffic-monitor bash
+
+# 4. Kiểm tra port
+lsof -i :5001
+```
+
+---
+
+**Chúc bạn thành công! 🚀**
+
+Nếu gặp lỗi, hãy chụp màn hình lỗi và gửi cho đội phát triển.
