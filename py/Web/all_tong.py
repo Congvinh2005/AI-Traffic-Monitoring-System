@@ -64,6 +64,7 @@ fps = 30.0  # Tăng FPS lên 30 để video mượt hơn
 frame_width = 1280  # Tăng độ phân giải
 frame_height = 720
 video_codec = cv2.VideoWriter_fourcc(*'avc1')  # Sử dụng codec H.264 cho chất lượng tốt hơn
+recording_mode = None  # Lưu chế độ đang ghi (driver, sign, vacham, road)
 
 # Tạo thư mục recordings nếu chưa tồn tại
 if not os.path.exists('recordings'):
