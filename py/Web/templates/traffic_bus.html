@@ -727,6 +727,9 @@
 
         // Lưu trữ cảnh báo đã gửi vào chat để không spam
         var alertsSentToChat = {};
+        
+        // Thời gian gửi lại cảnh báo cùng loại (ms) - 10 giây
+        var ALERT_RESEND_INTERVAL = 10000;
 
         function fetchAICurrentWarnings() {
             // Poll API để lấy cảnh báo từ backend Flask
@@ -835,21 +838,40 @@
                     alertsBody.appendChild(alertDiv);
                 });
                 
-                // Gửi cảnh báo vào chat - CHỈ KHI MỚI XUẤT HIỆN
+                // Gửi cảnh báo vào chat - CÓ THỂ GỬI LẠI SAU 10 GIÂY
                 currentAlerts.forEach(alert => {
-                    // Tạo key duy nhất cho mỗi cảnh báo
-                    var alertKey = alert.key + '_' + alert.time;
+                    var now = Date.now();
                     
-                    // Chỉ gửi nếu chưa gửi cảnh báo này
-                    if (!alertsSentToChat[alertKey]) {
-                        addSystemMsg(`🔔 ${alert.message}`);
-                        alertsSentToChat[alertKey] = true;
+                    // Kiểm tra xem đã gửi cảnh báo này chưa
+                    if (alertsSentToChat[alert.key]) {
+                        var lastSent = alertsSentToChat[alert.key].time;
+                        var timeDiff = now - lastSent;
                         
-                        // Giới hạn lưu trữ để tránh tràn bộ nhớ
-                        var keys = Object.keys(alertsSentToChat);
-                        if (keys.length > 50) {
-                            delete alertsSentToChat[keys[0]];
+                        // Nếu chưa đủ thời gian resend → bỏ qua
+                        if (timeDiff < ALERT_RESEND_INTERVAL) {
+                            return; // Skip this alert
                         }
+                    }
+                    
+                    // Lấy thời gian hiện tại
+                    var currentTime = new Date();
+                    var timeString = currentTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                    var dateString = currentTime.toLocaleDateString('vi-VN');
+                    
+                    // Gửi cảnh báo với thời gian
+                    addSystemMsg(`🔔 ${alert.message}\n⏰ ${timeString} - ${dateString}`);
+                    
+                    // Lưu thời gian gửi
+                    alertsSentToChat[alert.key] = {
+                        time: now,
+                        message: alert.message,
+                        timestamp: timeString
+                    };
+                    
+                    // Giới hạn lưu trữ để tránh tràn bộ nhớ
+                    var keys = Object.keys(alertsSentToChat);
+                    if (keys.length > 50) {
+                        delete alertsSentToChat[keys[0]];
                     }
                 });
             }

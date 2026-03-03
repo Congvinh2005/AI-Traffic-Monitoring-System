@@ -1,4 +1,5 @@
 from flask import Flask, render_template, Response, jsonify, request, send_file
+from flask_cors import CORS
 import cv2
 import dlib
 import numpy as np
@@ -14,6 +15,7 @@ import pyttsx3
 
 
 app = Flask(__name__)
+CORS(app)  # Cho phép frontend từ port khác gọi API
 
 # ==================== BIẾN TOÀN CỤC CHO CHATBOT & GIỌNG NÓI ====================
 
@@ -607,28 +609,42 @@ def draw_lane_classic(image):
 last_collision_warning = 0
 warning_interval = 1.0  # Khoảng thời gian giữa các cảnh báo (giây)
 
+# Biến để theo dõi trạng thái cảnh báo va chạm/lệch làn đã gửi
+collision_alert_sent = False
+lane_alert_sent = False
+
 def process_collision_warning(frame, distance, current_time):
-    global last_collision_warning, warnings
-    
+    global last_collision_warning, warnings, collision_alert_sent
+
     if distance < 8:
         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
         if current_time - last_collision_warning >= warning_interval:
             va_cham_sound.play()
             last_collision_warning = current_time
+            # Gửi cảnh báo vào chatbot
+            if not collision_alert_sent:
+                add_ai_alert("collision", "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!", current_monitoring_vehicle_id)
+                collision_alert_sent = True
     elif distance < 15:
         warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
     else:
         warnings["collision"] = ""
+        collision_alert_sent = False  # Reset khi không còn nguy hiểm
 
 def process_lane_warning(frame, left_found, right_found):
-    global warnings
-    
+    global warnings, lane_alert_sent
+
     if not (left_found and right_found):
         warnings["lane"] = "CẢNH BÁO LỆCH LÀN!"
         if not pygame.mixer.get_busy():
             lech_lan_sounds.play()
+        # Gửi cảnh báo vào chatbot
+        if not lane_alert_sent:
+            add_ai_alert("lane", "⚠️ Xe đang LỆCH LÀN!", current_monitoring_vehicle_id)
+            lane_alert_sent = True
     else:
         warnings["lane"] = ""
+        lane_alert_sent = False  # Reset khi trở lại làn
 
 def detect_lane_deviation_combined(results_l, frame, width, classic_lines):
     center_x = width // 2
@@ -1759,6 +1775,11 @@ def toggle_warning():
 def index():
     return render_template('trang_chu.html')
 
+@app.route('/traffic_bus')
+def traffic_bus():
+    """Serve traffic_bus.html từ Flask"""
+    # Serve file từ thư mục gốc (ngoài py/Web)
+    return send_file(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'traffic_bus.html'))
 
 @app.route('/lai_xe')
 def settings():
