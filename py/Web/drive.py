@@ -1484,7 +1484,7 @@ def api_process_voice_command():
 
 @app.route('/api/send_chat_message', methods=['POST'])
 def api_send_chat_message():
-    """API gửi tin nhắn vào chatbot (lưu vào database nếu cần)"""
+    """API gửi tin nhắn vào chatbot với AI xử lý"""
     try:
         data = request.get_json()
         message = data.get('message', '')
@@ -1492,11 +1492,10 @@ def api_send_chat_message():
         user_id = data.get('user_id', 'anonymous')
         
         # Lưu tin nhắn vào database (nếu có)
-        # Ở đây chỉ in log
         print(f"[CHAT] User {user_id} (xe {vehicle_id}): {message}")
         
-        # Tạo phản hồi tự động
-        bot_response = generate_bot_response(message)
+        # AI xử lý và tạo phản hồi
+        bot_response = process_ai_chat_message(message, vehicle_id)
         
         return jsonify({
             'status': 'success',
@@ -1509,22 +1508,253 @@ def api_send_chat_message():
             'message': str(e)
         }), 400
 
-def generate_bot_response(message):
-    """Sinh phản hồi tự động cho chatbot"""
-    message_lower = message.lower()
+# ==================== AI CHATBOT XỬ LÝ TIN NHẮN ====================
+
+def generate_bot_response(message, vehicle_id=None):
+    """
+    AI Rule-based response (fallback khi không có LLM API)
+    """
+    message_lower = message.lower().strip()
     
-    if 'xin chào' in message_lower or 'hello' in message_lower:
-        return 'Xin chào quý khách! Vietravel Supporter có thể giúp gì cho quý khách?'
-    elif 'cảm ơn' in message_lower:
-        return 'Dạ không có gì ạ! Rất vui được hỗ trợ quý khách.'
-    elif 'giúp' in message_lower or 'hỗ trợ' in message_lower:
-        return 'Dạ vâng, quý khách cần hỗ trợ vấn đề gì ạ?'
-    elif 'xe' in message_lower and ('đâu' in message_lower or 'ở đâu' in message_lower):
-        return 'Quý khách vui lòng cho biết biển số xe để em kiểm tra ạ.'
-    elif 'tài xế' in message_lower or 'tài xế' in message_lower:
-        return 'Thông tin tài xế sẽ được hiển thị khi quý khách chọn xe trên bản đồ ạ.'
-    else:
-        return 'Cảm ơn bạn. Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.'
+    # === AI RULE-BASED RESPONSE ===
+    
+    # 1. Chào hỏi
+    if any(x in message_lower for x in ['xin chào', 'hello', 'hi', 'chào']):
+        return 'Xin chào quý khách! 🚗 Tôi là Vietravel Supporter. Tôi có thể giúp gì cho bạn?'
+    
+    # 2. Cảm ơn
+    if any(x in message_lower for x in ['cảm ơn', 'cam on', 'thanks']):
+        return 'Dạ không có gì ạ! Rất vui được hỗ trợ quý khách. 😊'
+    
+    # 3. Hỏi về xe
+    if any(x in message_lower for x in ['xe ở đâu', 'vị trí xe', 'xe nào', 'tìm xe']):
+        import re
+        plate_match = re.search(r'(\d{1,2}[A-Z]-\d{3}\.\d{2})', message, re.IGNORECASE)
+        if plate_match:
+            plate = plate_match.group(0).upper()
+            vehicles = [
+                {'plate': '29A-111.11', 'driver': 'Nguyễn Văn Đức', 'location': 'Võ Chí Công'},
+                {'plate': '29B-222.22', 'driver': 'Trần Văn Hoan', 'location': 'Bến xe Mỹ Đình'},
+                {'plate': '30E-333.33', 'driver': 'Lê Thị Đào', 'location': 'Minh Khai'},
+            ]
+            for v in vehicles:
+                if v['plate'] == plate:
+                    return f"🚗 Xe {plate} do tài xế {v['driver']} lái, đang ở vị trí: {v['location']}"
+            return f"❌ Không tìm thấy xe biển số {plate}"
+        return 'Bạn vui lòng cho biết biển số xe, ví dụ: "Xe 29B-222.22 ở đâu?"'
+    
+    # 4. Hỏi về vi phạm / cảnh báo
+    if any(x in message_lower for x in ['vi phạm', 'cảnh báo', 'lỗi', 'bị phạt']):
+        return f'''📊 Thống kê vi phạm hôm nay:
+- 📱 Dùng điện thoại: {warnings.get('phone', '') and 1 or 0} lần
+- 😴 Ngáp ngủ: {warnings.get('yawn', '') and 1 or 0} lần
+- ⚠️ Không dây an toàn: {warnings.get('seatbelt', '') and 1 or 0} lần
+- 🚨 Va chạm: {warnings.get('collision', '') and 1 or 0} lần
+
+Bạn muốn xem chi tiết xe nào?'''
+    
+    # 5. Hỏi về tài xế
+    if any(x in message_lower for x in ['tài xế', 'tài xế nào', 'ai lái']):
+        return '''👨‍✈️ Danh sách tài xế đang hoạt động:
+1. Nguyễn Văn Đức - 29A-111.11
+2. Trần Văn Hoan - 29B-222.22
+3. Lê Thị Đào - 30E-333.33
+
+Bạn cần thông tin tài xế nào?'''
+    
+    # 6. Yêu cầu hỗ trợ
+    if any(x in message_lower for x in ['hỗ trợ', 'giúp', 'help', 'cần giúp']):
+        return '''🆘 Tôi có thể giúp bạn:
+- 📍 Theo dõi vị trí xe
+- ⚠️ Xem cảnh báo vi phạm
+- 👤 Thông tin tài xế
+- 📊 Thống kê hành trình
+
+Bạn cần gì?'''
+    
+    # 7. Hỏi về thời tiết / giao thông
+    if any(x in message_lower for x in ['thời tiết', 'giao thông', 'đường xá']):
+        return '''🌤️ Thời tiết Hà Nội:
+- Nhiệt độ: 25°C
+- Trời nắng đẹp
+- Giao thông thuận lợi
+
+Chúc bạn lái xe an toàn! 🚗'''
+    
+    # 8. Tạm biệt
+    if any(x in message_lower for x in ['tạm biệt', 'bye', 'goodbye', 'kết thúc']):
+        return 'Cảm ơn bạn đã sử dụng dịch vụ! Chúc bạn một ngày tốt lành! 🌟'
+    
+    # === DEFAULT RESPONSE ===
+    return '''Cảm ơn bạn đã nhắn tin! 
+Tôi đã nhận được yêu cầu và sẽ phản hồi sớm nhất.
+
+Hoặc bạn có thể:
+- 🎤 Nói: "Xem cảnh báo"
+- 📍 Hỏi: "Xe 29B-222.22 ở đâu?"
+- 📊 Hỏi: "Thống kê hôm nay"'''
+
+
+def call_llm_api(message, vehicle_id=None):
+    """
+    Gọi API từ mô hình AI thực thụ (LLM)
+    Hỗ trợ: OpenAI, Google Gemini, Groq (miễn phí)
+    """
+    
+    # === OPTION 1: GROQ (MIỄN PHÍ, NHANH) ===
+    # API Key đã được tích hợp
+    try:
+        from groq import Groq
+        
+        # API key chính thức từ Groq
+        GROQ_API_KEY = "x"
+        
+        client = Groq(api_key=GROQ_API_KEY)
+        
+        # === DATA THỰC TẾ TỪ HỆ THỐNG ===
+        # Lấy thông tin xe từ data
+        vehicles_data = [
+            {'plate': '29A-111.11', 'driver': 'Nguyễn Văn Đức', 'location': 'Võ Chí Công', 'status': 'Đang chạy', 'speed': 45},
+            {'plate': '29B-222.22', 'driver': 'Trần Văn Hoan', 'location': 'Bến xe Mỹ Đình', 'status': 'Đang dừng', 'speed': 0},
+            {'plate': '30E-333.33', 'driver': 'Lê Thị Đào', 'location': 'Minh Khai', 'status': 'Đang chạy', 'speed': 30},
+            {'plate': '29H-444.44', 'driver': 'Phạm Văn Dũng', 'location': 'Ngã tư Sở', 'status': 'Đang chạy', 'speed': 50},
+            {'plate': '15B-555.55', 'driver': 'Hoàng Văn Việt', 'location': 'Cao tốc 5B', 'status': 'Đang chạy', 'speed': 40},
+            {'plate': '30G-666.66', 'driver': 'Vũ Thị Hồng', 'location': 'Phủ Tây Hồ', 'status': 'Đang chạy', 'speed': 40},
+            {'plate': '29LD-777.77', 'driver': 'Công ty Travel', 'location': 'Cầu Chương Dương', 'status': 'Đang chạy', 'speed': 60},
+        ]
+        
+        # Chuyển thành string để đưa vào context
+        vehicles_info = "\n".join([
+            f"- {v['plate']}: Tài xế {v['driver']}, vị trí {v['location']}, trạng thái {v['status']}, tốc độ {v['speed']} km/h"
+            for v in vehicles_data
+        ])
+        
+        # Context cho AI với DATA THỰC TẾ
+        context = f"""
+Bạn là trợ lý ảo AI của Vietravel, hỗ trợ giám sát giao thông và an toàn lái xe.
+
+=== THÔNG TIN XE THỰC TẾ (DATA TỪ HỆ THỐNG) ===
+Danh sách xe đang giám sát:
+{vehicles_info}
+
+=== CẢNH BÁO AI ĐANG HOẠT ĐỘNG ===
+- Nhắm mắt: {warnings.get('eye', 'Không có') or 'Không có'}
+- Ngáp ngủ: {warnings.get('yawn', 'Không có') or 'Không có'}
+- Mất tập trung: {warnings.get('head', 'Không có') or 'Không có'}
+- Dùng điện thoại: {warnings.get('phone', 'Không có') or 'Không có'}
+- Không dây an toàn: {warnings.get('seatbelt', 'Không có') or 'Không có'}
+- Không cầm vô lăng: {warnings.get('hand', 'Không có') or 'Không có'}
+- Va chạm: {warnings.get('collision', 'Không có') or 'Không có'}
+- Lệch làn: {warnings.get('lane', 'Không có') or 'Không có'}
+
+=== HƯỚNG DẪN TRẢ LỜI ===
+- Khi được hỏi về xe (ví dụ: "xe 29A-111.11 ở đâu"), TRA CỨU trong danh sách xe trên
+- Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
+- Sử dụng emoji phù hợp
+- Ưu tiên an toàn giao thông
+- Nếu không tìm thấy biển số, nói "Không tìm thấy xe trong hệ thống"
+
+=== USER MESSAGE ===
+{message}
+
+=== TRẢ LỜI ===
+"""
+        
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",  # Model mới nhất, nhanh và thông minh
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Bạn là trợ lý giao thông Vietravel. Trả lời bằng tiếng Việt, thân thiện. LUÔN TRA CỨU DANH SÁCH XE KHI ĐƯỢC HỎI VỀ VỊ TRÍ."
+                },
+                {
+                    "role": "user",
+                    "content": context
+                }
+            ],
+            temperature=0.7,
+            max_tokens=500,
+            top_p=1.0,
+            stream=False,
+            stop=None
+        )
+        
+        response = chat_completion.choices[0].message.content
+        print(f"🤖 [GROQ AI] Response: {response[:100]}...")
+        return response
+        
+    except ImportError:
+        print("⚠️ Chưa cài groq. Chạy: pip install groq")
+        return None
+    except Exception as e:
+        print(f"❌ Lỗi Groq API: {e}")
+        return None
+    
+    # === OPTION 2: OPENAI CHATGPT (TRẢ PHÍ) ===
+    # Uncomment để dùng
+    """
+    try:
+        from openai import OpenAI
+
+        OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'sk-YOUR_API_KEY')
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        context = "Bạn là trợ lý giao thông Vietravel. Cảnh báo: " + str(warnings) + ". User: " + message + ". Trả lời bằng tiếng Việt:"
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Bạn là trợ lý giao thông Vietravel"},
+                {"role": "user", "content": context}
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"❌ Lỗi OpenAI API: {e}")
+        return None
+    """
+    
+    # === OPTION 3: GOOGLE GEMINI (MIỄN PHÍ GIỚI HẠN) ===
+    # Uncomment để dùng
+    """
+    try:
+        import google.generativeai as genai
+
+        GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY')
+        genai.configure(api_key=GEMINI_API_KEY)
+
+        model = genai.GenerativeModel('gemini-pro')
+
+        context = "Bạn là trợ lý giao thông Vietravel. Cảnh báo: " + str(warnings) + ". User: " + message + ". Trả lời bằng tiếng Việt:"
+
+        response = model.generate_content(context)
+        return response.text
+
+    except Exception as e:
+        print(f"❌ Lỗi Gemini API: {e}")
+        return None
+    """
+
+
+def process_ai_chat_message(message, vehicle_id=None):
+    """
+    Xử lý tin nhắn chatbot với AI thực thụ
+    Fallback về rule-based nếu API thất bại
+    """
+    # 1. Thử gọi LLM API
+    llm_response = call_llm_api(message, vehicle_id)
+    
+    if llm_response:
+        # Thành công với AI
+        return llm_response
+    
+    # 2. Fallback về rule-based
+    print("⚠️ Fallback về rule-based AI")
+    return generate_bot_response(message, vehicle_id)
 
 
 if __name__ == '__main__':

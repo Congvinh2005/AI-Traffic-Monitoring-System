@@ -589,6 +589,7 @@
 
             const chatBody = document.getElementById('chatBody');
 
+            // 1. Hiện tin nhắn người dùng
             const userDiv = document.createElement('div');
             userDiv.className = 'msg-user';
             userDiv.innerText = text;
@@ -597,9 +598,34 @@
             input.value = '';
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            setTimeout(() => {
-                addSystemMsg("Cảm ơn bạn. Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.");
-            }, 1000);
+            // 2. Gọi API để AI xử lý
+            fetch('http://localhost:5001/api/send_chat_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: text,
+                    vehicle_id: null,
+                    user_id: 'admin'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 3. Hiện phản hồi từ AI
+                    setTimeout(() => {
+                        addSystemMsg(data.bot_response);
+                    }, 500);
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi tin:', error);
+                // Fallback: phản hồi mặc định
+                setTimeout(() => {
+                    addSystemMsg("Cảm ơn bạn. Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.");
+                }, 500);
+            });
         }
 
         function addSystemMsg(text) {
