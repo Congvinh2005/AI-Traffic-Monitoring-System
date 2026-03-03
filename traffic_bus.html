@@ -129,6 +129,149 @@
             background: #007bff;
             transform: scale(1.1);
         }
+
+        /* --- FLOATING VOICE BUTTON --- */
+        #voiceToggleBtn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(220,53,69,0.4);
+            z-index: 9999;
+            font-size: 22px;
+            transition: transform 0.2s, background 0.2s;
+            animation: pulse 2s infinite;
+        }
+        #voiceToggleBtn:hover {
+            background: linear-gradient(135deg, #e74c3c, #dc3545);
+            transform: scale(1.1);
+        }
+        #voiceToggleBtn.listening {
+            animation: pulseFast 0.5s infinite;
+            background: linear-gradient(135deg, #28a745, #218838);
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220,53,69,0); }
+            100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+        }
+        @keyframes pulseFast {
+            0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(40,167,69,0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+        }
+
+        /* --- AI ALERTS PANEL --- */
+        #aiAlertsPanel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 9998;
+            display: none;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .alerts-header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .alerts-title {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .alerts-close {
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .alerts-body {
+            padding: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .alert-item {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 13px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .alert-item.critical {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .alert-item.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .alert-item.info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+        .alert-time {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* --- VOICE COMMAND SUGGESTIONS --- */
+        #voiceSuggestions {
+            position: fixed;
+            bottom: 160px;
+            right: 20px;
+            width: 280px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 9997;
+            display: none;
+            padding: 10px;
+        }
+        .suggestion-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .suggestion-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background: #e9ecef;
+        }
+        .suggestion-item i {
+            margin-right: 8px;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +296,45 @@
     <!-- Floating Message Button -->
     <div id="chatToggleBtn" onclick="toggleChat(true)">
         <i class="fa-solid fa-comment-dots"></i>
+    </div>
+
+    <!-- Floating Voice Button -->
+    <div id="voiceToggleBtn" onclick="toggleVoiceRecognition()" title="Ra lệnh bằng giọng nói">
+        <i class="fa-solid fa-microphone"></i>
+    </div>
+
+    <!-- AI Alerts Panel -->
+    <div id="aiAlertsPanel">
+        <div class="alerts-header">
+            <span class="alerts-title">🔔 Cảnh Báo AI Thời Gian Thực</span>
+            <span class="alerts-close" onclick="toggleAlertsPanel(false)">&times;</span>
+        </div>
+        <div class="alerts-body" id="alertsBody">
+            <div style="text-align:center; color:#999; font-size:12px; padding:20px;">
+                <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px;"></i>
+                <br>Không có cảnh báo nào
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Command Suggestions -->
+    <div id="voiceSuggestions">
+        <div class="suggestion-title">🎤 Lệnh gợi ý (click để nói):</div>
+        <div class="suggestion-item" onclick="voiceCommand('hiển thị xe 29B-222.22')">
+            <i class="fa-solid fa-bus"></i>Hiển thị xe 29B-222.22
+        </div>
+        <div class="suggestion-item" onclick="voiceCommand('mở camera tài xế')">
+            <i class="fa-solid fa-video"></i>Mở camera tài xế
+        </div>
+        <div class="suggestion-item" onclick="voiceCommand('gọi hỗ trợ')">
+            <i class="fa-solid fa-headset"></i>Gọi hỗ trợ
+        </div>
+        <div class="suggestion-item" onclick="voiceCommand('xem tất cả cảnh báo')">
+            <i class="fa-solid fa-triangle-exclamation"></i>Xem tất cả cảnh báo
+        </div>
+        <div class="suggestion-item" onclick="voiceCommand('tìm xe gần nhất')">
+            <i class="fa-solid fa-location-crosshairs"></i>Tìm xe gần nhất
+        </div>
     </div>
 
     <div id="chatWidget">
@@ -201,6 +383,49 @@
             var hours = km / speed; var minutes = Math.round(hours * 60);
             if (minutes < 60) return `${minutes} phút`;
             return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
+        }
+
+        // ==================== BIẾN TOÀN CỤC CHO AI & GIỌNG NÓI ====================
+        var isVoiceListening = false;
+        var recognition = null;
+        var alertsPollingInterval = null;
+        var currentAlerts = [];
+
+        // Kiểm tra hỗ trợ Web Speech API
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'vi-VN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isVoiceListening = true;
+                document.getElementById('voiceToggleBtn').classList.add('listening');
+                document.getElementById('voiceSuggestions').style.display = 'block';
+            };
+
+            recognition.onend = function() {
+                isVoiceListening = false;
+                document.getElementById('voiceToggleBtn').classList.remove('listening');
+                setTimeout(() => {
+                    document.getElementById('voiceSuggestions').style.display = 'none';
+                }, 2000);
+            };
+
+            recognition.onresult = function(event) {
+                var transcript = event.results[0][0].transcript.toLowerCase();
+                console.log('Giọng nói nhận diện:', transcript);
+                processVoiceCommand(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Lỗi nhận diện giọng nói:', event.error);
+                isVoiceListening = false;
+                document.getElementById('voiceToggleBtn').classList.remove('listening');
+            };
+        } else {
+            console.warn('Trình duyệt không hỗ trợ nhận diện giọng nói');
         }
 
         const vehicles = [
@@ -390,7 +615,247 @@
             chatBody.scrollTop = chatBody.scrollHeight;
         }
 
+        // ==================== CHỨC NĂNG ĐIỀU KHIỂN BẰNG GIỌNG NÓI ====================
+        
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                alert('Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Google Chrome.');
+                return;
+            }
+            if (isVoiceListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function voiceCommand(command) {
+            if (!recognition) {
+                alert('Trình duyệt không hỗ trợ nhận diện giọng nói');
+                return;
+            }
+            // Hiển thị command đang nói
+            document.getElementById('voiceSuggestions').style.display = 'none';
+            recognition.start();
+            // Giả lập nhận diện command
+            setTimeout(() => {
+                processVoiceCommand(command);
+                if (isVoiceListening) recognition.stop();
+            }, 500);
+        }
+
+        function processVoiceCommand(cmd) {
+            console.log('Xử lý lệnh:', cmd);
+            
+            // Hiển thị thông báo đang xử lý
+            addSystemMsg(`🎤 Đang xử lý: "${cmd}"`);
+
+            // Tìm xe theo biển số
+            if (cmd.includes('hiển thị xe') || cmd.includes('tìm xe')) {
+                var plateMatch = cmd.match(/(\d{1,2}[A-Z]-\d{3}\.\d{2})/i);
+                if (plateMatch) {
+                    var plate = plateMatch[0].toUpperCase();
+                    var vehicle = vehicles.find(v => v.plate === plate);
+                    if (vehicle) {
+                        focusVehicle(vehicle.id);
+                        addSystemMsg(`✅ Đã tìm thấy xe ${plate} - Tài xế: ${vehicle.driver}`);
+                    } else {
+                        addSystemMsg(`❌ Không tìm thấy xe biển số ${plate}`);
+                    }
+                } else {
+                    // Tìm xe gần nhất
+                    if (cmd.includes('gần nhất')) {
+                        findNearestVehicle();
+                    } else {
+                        addSystemMsg('Vui lòng nói biển số xe, ví dụ: "hiển thị xe 29B-222.22"');
+                    }
+                }
+            }
+            
+            // Mở camera tài xế
+            else if (cmd.includes('camera') || cmd.includes('video')) {
+                addSystemMsg('📹 Tính năng camera đang được phát triển. Vui lòng chọn xe trên bản đồ để xem thông tin chi tiết.');
+            }
+            
+            // Gọi hỗ trợ / mở chat
+            else if (cmd.includes('hỗ trợ') || cmd.includes('chat') || cmd.includes('nhắn tin')) {
+                toggleChat(true);
+                addSystemMsg('💬 Đã mở chat hỗ trợ. Quý khách cần giúp gì?');
+            }
+            
+            // Xem cảnh báo
+            else if (cmd.includes('cảnh báo') || cmd.includes('cảnh báo')) {
+                toggleAlertsPanel(true);
+                fetchAICurrentWarnings();
+                addSystemMsg('🔔 Đang hiển thị cảnh báo AI thời gian thực.');
+            }
+            
+            // Tìm xe theo loại
+            else if (cmd.includes('xe khách') || cmd.includes('xe bus')) {
+                var busVehicles = vehicles.filter(v => v.type === 'bus');
+                if (busVehicles.length > 0) {
+                    focusVehicle(busVehicles[0].id);
+                    addSystemMsg(`✅ Đã hiển thị xe khách gần nhất. Tổng cộng: ${busVehicles.length} xe.`);
+                }
+            }
+            else if (cmd.includes('xe con') || cmd.includes('xe taxi')) {
+                var carVehicles = vehicles.filter(v => v.type === 'car');
+                if (carVehicles.length > 0) {
+                    focusVehicle(carVehicles[0].id);
+                    addSystemMsg(`✅ Đã hiển thị xe con gần nhất. Tổng cộng: ${carVehicles.length} xe.`);
+                }
+            }
+            
+            // Không hiểu lệnh
+            else {
+                addSystemMsg('❌ Xin lỗi, tôi không hiểu lệnh này. Thử: "hiển thị xe 29B-222.22", "gọi hỗ trợ", "xem cảnh báo"');
+            }
+        }
+
+        function findNearestVehicle() {
+            // Giả lập tìm xe gần nhất (trong thực tế sẽ dùng GPS)
+            var nearestVehicle = vehicles[0];
+            focusVehicle(nearestVehicle.id);
+            addSystemMsg(`📍 Xe gần nhất: ${nearestVehicle.plate} - ${nearestVehicle.currentAddress}`);
+        }
+
+        // ==================== CHỨC NĂNG CẢNH BÁO AI TỪ BACKEND ====================
+        
+        function toggleAlertsPanel(show) {
+            document.getElementById('aiAlertsPanel').style.display = show ? 'block' : 'none';
+        }
+
+        function fetchAICurrentWarnings() {
+            // Poll API để lấy cảnh báo từ backend
+            fetch('/api/get_ai_warnings')
+                .then(response => response.json())
+                .then(data => {
+                    updateAlertsPanel(data);
+                })
+                .catch(error => {
+                    console.error('Lỗi khi lấy cảnh báo AI:', error);
+                    // Giả lập cảnh báo cho demo
+                    simulateDemoAlerts();
+                });
+        }
+
+        function updateAlertsPanel(warnings) {
+            const alertsBody = document.getElementById('alertsBody');
+            currentAlerts = [];
+            
+            // Kiểm tra các loại cảnh báo
+            if (warnings.eye && warnings.eye.trim() !== '') {
+                currentAlerts.push({
+                    type: 'critical',
+                    message: '⚠️ Tài xế đang NHẮM MẮT QUÁ LÂU!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.yawn && warnings.yawn.trim() !== '') {
+                currentAlerts.push({
+                    type: 'warning',
+                    message: '😴 Tài xế đang NGÁP NGỦ!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.head && warnings.head.trim() !== '') {
+                currentAlerts.push({
+                    type: 'warning',
+                    message: '🔄 Tài xế MẤT TẬP TRUNG!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.phone && warnings.phone.trim() !== '') {
+                currentAlerts.push({
+                    type: 'critical',
+                    message: '📱 Tài xế đang DÙNG ĐIỆN THOẠI!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.seatbelt && warnings.seatbelt.trim() !== '') {
+                currentAlerts.push({
+                    type: 'critical',
+                    message: '⚠️ Tài xế KHÔNG ĐEO DÂY AN TOÀN!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.hand && warnings.hand.trim() !== '') {
+                currentAlerts.push({
+                    type: 'warning',
+                    message: '🙌 Tài xế KHÔNG CẦM VÔ LĂNG!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.collision && warnings.collision.trim() !== '') {
+                currentAlerts.push({
+                    type: 'critical',
+                    message: '🚨 CẢNH BÁO VA CHẠM!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            if (warnings.lane && warnings.lane.trim() !== '') {
+                currentAlerts.push({
+                    type: 'warning',
+                    message: '⚠️ Xe đang LỆCH LÀN!',
+                    time: new Date().toLocaleTimeString()
+                });
+            }
+            
+            // Hiển thị cảnh báo
+            if (currentAlerts.length === 0) {
+                alertsBody.innerHTML = `
+                    <div style="text-align:center; color:#999; font-size:12px; padding:20px;">
+                        <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px; color:#28a745;"></i>
+                        <br>Không có cảnh báo nào
+                    </div>`;
+            } else {
+                alertsBody.innerHTML = '';
+                currentAlerts.forEach(alert => {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert-item ${alert.type}`;
+                    alertDiv.innerHTML = `
+                        <div style="font-weight:bold;">${alert.message}</div>
+                        <div class="alert-time">⏰ ${alert.time}</div>
+                    `;
+                    alertsBody.appendChild(alertDiv);
+                });
+                
+                // Gửi cảnh báo vào chat
+                const latestAlert = currentAlerts[0];
+                if (latestAlert && !latestAlert.sentToChat) {
+                    addSystemMsg(`🔔 ${latestAlert.message}`);
+                    latestAlert.sentToChat = true;
+                }
+            }
+        }
+
+        function simulateDemoAlerts() {
+            // Giả lập cảnh báo cho demo (khi không có backend)
+            const demoWarnings = {
+                eye: '',
+                yawn: 'NGÁP NGỦ',
+                head: '',
+                phone: '',
+                seatbelt: '',
+                hand: '',
+                collision: '',
+                lane: ''
+            };
+            updateAlertsPanel(demoWarnings);
+        }
+
+        // Bắt đầu poll cảnh báo mỗi 3 giây
+        function startAlertsPolling() {
+            fetchAICurrentWarnings();
+            alertsPollingInterval = setInterval(() => {
+                fetchAICurrentWarnings();
+            }, 3000);
+        }
+
         initSystem();
+        
+        // Bắt đầu poll cảnh báo AI sau khi init
+        setTimeout(startAlertsPolling, 2000);
     </script>
 </body>
 </html>

@@ -15,6 +15,35 @@ import pyttsx3
 
 app = Flask(__name__)
 
+# ==================== BIẾN TOÀN CỤC CHO CHATBOT & GIỌNG NÓI ====================
+
+# Hàng đợi cảnh báo AI để gửi vào chatbot
+ai_alerts_queue = []
+ai_alerts_lock = threading.Lock()
+
+# Lịch sử cảnh báo (tối đa 50 cảnh báo)
+MAX_ALERTS_HISTORY = 50
+
+# Biến để lưu vehicle_id hiện tại đang được giám sát
+current_monitoring_vehicle_id = None
+
+def add_ai_alert(alert_type, message, vehicle_id=None):
+    """Thêm cảnh báo AI vào hàng đợi"""
+    global ai_alerts_queue
+    with ai_alerts_lock:
+        alert = {
+            'type': alert_type,
+            'message': message,
+            'vehicle_id': vehicle_id,
+            'timestamp': datetime.now().strftime('%H:%M:%S'),
+            'level': 'critical' if alert_type in ['eye', 'phone', 'seatbelt', 'collision'] else 'warning'
+        }
+        ai_alerts_queue.append(alert)
+        # Giới hạn số lượng cảnh báo
+        if len(ai_alerts_queue) > MAX_ALERTS_HISTORY:
+            ai_alerts_queue = ai_alerts_queue[-MAX_ALERTS_HISTORY:]
+        print(f"[AI ALERT] {alert_type}: {message}")
+
 # ======================= Âm thanh & Cảnh báo ===========================
 latest_warning = ""
 lock = threading.Lock()
@@ -254,6 +283,18 @@ warnings = {
 # Thêm biến để kiểm soát luồng video
 active_video_stream = None
 
+# Cảnh báo cũ để so sánh (tránh spam cảnh báo giống nhau)
+previous_warnings = {
+    "eye": "",
+    "yawn": "",
+    "head": "",
+    "phone": "",
+    "seatbelt": "",
+    "hand": "",
+    "collision": "",
+    "lane": ""
+}
+
 # ======================= Video giám sát tài xế ===========================
 def driver_monitor():
     global latest_warning, warnings, video_writer, is_recording, active_video_stream, warning_states
@@ -309,6 +350,9 @@ def driver_monitor():
                             if can_play_warning("eye"):
                                 chopmat_sound.play()
                             warnings["eye"] = "NHẮM MẮT QUÁ LÂU!"
+                            # Gửi cảnh báo vào chatbot
+                            if previous_warnings["eye"] != "NHẮM MẮT QUÁ LÂU!":
+                                add_ai_alert("eye", "Tài xế đang nhắm mắt quá lâu!", current_monitoring_vehicle_id)
                     else:
                         eye_closed_time = None
 
@@ -322,6 +366,8 @@ def driver_monitor():
                                 alarm_yawn_on = True
                                 ngap_sound.play()
                             warnings["yawn"] = "NGÁP NGỦ!"
+                            if previous_warnings["yawn"] != "NGÁP NGỦ!":
+                                add_ai_alert("yawn", "Tài xế đang ngáp ngủ!", current_monitoring_vehicle_id)
                     else:
                         counter_yawn = 0
                         alarm_yawn_on = False
@@ -334,6 +380,8 @@ def driver_monitor():
                         if can_play_warning("head"):
                             dau_quay_sound.play()
                         warnings["head"] = "MẤT TẬP TRUNG !"
+                        if previous_warnings["head"] != "MẤT TẬP TRUNG !":
+                            add_ai_alert("head", "Tài xế mất tập trung (quay đầu/ngửa đầu)!", current_monitoring_vehicle_id)
 
             # Phát hiện dùng điện thoại - chỉ kiểm tra nếu cảnh báo điện thoại được bật
             if warning_states["phone"]:
@@ -347,6 +395,8 @@ def driver_monitor():
                             if can_play_warning("phone"):
                                 phone_baodong.play()
                             warnings["phone"] = "DÙNG ĐIỆN THOẠI!"
+                            if previous_warnings["phone"] != "DÙNG ĐIỆN THOẠI!":
+                                add_ai_alert("phone", "Tài xế đang dùng điện thoại!", current_monitoring_vehicle_id)
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                             cv2.putText(frame, label, (x1, y1 - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
@@ -370,10 +420,19 @@ def driver_monitor():
                     if can_play_warning("seatbelt"):
                         seatbelt_baodong.play()
                     warnings["seatbelt"] = "KHÔNG ĐEO DÂY AN TOÀN!"
+                    if previous_warnings["seatbelt"] != "KHÔNG ĐEO DÂY AN TOÀN!":
+                        add_ai_alert("seatbelt", "Tài xế không đeo dây an toàn!", current_monitoring_vehicle_id)
 
             # Giám sát tay lái - chỉ kiểm tra nếu cảnh báo tay lái được bật
             if warning_states["hand"]:
                 frame = hand_detector.findArmsAndHands(frame)
+                # Cảnh báo tay lái đã được thêm vào warnings["hand"] từ hand_detector
+                if warnings["hand"] and previous_warnings["hand"] != warnings["hand"]:
+                    add_ai_alert("hand", warnings["hand"], current_monitoring_vehicle_id)
+
+            # Cập nhật previous_warnings
+            for key in previous_warnings:
+                previous_warnings[key] = warnings[key] if warnings[key] else ""
 
             # Resize frame trước khi ghi
             frame = cv2.resize(frame, (frame_width, frame_height))
@@ -1821,6 +1880,140 @@ def reset_clicked_button():
     global clicked_button
     clicked_button = None
     return jsonify({'status': 'success'})
+
+
+# ==================== API CHO CHATBOT & ĐIỀU KHIỂN GIỌNG NÓI ====================
+
+@app.route('/api/get_ai_warnings')
+def api_get_ai_warnings():
+    """API để frontend lấy cảnh báo AI hiện tại"""
+    return jsonify(warnings)
+
+@app.route('/api/get_ai_alerts_history')
+def api_get_ai_alerts_history():
+    """API lấy lịch sử cảnh báo AI"""
+    with ai_alerts_lock:
+        return jsonify({
+            'status': 'success',
+            'alerts': ai_alerts_queue[-20:]  # Trả về 20 cảnh báo gần nhất
+        })
+
+@app.route('/api/set_monitoring_vehicle', methods=['POST'])
+def api_set_monitoring_vehicle():
+    """API để thiết lập vehicle_id đang được giám sát"""
+    global current_monitoring_vehicle_id
+    try:
+        data = request.get_json()
+        vehicle_id = data.get('vehicle_id')
+        current_monitoring_vehicle_id = vehicle_id
+        return jsonify({
+            'status': 'success',
+            'vehicle_id': vehicle_id,
+            'message': f'Đang giám sát xe {vehicle_id}'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+@app.route('/api/process_voice_command', methods=['POST'])
+def api_process_voice_command():
+    """API xử lý lệnh giọng nói từ frontend"""
+    try:
+        data = request.get_json()
+        command = data.get('command', '').lower()
+        
+        response = {
+            'status': 'success',
+            'action': 'unknown',
+            'message': ''
+        }
+        
+        # Xử lý các lệnh cơ bản
+        if 'hiển thị xe' in command or 'tìm xe' in command:
+            # Tìm xe theo biển số
+            import re
+            plate_match = re.search(r'(\d{1,2}[a-z]-\d{3}\.\d{2})', command, re.IGNORECASE)
+            if plate_match:
+                response['action'] = 'focus_vehicle'
+                response['plate'] = plate_match.group(0).upper()
+                response['message'] = f'Tìm xe biển số {plate_match.group(0).upper()}'
+            elif 'gần nhất' in command:
+                response['action'] = 'find_nearest'
+                response['message'] = 'Tìm xe gần nhất'
+            else:
+                response['action'] = 'help'
+                response['message'] = 'Vui lòng nói biển số xe'
+                
+        elif 'camera' in command or 'video' in command:
+            response['action'] = 'open_camera'
+            response['message'] = 'Mở camera tài xế'
+            
+        elif 'hỗ trợ' in command or 'chat' in command or 'nhắn tin' in command:
+            response['action'] = 'open_chat'
+            response['message'] = 'Mở chat hỗ trợ'
+            
+        elif 'cảnh báo' in command:
+            response['action'] = 'show_alerts'
+            response['message'] = 'Hiển thị cảnh báo'
+            
+        else:
+            response['action'] = 'unknown'
+            response['message'] = 'Không hiểu lệnh. Thử: hiển thị xe, mở camera, gọi hỗ trợ'
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+@app.route('/api/send_chat_message', methods=['POST'])
+def api_send_chat_message():
+    """API gửi tin nhắn vào chatbot (lưu vào database nếu cần)"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        vehicle_id = data.get('vehicle_id')
+        user_id = data.get('user_id', 'anonymous')
+        
+        # Lưu tin nhắn vào database (nếu có)
+        # Ở đây chỉ in log
+        print(f"[CHAT] User {user_id} (xe {vehicle_id}): {message}")
+        
+        # Tạo phản hồi tự động
+        bot_response = generate_bot_response(message)
+        
+        return jsonify({
+            'status': 'success',
+            'bot_response': bot_response
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+def generate_bot_response(message):
+    """Sinh phản hồi tự động cho chatbot"""
+    message_lower = message.lower()
+    
+    if 'xin chào' in message_lower or 'hello' in message_lower:
+        return 'Xin chào quý khách! Vietravel Supporter có thể giúp gì cho quý khách?'
+    elif 'cảm ơn' in message_lower:
+        return 'Dạ không có gì ạ! Rất vui được hỗ trợ quý khách.'
+    elif 'giúp' in message_lower or 'hỗ trợ' in message_lower:
+        return 'Dạ vâng, quý khách cần hỗ trợ vấn đề gì ạ?'
+    elif 'xe' in message_lower and ('đâu' in message_lower or 'ở đâu' in message_lower):
+        return 'Quý khách vui lòng cho biết biển số xe để em kiểm tra ạ.'
+    elif 'tài xế' in message_lower or 'tài xế' in message_lower:
+        return 'Thông tin tài xế sẽ được hiển thị khi quý khách chọn xe trên bản đồ ạ.'
+    else:
+        return 'Cảm ơn bạn. Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.'
+
 
 
 
