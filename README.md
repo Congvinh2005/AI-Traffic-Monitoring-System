@@ -1,401 +1,338 @@
-# 🚗 AI Traffic Monitoring System
+# 🚀 HỆ THỐNG GIÁM SÁT TÀI XẾ - AI CHATBOT
 
-Hệ thống Hỗ trợ Lái xe Thông minh với AI, tích hợp nhiều tính năng an toàn và cảnh báo giao thông.
+> **Phiên bản:** 1.0 | **Cập nhật:** 2024
 
----
+## 📋 Mô tả
 
-## 📋 Mục lục
+Hệ thống giám sát tài xế bằng AI và gửi cảnh báo vào chatbot để thông báo cho admin theo thời gian thực.
 
-- [Tính năng](#-tính-năng)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
-  - [Cách 1: Cài đặt trực tiếp (Recommended)](#cách-1-cài-đặt-trực-tiếp-recommended)
-  - [Cách 2: Sử dụng Docker](#cách-2-sử-dụng-docker)
-- [Cấu trúc dự án](#-cấu-trúc-dự-án)
-- [Chạy ứng dụng](#-chạy-ứng-dụng)
-- [Troubleshooting](#-troubleshooting)
+### ⚠️ 8 Loại cảnh báo:
 
----
-
-## ✨ Tính năng
-
-### 🎯 Giám sát tài xế
-- Phát hiện buồn ngủ (nhắm mắt, ngáp)
-- Phát hiện sử dụng điện thoại
-- Kiểm tra dây an toàn
-- Giám sát tay lái
-
-### 🚦 Cảnh báo biển báo giao thông
-- Nhận diện biển báo tốc độ
-- Cảnh báo cấm rẽ
-- Nhận diện biển báo nguy hiểm
-
-### 📊 Phân tích lưu lượng giao thông
-- Đếm phương tiện
-- Phân loại xe (xe hơi, xe tải, xe máy)
-- Cảnh báo kẹt xe
-
-### ⚠️ Cảnh báo an toàn
-- Cảnh báo va chạm
-- Cảnh báo lệch làn đường
-- Phát hiện khoảng cách an toàn
-
-### 👋 Điều khiển bằng cử chỉ tay
-- Điều khiển âm thanh
-- Điều khiển ứng dụng
-- Điều khiển camera
+| # | Cảnh báo | Mức độ | Mô tả |
+|---|----------|--------|-------|
+| 1 | 👁️ **Nhắm mắt quá lâu** | 🔴 Critical | Tài xế buồn ngủ, mệt mỏi |
+| 2 | 😴 **Ngáp ngủ** | 🟡 Warning | Dấu hiệu mệt mỏi |
+| 3 | 🔄 **Mất tập trung** | 🟡 Warning | Quay đầu/ngửa đầu quá mức |
+| 4 | 📱 **Dùng điện thoại** | 🔴 Critical | Sử dụng ĐT khi lái xe |
+| 5 | ⚠️ **Không dây an toàn** | 🔴 Critical | Vi phạm an toàn |
+| 6 | 🙌 **Không cầm vô lăng** | 🟡 Warning | Tay không đúng vị trí |
+| 7 | 🚨 **Va chạm** | 🔴 Critical | Phát hiện va chạm sắp xảy ra |
+| 8 | ⚠️ **Lệch làn** | 🟡 Warning | Xe đi chệch làn đường |
 
 ---
 
-## 💻 Yêu cầu hệ thống
+## 🎯 Kiến trúc hệ thống
 
-### Tối thiểu
-- **Hệ điều hành**: Windows 10 / macOS 11+ / Linux (Ubuntu 20.04+)
-- **Python**: 3.8 - 3.10
-- **RAM**: 8GB (khuyến nghị 16GB)
-- **Dung lượng**: 10GB trống
-- **Webcam**: Tùy chọn (cho tính năng giám sát tài xế)
-
-### Khuyến nghị
-- **GPU**: NVIDIA CUDA support (tăng tốc inference)
-- **CPU**: 4 cores trở lên
-- **RAM**: 16GB
-
----
-
-## 🛠️ Hướng dẫn cài đặt
-
-### Cách 1: Cài đặt trực tiếp (Recommended)
-
-#### Bước 1: Clone repository
-
-```bash
-git clone <repository-url>
-cd AI-Traffic-Monitoring-System
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CAMERA GIÁM SÁT                           │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│              BACKEND (drive.py / all_tong.py)                │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  AI Detection: Dlib, YOLO, MediaPipe                  │   │
+│  │  → Phát hiện vi phạm → add_ai_alert()                 │   │
+│  │  → Lưu vào ai_alerts_queue                            │   │
+│  └──────────────────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────────────────┘
+                     │ API: /api/get_ai_warnings
+                     │ (Polling mỗi 3 giây)
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│           FRONTEND (traffic_bus.html)                        │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Chatbot Widget:                                      │   │
+│  │  - Hiển thị cảnh báo với thời gian                    │   │
+│  │  - Anti-spam: gửi lại sau 10 giây                     │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-#### Bước 2: Tạo và kích hoạt Virtual Environment
+---
 
-**Trên Windows:**
+## 🛠️ Cài đặt
+
+### Bước 1: Cài dependencies
 ```bash
-python -m venv venv
-venv\Scripts\activate
+cd /Users/vinhdv/Documents/Clone/AI-Traffic-Monitoring-System
+pip install -r requirements.txt
+pip install flask-cors
 ```
 
-**Trên macOS/Linux:**
+### Bước 2: Kiểm tra files
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+# Backend
+ls py/Web/drive.py
+ls py/Web/all_tong.py
+ls py/Web/templates/traffic_bus.html
+
+# Models (phải có)
+ls py/weights/yolov8n.pt
+ls py/weights/lasttx.pt
+ls py/shape_predictor_68_face_landmarks.dat
 ```
 
-> **Lưu ý**: Thư mục `venv/` đã được thêm vào `.gitignore`, nên khi pull dự án về, bạn **phải tự tạo** virtual environment mới.
+---
 
-#### Bước 3: Cài đặt dependencies
+## 🚀 Chạy chương trình
 
+### **Cách 1: Với drive.py** (Camera webcam)
 ```bash
-pip install --upgrade pip
+cd /Users/vinhdv/Documents/Clone/AI-Traffic-Monitoring-System/py/Web
+python drive.py
+```
+
+### **Cách 2: Với all_tong.py** (Nhiều tính năng hơn)
+```bash
+cd /Users/vinhdv/Documents/Clone/AI-Traffic-Monitoring-System/py/Web
+python all_tong.py
+```
+
+### Truy cập:
+```
+http://localhost:5001/traffic_bus
+```
+
+---
+
+## 📊 Kết quả mong đợi
+
+### Trong Chatbot:
+```
+🔔 📱 Tài xế đang DÙNG ĐIỆN THOẠI!
+⏰ 14:30:25 - 03/12/2024
+
+🔔 😴 Tài xế đang NGÁP NGỦ!
+⏰ 14:30:35 - 03/12/2024
+
+🔔 🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!
+⏰ 14:30:45 - 03/12/2024
+```
+
+### Anti-spam:
+- Mỗi cảnh báo chỉ gửi **1 lần duy nhất**
+- Nếu vi phạm **tiếp diễn** → Gửi lại sau **10 giây**
+- Có thể tùy chỉnh thời gian resend
+
+---
+
+## 🔧 Tùy chỉnh
+
+### Thay đổi thời gian resend (trong `traffic_bus.html`):
+```javascript
+var ALERT_RESEND_INTERVAL = 10000;  // 10000ms = 10 giây
+```
+
+**Các lựa chọn:**
+- `5000` = 5 giây (gửi thường xuyên)
+- `10000` = 10 giây (mặc định)
+- `30000` = 30 giây (ít spam)
+- `60000` = 60 giây (rất ít)
+
+### Thay đổi thời gian poll:
+```javascript
+function startAlertsPolling() {
+    fetchAICurrentWarnings();
+    alertsPollingInterval = setInterval(() => {
+        fetchAICurrentWarnings();
+    }, 3000);  // Thay đổi số này (ms)
+}
+```
+
+---
+
+## 🧪 Test API
+
+### Kiểm tra cảnh báo hiện tại:
+```bash
+curl http://localhost:5001/api/get_ai_warnings
+```
+
+**Kết quả:**
+```json
+{
+  "eye": "NHẮM MẮT QUÁ LÂU!",
+  "yawn": "NGÁP NGỦ!",
+  "head": "MẤT TẬP TRUNG !",
+  "phone": "DÙNG ĐIỆN THOẠI!",
+  "seatbelt": "KHÔNG ĐEO DÂY AN TOÀN!",
+  "hand": "CẢNH BÁO: KHÔNG CẦM VÔ LĂNG!",
+  "collision": "",
+  "lane": ""
+}
+```
+
+### Kiểm tra lịch sử cảnh báo:
+```bash
+curl http://localhost:5001/api/get_ai_alerts_history
+```
+
+**Kết quả:**
+```json
+{
+  "status": "success",
+  "alerts": [
+    {
+      "type": "phone",
+      "message": "Tài xế đang dùng điện thoại!",
+      "timestamp": "14:30:25",
+      "level": "critical"
+    }
+  ]
+}
+```
+
+---
+
+## 🎤 Điều khiển bằng giọng nói
+
+### Các lệnh hỗ trợ:
+
+| Lệnh | Tác vụ |
+|------|--------|
+| "Hiển thị xe 29B-222.22" | Focus vào xe |
+| "Tìm xe gần nhất" | Tìm xe gần |
+| "Mở camera tài xế" | Xem camera |
+| "Gọi hỗ trợ" | Mở chatbot |
+| "Xem cảnh báo" | Mở AI Alerts Panel |
+
+### Cách dùng:
+1. Click nút **🎤 Microphone** (góc dưới phải)
+2. Nói lệnh
+3. Hệ thống tự động thực hiện
+
+---
+
+## 🐛 Xử lý sự cố
+
+### Lỗi: "Không thấy cảnh báo trong chat"
+**Kiểm tra:**
+1. Backend có chạy không? `curl localhost:5001/api/get_ai_warnings`
+2. Console log có lỗi không? (F12)
+3. Camera có hoạt động không?
+
+### Lỗi: "CORS policy blocked"
+**Fix:**
+```bash
+pip install flask-cors
+# Restart backend
+```
+
+### Lỗi: "Module not found"
+```bash
 pip install -r requirements.txt
 ```
 
-> **⚠️ Lưu ý quan trọng về dlib:**
-> - **Windows**: Cần cài Visual C++ Build Tools trước khi cài dlib
->   - Tải tại: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-> - **macOS**: 
->   ```bash
->   brew install cmake
->   pip install dlib --no-binary dlib
->   ```
-> - **Linux**:
->   ```bash
->   sudo apt-get install build-essential cmake libopenblas-dev liblapack-dev libx11-dev libgtk-3-dev
->   ```
-
-#### Bước 4: Tải model files
-
-**Tải YOLO weights:**
+### Lỗi: "Video file not found"
 ```bash
-mkdir -p py/weights
-cd py/weights
-# Tải model YOLOv8
-curl -L https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8n.pt -o yolov8n.pt
-# Hoặc tải các model khác nếu cần
-cd ../..
-```
-
-**Tải shape predictor (cho facial landmarks):**
-```bash
-# File đã có sẵn trong dự án: py/shape_predictor_68_face_landmarks.dat
-# Nếu thiếu, tải từ: https://github.com/davisking/dlib-models
-```
-
-#### Bước 5: Kiểm tra cài đặt
-
-```bash
-python -c "import cv2, dlib, flask, ultralytics; print('✅ Tất cả dependencies đã cài đặt thành công!')"
+# Kiểm tra đường dẫn video trong code
+# Hoặc dùng webcam thay vì video file
 ```
 
 ---
 
-### Cách 2: Sử dụng Docker
+## 📈 Hiệu năng
 
-> **Lưu ý**: Docker không hỗ trợ webcam trên macOS. Chỉ sử dụng Docker cho testing hoặc deployment server.
+| Thành phần | Thời gian |
+|------------|-----------|
+| AI Detection (1 frame) | ~30-50ms |
+| add_ai_alert() | <1ms |
+| API GET | ~10ms |
+| Frontend render | ~5ms |
+| **Tổng độ trễ** | **~50-70ms** |
 
-#### Bước 1: Cài đặt Docker Desktop
-
-- Tải từ: https://www.docker.com/products/docker-desktop
-- Chọn phiên bản phù hợp (Apple Silicon cho M1/M2/M3)
-
-#### Bước 2: Build và chạy container
-
-```bash
-# Build image
-docker compose build
-
-# Chạy container
-docker compose up
-
-# Hoặc chạy background
-docker compose up -d
-```
-
-#### Bước 3: Truy cập ứng dụng
-
-Mở trình duyệt: http://localhost:5000
-
-#### Các lệnh Docker hữu ích
-
-```bash
-# Xem logs
-docker compose logs -f
-
-# Dừng container
-docker compose down
-
-# Dừng và xóa containers, networks
-docker compose down --rmi all
-```
+→ **Real-time**: Cảnh báo xuất hiện trong chat < 1 giây
 
 ---
 
-## 📁 Cấu trúc dự án
+## 📁 Cấu trúc files
 
 ```
 AI-Traffic-Monitoring-System/
 ├── py/
-│   ├── Web/                    # Ứng dụng Flask chính
-│   │   ├── all_tong.py        # File main - tích hợp tất cả tính năng
-│   │   ├── drive.py           # Module giám sát tài xế
-│   │   ├── tay_chuan.py       # Module điều khiển cử chỉ tay
-│   │   ├── bien_so.py         # Module nhận diện biển số
-│   │   ├── templates/         # HTML templates
-│   │   └── static/            # CSS, JS, images
-│   ├── weights/               # YOLO model files (.pt)
-│   ├── Sound/                 # Audio alerts
-│   ├── video_input/           # Video test files
-│   ├── pictures/              # Output images
-│   └── shape_predictor_68_face_landmarks.dat
-├── recordings/                # Video recordings
-├── requirements.txt           # Python dependencies
-├── docker-compose.yml         # Docker config
-├── Dockerfile
-└── README.md
+│   └── Web/
+│       ├── drive.py              # Backend AI (Camera)
+│       ├── all_tong.py           # Backend AI (Full)
+│       └── templates/
+│           └── traffic_bus.html  # Frontend + Chatbot
+├── traffic_bus.html              # Frontend (standalone)
+├── requirements.txt              # Python dependencies
+└── README.md                     # File này
 ```
 
 ---
 
-## 🚀 Chạy ứng dụng
+## 🎓 Tính năng nâng cao
 
-### Chạy Flask application
-
-**Cách 1: Sử dụng Flask CLI (Recommended)**
-```bash
-# Kích hoạt venv trước
-# Windows: venv\Scripts\activate
-# macOS/Linux: source venv/bin/activate
-
-# Chạy module chính
-flask --app py/Web/all_tong.py run --port 5001 --debug
+### 1. Lưu cảnh báo vào Database
+```python
+@app.route('/api/save_alert_to_db', methods=['POST'])
+def save_alert_to_db():
+    data = request.get_json()
+    # Lưu vào SQLite/MySQL
 ```
 
-**Cách 2: Sử dụng Python trực tiếp**
-```bash
-python py/Web/all_tong.py
+### 2. Gửi email/SMS khi nguy hiểm
+```python
+if alert_type in ['collision', 'eye']:
+    send_email_to_admin(...)
+    send_sms_to_driver(...)
 ```
 
-**Cách 3: Sử dụng python -m flask**
-```bash
-python -m flask --app py/Web/all_tong.py run --port 5001
+### 3. Thống kê theo ngày
+```python
+@app.route('/api/get_daily_stats')
+def get_daily_stats():
+    # COUNT alerts by type for today
 ```
 
-### Truy cập ứng dụng
-
-Sau khi khởi động, mở trình duyệt và truy cập:
-
-| Trang | URL | Mô tả |
-|-------|-----|-------|
-| **Trang chủ** | http://127.0.0.1:5001/ | Dashboard chính |
-| **Giám sát lái xe** | http://127.0.0.1:5001/lai_xe | Theo dõi trạng thái tài xế |
-| **Điều khiển tay** | http://127.0.0.1:5001/hands | Điều khiển bằng cử chỉ |
-
-> **Lưu ý**: Port mặc định là **5001**. Nếu port bị chiếm, đổi sang port khác:
-> ```bash
-> flask --app py/Web/all_tong.py run --port 5002
-> ```
-
----
-
-## ❓ Troubleshooting
-
-### Lỗi thường gặp
-
-#### 1. `ModuleNotFoundError: No module named '...'`
-
-**Nguyên nhân**: Chưa cài đặt dependencies hoặc venv chưa được kích hoạt.
-
-**Giải pháp**:
-```bash
-# Kiểm tra venv đang active
-which python  # macOS/Linux
-where python  # Windows
-
-# Cài đặt lại dependencies
-pip install -r requirements.txt
-```
-
-#### 2. Lỗi cài đặt `dlib` trên Windows
-
-**Nguyên nhân**: Thiếu Visual C++ Build Tools.
-
-**Giải pháp**:
-1. Tải và cài đặt: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-2. Chọn "Desktop development with C++"
-3. Restart và cài lại: `pip install dlib`
-
-#### 3. Lỗi cài đặt `dlib` trên macOS
-
-**Nguyên nhân**: Thiếu cmake hoặc compiler.
-
-**Giải pháp**:
-```bash
-brew install cmake
-pip install dlib --no-binary dlib
-```
-
-#### 4. `ImportError: cannot import name '...' from 'dlib'`
-
-**Nguyên nhân**: Version dlib không tương thích.
-
-**Giải pháp**:
-```bash
-pip uninstall dlib
-pip install dlib==19.22.0
-```
-
-#### 5. Không tìm thấy model file `.pt`
-
-**Nguyên nhân**: File weights chưa được tải về.
-
-**Giải pháp**:
-```bash
-mkdir -p py/weights
-cd py/weights
-curl -L https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8n.pt -o yolov8n.pt
-```
-
-#### 6. Port 5001 đã được sử dụng
-
-**Nguyên nhân**: Port đang bị ứng dụng khác chiếm.
-
-**Giải pháp**:
-```bash
-# Tìm process đang dùng port 5001
-lsof -i :5001  # macOS/Linux
-netstat -ano | findstr :5001  # Windows
-
-# Kill process hoặc đổi port khác
-flask --app py/Web/all_tong.py run --port 5002
-```
-
-#### 7. Webcam không hoạt động (Docker trên macOS)
-
-**Nguyên nhân**: Docker trên macOS không thể truy cập webcam host.
-
-**Giải pháp**:
-- Chạy native (không dùng Docker)
-- Hoặc sử dụng video file thay vì webcam
-
-#### 8. Lỗi `shape_predictor_68_face_landmarks.dat` không tồn tại
-
-**Giải pháp**:
-- File đã có sẵn trong `py/shape_predictor_68_face_landmarks.dat`
-- Nếu thiếu, tải từ: https://github.com/davisking/dlib-models
-
----
-
-## 📝 Additional Commands
-
-### Quản lý Virtual Environment
-
-```bash
-# Tạo venv mới
-python -m venv venv
-
-# Kích hoạt
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Thoát venv
-deactivate
-
-# Xem danh sách packages đã cài
-pip list
-
-# Xuất danh sách packages
-pip freeze > requirements.txt
-```
-
-### Cập nhật dự án (khi có changes từ remote)
-
-```bash
-# Pull changes mới nhất
-git pull origin main
-
-# Cập nhật dependencies (nếu requirements.txt thay đổi)
-pip install -r requirements.txt --upgrade
-
-# Nếu có xung đột venv, xóa và tạo lại
-rm -rf venv/  # macOS/Linux
-rmdir /s venv  # Windows
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+### 4. WebSocket (real-time không cần poll)
+```python
+from flask_socketio import SocketIO
+socketio.emit('new_alert', alert)
 ```
 
 ---
 
-## 📄 License
+## ✅ Checklist kiểm tra
 
-Dự án này được phát triển cho mục đích học tập và nghiên cứu.
-
----
-
-## 👥 Đóng góp
-
-Mọi đóng góp xin gửi về repository chính thông qua Pull Request.
+- [ ] Backend Flask chạy port 5001
+- [ ] Frontend truy cập được tại `/traffic_bus`
+- [ ] Camera mở và hiển thị video
+- [ ] Đưa điện thoại vào → Có cảnh báo trong chat
+- [ ] Chatbot hiển thị thời gian đầy đủ
+- [ ] Anti-spam hoạt động (10 giây/gửi lại)
+- [ ] Click nút "🔔" → Thấy AI Alerts Panel
+- [ ] Click nút "🎤" → Nói lệnh → Hoạt động
 
 ---
 
 ## 📞 Hỗ trợ
 
-Nếu gặp vấn đề khi cài đặt hoặc chạy dự án:
+**Vấn đề thường gặp:**
 
-1. Kiểm tra phần [Troubleshooting](#-troubleshooting)
-2. Xem logs chi tiết: `docker compose logs -f` (nếu dùng Docker)
-3. Tạo issue trên GitHub repository
+1. **Không có cảnh báo:** Kiểm tra backend đang chạy
+2. **Spam liên tục:** Kiểm tra `ALERT_RESEND_INTERVAL`
+3. **Lỗi CORS:** Cài `flask-cors`
+4. **Không nhận diện:** Kiểm tra camera/models
+
+**Kiểm tra log:**
+- Terminal backend: Xem `[AI ALERT]` messages
+- Browser Console (F12): Xem lỗi JavaScript
+- Network tab: Xem API requests status
 
 ---
 
-**Phát triển với ❤️ bởi AI Traffic Monitoring Team**
+## 📄 License
+
+Dự án mã nguồn mở, tự do sử dụng và phát triển.
+
+---
+
+**Chúc bạn thành công! 🎉**
+
+> **Tác giả:** AI Traffic Monitoring System  
+> **Email:** support@aitraffic.com  
+> **GitHub:** github.com/aitraffic
