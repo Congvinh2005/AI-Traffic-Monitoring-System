@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Tải mô hình YOLOv8
 # LƯU Ý: Để có kết quả tốt nhất, hãy thay thế 'best.pt' 
 # bằng một mô hình đã được huấn luyện chuyên để nhận diện biển số xe.
-model_path = "py/weights/yolov8n.pt"
+model_path = r"D:\Projects\AI-Traffic-Monitoring-System\py\weights\yolov8n.pt"
 try:
     model = YOLO(model_path)
 except Exception as e:

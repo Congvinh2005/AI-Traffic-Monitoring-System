@@ -19,15 +19,15 @@ app = Flask(__name__)
 latest_warning = ""
 lock = threading.Lock()
 pygame.init()
-chopmat_sound = pygame.mixer.Sound("py/Sound/nham_mat.wav")
-ngap_sound = pygame.mixer.Sound("py/Sound/buon_ngu.wav")
-phone_baodong = pygame.mixer.Sound("py/Sound/not_phone.wav")
-seatbelt_baodong = pygame.mixer.Sound("py/Sound/seatbelt_alert.wav")
-dau_quay_sound = pygame.mixer.Sound("py/Sound/chuylaixe.wav")
-bienbao_sound = pygame.mixer.Sound("py/Sound/chu_y_bien_bao.wav")
-tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
-lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
-va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
+chopmat_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\nham_mat.wav")
+ngap_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\buon_ngu.wav")
+phone_baodong = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\not_phone.wav")
+seatbelt_baodong = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\seatbelt_alert.wav")
+dau_quay_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\chu_y_bien_bao.wav")
+bienbao_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\chu_y_bien_bao.wav")
+tay_lai_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\tay_lai_xe.wav")
+lech_lan_sounds = pygame.mixer.Sound("D:\Projects\AI-Traffic-Monitoring-System\py\Sound\lech_lan.wav")
+va_cham_sound = pygame.mixer.Sound(r"D:\Projects\AI-Traffic-Monitoring-System\py\Sound\va_cham.wav")
 
 # Thời gian tối thiểu giữa các cảnh báo (giây)
 WARNING_INTERVALS = {
@@ -65,19 +65,39 @@ frame_width = 1280  # Tăng độ phân giải
 frame_height = 720
 video_codec = cv2.VideoWriter_fourcc(*'avc1')  # Sử dụng codec H.264 cho chất lượng tốt hơn
 
+# Dlib & YOLO models
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Tạo thư mục recordings nếu chưa tồn tại
-if not os.path.exists('recordings'):
-    os.makedirs('recordings')
+recordings_dir = os.path.join(BASE_DIR, "recordings")
+if not os.path.exists(recordings_dir):
+    os.makedirs(recordings_dir)
 
 # Dlib & YOLO models
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("py/shape_predictor_68_face_landmarks.dat")
-phone_mau = YOLO("py/weights/yolov8n.pt")
-seatbelt_mau = YOLO("py/weights/lasttx.pt")
-bienbao_model = YOLO("py/weights/best2.pt")
-model_vehicle = YOLO("py/weights/yolov8n.pt")   # Phát hiện phương tiện
-model_lane = YOLO("py/weights/lech_lan.pt")
-       # Mô hình YOLO đã huấn luyện lại vạch kẻ đường
+predictor = dlib.shape_predictor(os.path.join(BASE_DIR, "py", "shape_predictor_68_face_landmarks.dat"))
+phone_mau = YOLO(os.path.join(BASE_DIR, "py", "weights", "yolov8n.pt"))
+
+# Load các model với xử lý lỗi
+seatbelt_mau = None
+if os.path.exists(os.path.join(BASE_DIR, "py", "weights", "lasttx.pt")):
+    seatbelt_mau = YOLO(os.path.join(BASE_DIR, "py", "weights", "lasttx.pt"))
+else:
+    print("Warning: lasttx.pt not found. Seatbelt detection disabled.")
+
+bienbao_model = None
+if os.path.exists(os.path.join(BASE_DIR, "py", "weights", "best2.pt")):
+    bienbao_model = YOLO(os.path.join(BASE_DIR, "py", "weights", "best2.pt"))
+else:
+    print("Warning: best2.pt not found. Traffic sign detection disabled.")
+
+model_vehicle = YOLO(os.path.join(BASE_DIR, "py", "weights", "yolov8n.pt"))   # Phát hiện phương tiện
+
+model_lane = None
+if os.path.exists(os.path.join(BASE_DIR, "py", "weights", "lech_lan.pt")):
+    model_lane = YOLO(os.path.join(BASE_DIR, "py", "weights", "lech_lan.pt"))
+else:
+    print("Warning: lech_lan.pt not found. Lane detection disabled.")
 
 # ======================= Các thông số ===========================
 EAR_THRESHOLD = 0.30
@@ -396,7 +416,7 @@ def traffic_sign_monitor():
     global warnings, video_writer, is_recording, active_video_stream
     try:
         active_video_stream = 'sign'
-        cap = cv2.VideoCapture("py/video_input/bien_bao.mp4")
+        cap = cv2.VideoCapture(os.path.join(BASE_DIR, "py", "video_input", "bien_bao.mp4"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
@@ -572,7 +592,7 @@ def collision_monitor():
     global warnings, video_writer, is_recording, active_video_stream, last_collision_warning
     try:
         active_video_stream = 'vacham'
-        cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
+        cap = cv2.VideoCapture(os.path.join(BASE_DIR, "py", "video_input", "lech_lan.mp4"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
@@ -1529,28 +1549,28 @@ def get_region_points(region_type):
 
                 np.array([[443, 79], [4, 399], [4, 709], [1267, 711], [1272, 401], [877, 39], [475, 57]])
             ],
-            'video_source': "py/video_input/ha_noi.mp4"
+            'video_source': os.path.join(BASE_DIR, "py", "video_input", "ha_noi.mp4")
         }
     elif region_type == 'thanhxuan':
-      
+
          return {
             'regions': [
-                
-                # các làn xe 
+
+                # các làn xe
                 np.array([[500, 87], [75, 717], [2, 713], [2, 420], [440, 82]]),
                 np.array([[579, 90], [409, 717], [77, 717], [499, 87]]),
                 np.array([[639, 95], [746, 717], [416, 717], [579, 90]]),
                 np.array([[713, 95], [1088, 717], [750, 717], [639, 97]]),
                 np.array([[713, 97], [1090, 717], [1275, 717], [1282, 515], [767, 84]])
-   
+
             ],
-            'video_source': "py/video_input/thanh_xuan.mp4"
+            'video_source': os.path.join(BASE_DIR, "py", "video_input", "thanh_xuan.mp4")
         }
     elif region_type == 'multiple':
         return {
             'regions': [
-                
-                # các làn xe 
+
+                # các làn xe
                 np.array([[500, 87], [75, 717], [2, 713], [2, 420], [440, 82]]),
                 np.array([[579, 90], [409, 717], [77, 717], [499, 87]]),
                 np.array([[639, 95], [746, 717], [416, 717], [579, 90]]),
@@ -1558,10 +1578,10 @@ def get_region_points(region_type):
                 np.array([[713, 97], [1090, 717], [1275, 717], [1282, 515], [767, 84]])
 
                 #np.array([[438, 86], [2, 421], [2, 712], [1271, 711], [1269, 506], [761, 74]])
-                
-               
+
+
             ],
-            'video_source': "py/video_input/ha_dong.mp4"
+            'video_source': os.path.join(BASE_DIR, "py", "video_input", "ha_dong.mp4")
         }
     elif region_type == 'ngatuso':
         return {
@@ -1571,7 +1591,7 @@ def get_region_points(region_type):
                 np.array([[614, 99], [746, 95], [844, 709], [453, 705]]),
                 np.array([[842, 707], [1268, 710], [1276, 586], [897, 78], [747, 97]])
             ],
-            'video_source': "py/video_input/ngatuso.mp4"
+            'video_source': os.path.join(BASE_DIR, "py", "video_input", "ngatuso.mp4")
         }
     else:
         raise ValueError(f"Invalid region type: {region_type}")
