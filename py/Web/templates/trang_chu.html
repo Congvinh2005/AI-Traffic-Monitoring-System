@@ -17,9 +17,15 @@
         // Kiểm tra hỗ trợ Speech Recognition API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+        let recognition = null;
+        let isListening = false;
+        let startBtn = null;
+        let stopBtn = null;
+        let voiceOutput = null;
+
         if (SpeechRecognition) {
             // Khởi tạo nhận diện giọng nói
-            const recognition = new SpeechRecognition();
+            recognition = new SpeechRecognition();
             recognition.lang = 'vi-VN';
             recognition.continuous = true;
             recognition.interimResults = true;
@@ -50,6 +56,10 @@
                 const transcript = result[0].transcript.toLowerCase().trim();
                 console.log('Nhận diện được:', transcript);
 
+                if (voiceOutput) {
+                    voiceOutput.textContent = `🗣 Lệnh: ${transcript}`;
+                }
+
                 // Kiểm tra lệnh về trang chủ
                 if (transcript.includes("trang chủ") || transcript.includes("về trang chủ")) {
                     speak("Đang chuyển về trang chủ");
@@ -77,42 +87,111 @@
             // Xử lý lỗi
             recognition.onerror = function (event) {
                 console.error('Lỗi nhận diện giọng nói:', event.error);
-                speak('Có lỗi xảy ra với hệ thống nhận diện giọng nói');
-                // Thử khởi động lại sau một khoảng thời gian
-                setTimeout(() => {
-                    if (typeof isListening !== 'undefined' && isListening) {
-                        recognition.start();
+                
+                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+                    if (voiceOutput) {
+                        voiceOutput.textContent = "❌ Micro bị chặn! Vui lòng cấp quyền microphone.";
                     }
-                }, 1000);
+                    isListening = false;
+                    if (startBtn) {
+                        startBtn.style.display = 'inline-block';
+                        startBtn.disabled = false;
+                    }
+                    if (stopBtn) {
+                        stopBtn.style.display = 'none';
+                    }
+                } else if (isListening) {
+                    // Tự động restart nếu vẫn đang lắng nghe
+                    setTimeout(() => {
+                        recognition.start();
+                    }, 100);
+                }
             };
 
             // Khởi động lại nhận diện khi kết thúc
             recognition.onend = function () {
                 console.log('Khởi động lại nhận diện giọng nói');
                 // Chỉ tiếp tục nếu chưa bị người dùng tắt
-                if (typeof isListening === 'undefined' || isListening) {
-                    recognition.start();
+                if (isListening) {
+                    setTimeout(() => {
+                        recognition.start();
+                    }, 100);
+                } else {
+                    if (voiceOutput) {
+                        voiceOutput.textContent = "🔇 Đã dừng lắng nghe.";
+                    }
+                    if (startBtn) {
+                        startBtn.style.display = 'inline-block';
+                    }
+                    if (stopBtn) {
+                        stopBtn.style.display = 'none';
+                    }
                 }
             };
 
-            // Biến để theo dõi trạng thái
-            let isListening = false;
+            // Khi trang web tải xong, chuẩn bị nút điều khiển
+            window.addEventListener('DOMContentLoaded', function () {
+                // Tạo nút điều khiển giọng nói
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; gap: 10px; align-items: center;';
+                
+                startBtn = document.createElement('button');
+                startBtn.id = 'start-voice';
+                startBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> Bật giọng nói';
+                startBtn.style.cssText = 'padding: 10px 20px; font-size: 16px; background-color: #1e88e5; color: white; border: none; border-radius: 8px; cursor: pointer;';
+                
+                stopBtn = document.createElement('button');
+                stopBtn.id = 'stop-voice';
+                stopBtn.innerHTML = '🔇 Tắt giọng nói';
+                stopBtn.style.cssText = 'padding: 10px 20px; font-size: 16px; background-color: #e53935; color: white; border: none; border-radius: 8px; cursor: pointer; display: none;';
+                
+                voiceOutput = document.createElement('p');
+                voiceOutput.id = 'voice-output';
+                voiceOutput.style.cssText = 'margin: 0; color: white; font-size: 14px; text-shadow: 1px 1px 2px black;';
+                
+                buttonContainer.appendChild(startBtn);
+                buttonContainer.appendChild(stopBtn);
+                buttonContainer.appendChild(voiceOutput);
+                document.body.appendChild(buttonContainer);
 
-            // Bắt đầu nhận diện khi trang được tải
-            window.onload = function () {
-                console.log('Đang yêu cầu quyền truy cập microphone...');
-                isListening = true;
-                try {
-                    recognition.start();
-                    speak('Hệ thống đã sẵn sàng. Bạn có thể ra lệnh bằng giọng nói.');
-                } catch (error) {
-                    console.error('Không thể bắt đầu nhận diện giọng nói:', error);
-                    speak('Cần có quyền truy cập microphone để sử dụng tính năng giọng nói.');
-                }
-            };
+                // Thêm event listeners cho nút
+                startBtn.addEventListener('click', function () {
+                    if (!isListening) {
+                        try {
+                            recognition.start();
+                        } catch (error) {
+                            console.error('Không thể bắt đầu nhận diện giọng nói:', error);
+                            voiceOutput.textContent = '❌ Lỗi: ' + error.message;
+                        }
+                    }
+                });
+
+                stopBtn.addEventListener('click', function () {
+                    isListening = false;
+                    recognition.stop();
+                });
+
+                // Tự động bật mic khi trang web tải xong
+                setTimeout(function () {
+                    if (!isListening) {
+                        try {
+                            recognition.start();
+                            console.log('Đã tự động bật microphone');
+                        } catch (error) {
+                            console.error('Không thể tự động bật microphone (cần tương tác người dùng):', error);
+                            voiceOutput.textContent = '🎤 Click "Bật giọng nói" để kích hoạt';
+                        }
+                    }
+                }, 500);
+            });
         } else {
             console.error('Trình duyệt không hỗ trợ Web Speech API');
-            alert('Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói. Vui lòng sử dụng Chrome hoặc Edge để có trải nghiệm tốt nhất.');
+            window.addEventListener('DOMContentLoaded', function () {
+                const errorMsg = document.createElement('div');
+                errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 10px 20px; background-color: #e53935; color: white; border-radius: 8px;';
+                errorMsg.textContent = '❌ Trình duyệt không hỗ trợ nhận diện giọng nói';
+                document.body.appendChild(errorMsg);
+            });
         }
     </script>
 
