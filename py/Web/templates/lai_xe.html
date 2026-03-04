@@ -83,7 +83,7 @@
         padding: 20px;
         margin: 0 auto;
         width: 100%;
-        max-width: 1300px;
+        max-width: 1500px;
         border-radius: 15px;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         overflow: hidden;
@@ -550,8 +550,8 @@
 
       .location-video-wrapper {
         position: relative;
-        width: 400px;
-        min-width: 400px;
+        width: 640px;
+        min-width: 480px;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -1766,13 +1766,14 @@
 
       const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
+      // Biến để theo dõi trạng thái
+      let isListening = false;
+
       if (recognition) {
           recognition.lang = "vi-VN";
           recognition.continuous = true;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
-
-          let isListening = false;
 
           recognition.onstart = () => {
             isListening = true;
@@ -1794,7 +1795,7 @@
 
           recognition.onerror = (event) => {
             console.error("Speech recognition error:", event.error);
-            
+
             if (event.error === 'not-allowed') {
               voiceOutput.textContent = "❌ Micro bị chặn! Click icon ổ khóa 🔒 → Cho phép microphone";
               isListening = false;
@@ -1805,6 +1806,10 @@
               isListening = false;
               startBtn.style.display = "inline-block";
               stopBtn.style.display = "none";
+            } else if (isListening) {
+              setTimeout(() => {
+                recognition.start();
+              }, 100);
             }
           };
 
@@ -1864,16 +1869,6 @@
                   return;
                 }
               }
-            }
-          };
-
-          // Thêm xử lý lỗi để tự động khởi động lại nếu có vấn đề
-          recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
-            if (isListening) {
-              setTimeout(() => {
-                recognition.start();
-              }, 100);
             }
           };
       }

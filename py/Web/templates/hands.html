@@ -338,6 +338,7 @@
     <script>
         // Thêm biến để lưu trữ đối tượng nhận diện giọng nói
         let recognition;
+        let isListening = false;
 
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -351,7 +352,12 @@
                 recognition = new webkitSpeechRecognition();
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.lang = 'vi-VN'; // Sử dụng tiếng Việt
+                recognition.lang = 'vi-VN';
+
+                recognition.onstart = function () {
+                    isListening = true;
+                    console.log('Đang lắng nghe...');
+                };
 
                 recognition.onresult = function (event) {
                     const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
@@ -369,6 +375,19 @@
 
                 recognition.onerror = function (event) {
                     console.error('Lỗi nhận diện giọng nói:', event.error);
+                    if (isListening && event.error !== 'not-allowed' && event.error !== 'permission-denied') {
+                        setTimeout(() => {
+                            recognition.start();
+                        }, 100);
+                    }
+                };
+
+                recognition.onend = function () {
+                    if (isListening) {
+                        setTimeout(() => {
+                            recognition.start();
+                        }, 100);
+                    }
                 };
 
                 // Bắt đầu nhận diện
