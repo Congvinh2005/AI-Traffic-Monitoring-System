@@ -13,11 +13,16 @@
         /* --- SIDEBAR --- */
         #sidebar { width: 380px; background: white; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 2; }
         .header { background: #2c3e50; color: white; padding: 15px; text-align: center; }
+        .search-box { padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ddd; }
+        .search-input { width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 25px; font-size: 14px; outline: none; transition: 0.2s; box-sizing: border-box; }
+        .search-input:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.3); }
         .vehicle-list { padding: 10px; overflow-y: auto; flex: 1; }
         .vehicle-item { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; }
         .vehicle-item:hover { background: #f1f1f1; border-color: #007bff; }
         .vehicle-item.active { border-left: 5px solid #007bff; background: #eef7ff; }
+        .vehicle-item.hidden { display: none; }
         .vehicle-icon-preview { width: 40px; height: 40px; margin-right: 15px; opacity: 0.9; }
+        .no-results { text-align: center; color: #999; padding: 20px; font-size: 14px; display: none; }
 
         /* --- MAP & POPUP --- */
         #map { flex: 1; height: 100%; z-index: 1; }
@@ -281,7 +286,12 @@
             <h3>Quản Lí Xe </h3>
             <small>Cập nhật lúc: <span id="clock">--:--:--</span></small>
         </div>
-        <div class="vehicle-list" id="vehicleList"></div>
+        <div class="search-box">
+            <input type="text" class="search-input" id="vehicleSearch" placeholder="🔍 Tìm biển số, tài xế, lộ trình..." oninput="filterVehicles()">
+        </div>
+        <div class="vehicle-list" id="vehicleList">
+            <div class="no-results" id="noResults">Không tìm thấy phương tiện nào</div>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -373,8 +383,8 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-        var carIconUrl = "https://cdn-icons-png.flaticon.com/512/3202/3202926.png";
-        var busIconUrl = "bus1.png";
+        var carIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048315.png";
+        var busIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048333.png";
         var CarIcon = L.icon({ iconUrl: carIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
         var BusIcon = L.icon({ iconUrl: busIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
 
@@ -502,6 +512,26 @@
                 document.querySelectorAll('.vehicle-item').forEach(el => el.classList.remove('active'));
                 document.getElementById(`item-${id}`).classList.add('active');
             }
+        }
+
+        function filterVehicles() {
+            const searchInput = document.getElementById('vehicleSearch').value.toLowerCase().trim();
+            const noResults = document.getElementById('noResults');
+            let visibleCount = 0;
+
+            vehicles.forEach(vehicle => {
+                const item = document.getElementById(`item-${vehicle.id}`);
+                const searchText = `${vehicle.plate} ${vehicle.driver} ${vehicle.route} ${vehicle.currentAddress}`.toLowerCase();
+                
+                if (searchText.includes(searchInput)) {
+                    item.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
         }
 
         function simulateMovement() {
