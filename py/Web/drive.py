@@ -1659,15 +1659,22 @@ def call_llm_api(message, vehicle_id=None):
     Gọi API từ mô hình AI thực thụ (LLM)
     Hỗ trợ: OpenAI, Google Gemini, Groq (miễn phí)
     """
-    
+
     # === OPTION 1: GROQ (MIỄN PHÍ, NHANH) ===
     # API Key đã được tích hợp
     try:
         from groq import Groq
+        import os
+        from dotenv import load_dotenv
         
-        # API key chính thức từ Groq
-        GROQ_API_KEY = "x"
+        # Load API key từ file .env
+        load_dotenv()
+        GROQ_API_KEY = os.getenv('GROQ_API_KEY')
         
+        if not GROQ_API_KEY:
+            print("⚠️ Không tìm thấy GROQ_API_KEY trong .env file")
+            return None
+
         client = Groq(api_key=GROQ_API_KEY)
         
         # === DATA THỰC TẾ TỪ HỆ THỐNG ===
