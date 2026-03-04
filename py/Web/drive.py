@@ -1827,24 +1827,28 @@ if __name__ == '__main__':
     try:
         import webbrowser
         from threading import Timer
-        
+        import os
+
         # Cấu hình cổng - có thể thay đổi nếu cổng bị chiếm
         PORT = 5002  # Đổi sang cổng 5002 để tránh cache
-        
+
         browser_opened = False
-        
+
         def open_browser():
             global browser_opened
             if not browser_opened:
                 webbrowser.open(f'http://127.0.0.1:{PORT}/')
                 browser_opened = True
-        
+
         init_app()
         threading.Thread(target=reset_temporary_counts, daemon=True).start()
-        
-        # Đợi 1.5 giây để Flask khởi động xong rồi mới mở trình duyệt
-        Timer(1.5, open_browser).start()
-        
+
+        # Chỉ mở browser từ process chính (không phải reloader)
+        #WERKZEUG_RUN_MAIN được đặt là 'true' trong process reloader
+        if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+            # Đợi 1.5 giây để Flask khởi động xong rồi mới mở trình duyệt
+            Timer(1.5, open_browser).start()
+
         # Chạy ứng dụng Flask với debug=True để auto reload template
         print(f"Starting server on port {PORT}...")
         app.run(debug=True, host='0.0.0.0', port=PORT, use_reloader=True)
