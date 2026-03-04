@@ -1665,8 +1665,8 @@ def call_llm_api(message, vehicle_id=None):
     try:
         from groq import Groq
         import os
-        from dotenv import load_dotenv
-        
+        from dotenv import load_dotenv  # type: ignore
+
         # Load API key từ file .env
         load_dotenv()
         GROQ_API_KEY = os.getenv('GROQ_API_KEY')
