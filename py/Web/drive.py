@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, jsonify, request, send_file
+from flask import Flask, render_template, Response, jsonify, request, send_file, make_response
 from flask_cors import CORS
 import cv2
 import dlib
@@ -16,6 +16,9 @@ import mediapipe as mp
 
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.debug = True
 CORS(app)  # Cho phép frontend từ port khác gọi API
 
 # ==================== BIẾN TOÀN CỤC CHO CHATBOT & GIỌNG NÓI ====================
@@ -1062,6 +1065,15 @@ counter = None
 video_capture = None
 current_region_type = 'single'  # Default to single region
 
+# Lưu vị trí hiện tại để hỗ trợ frontend
+current_location_id = "hanoi"
+location_video_map = {
+    "hanoi": "single",
+    "hadong": "multiple",
+    "thanhxuan": "thanhxuan",
+    "ngatuso": "ngatuso"
+}
+
 def traffic_monitor():
     global counter, video_capture, active_video_stream, video_writer, is_recording
     try:
@@ -1203,59 +1215,67 @@ def init_app():
 
 @app.route('/change_region_points', methods=['POST'])
 def change_region_points():
-    global counter, current_region_type, video_capture, active_video_stream
+    global counter, current_region_type, video_capture, active_video_stream, current_location_id
     try:
         data = request.get_json()
         region_type = data.get('type')
-        
+        location_id = data.get('location')  # Thêm location_id từ frontend
+
+        # Hỗ trợ cả region_type cũ và location_id mới
+        if location_id and location_id in location_video_map:
+            region_type = location_video_map[location_id]
+            current_location_id = location_id
+        elif region_type in ['single', 'multiple', 'thanhxuan', 'ngatuso']:
+            current_location_id = [k for k, v in location_video_map.items() if v == region_type][0]
+
         if region_type in ['single', 'multiple', 'thanhxuan', 'ngatuso']:
-            print(f"Changing to region type: {region_type}")
-            
+            print(f"Changing to region type: {region_type} (location: {current_location_id})")
+
             # Dừng luồng video hiện tại
             active_video_stream = None
             time.sleep(1)  # Đợi luồng cũ dừng hoàn toàn
-            
+
             # Release current video capture
             if video_capture is not None:
                 video_capture.release()
                 video_capture = None
-            
+
             current_region_type = region_type
             # Get new region points and video source
             region_data = get_region_points(region_type)
             region_points = region_data['regions']
             video_source = region_data['video_source']
-            
+
             print(f"Using video source: {video_source}")  # Debug log
-            
+
             # Kiểm tra file video tồn tại
             if not os.path.exists(video_source):
                 print(f"Video file not found: {video_source}")  # Debug log
                 return jsonify({"status": "error", "message": f"Không tìm thấy file video: {video_source}"})
-            
+
             # Initialize new video capture
             video_capture = cv2.VideoCapture(video_source)
             if not video_capture.isOpened():
                 print(f"Failed to open video: {video_source}")  # Debug log
                 return jsonify({"status": "error", "message": f"Không thể mở video: {video_source}"})
-            
+
             # Set video properties
             video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
             video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 560)
             video_capture.set(cv2.CAP_PROP_FPS, 20)
-            
+
             print(f"Video capture initialized with properties: {video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)}x{video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)}")  # Debug log
-                
+
             # Reinitialize counter with new region points
             object_classes = [2, 3, 5, 7]
             counter = MultipleObjectCounter(model_path="py/weights/yolov8n.pt", regions=region_points, classes=object_classes)
-            
+
             # Khởi động lại luồng video
             active_video_stream = 'traffic'
-            
+
             print("Region change completed successfully")  # Debug log
             return jsonify({"status": "success"})
-            
+
         return jsonify({"status": "error", "message": "Invalid region type"})
     except Exception as e:
         print(f"Error in change_region_points: {str(e)}")  # Debug log
@@ -1289,9 +1309,13 @@ def traffic_bus():
 def index():
     return render_template('trang_chu.html')
 
-@app.route('/lai_xe')
+@app.route('/lai_xe_v2')
 def settings():
-    return render_template('lai_xe.html')
+    response = make_response(render_template('lai_xe.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/video_driver')
 def video_driver():
@@ -1305,6 +1329,41 @@ def video_traffic():
 
 @app.route('/video_sign')
 def video_sign():
+    global current_location_id
+    # Lấy tham số location từ frontend
+    location_id = request.args.get('location', None)
+    
+    # Nếu có location_id và khác với hiện tại, cập nhật
+    if location_id and location_id in location_video_map:
+        current_location_id = location_id
+        region_type = location_video_map[location_id]
+        
+        # Cập nhật region type và video source
+        global current_region_type, video_capture, active_video_stream
+        if region_type != current_region_type:
+            active_video_stream = None
+            time.sleep(0.5)
+            
+            if video_capture is not None:
+                video_capture.release()
+            
+            current_region_type = region_type
+            region_data = get_region_points(region_type)
+            video_source = region_data['video_source']
+            
+            video_capture = cv2.VideoCapture(video_source)
+            if not video_capture.isOpened():
+                print(f"Failed to open video for location {location_id}")
+            
+            # Reinitialize counter
+            object_classes = [2, 3, 5, 7]
+            counter = MultipleObjectCounter(model_path="py/weights/yolov8n.pt", 
+                                           regions=region_data['regions'], 
+                                           classes=object_classes)
+            
+            active_video_stream = 'traffic'
+            print(f"Switched to location: {location_id} ({region_type})")
+    
     return Response(traffic_monitor(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -1763,7 +1822,7 @@ if __name__ == '__main__':
         from threading import Timer
         
         # Cấu hình cổng - có thể thay đổi nếu cổng bị chiếm
-        PORT = 5001  # Đổi sang cổng 5001 (hoặc 8080, 3000, 8000...)
+        PORT = 5002  # Đổi sang cổng 5002 để tránh cache
         
         browser_opened = False
         
@@ -1779,9 +1838,9 @@ if __name__ == '__main__':
         # Đợi 1.5 giây để Flask khởi động xong rồi mới mở trình duyệt
         Timer(1.5, open_browser).start()
         
-        # Chạy ứng dụng Flask với use_reloader=False để tránh mở nhiều trình duyệt
+        # Chạy ứng dụng Flask với debug=True để auto reload template
         print(f"Starting server on port {PORT}...")
-        app.run(debug=False, host='0.0.0.0', port=PORT, use_reloader=False)
+        app.run(debug=True, host='0.0.0.0', port=PORT, use_reloader=True)
     except Exception as e:
         print(f"Error in main: {str(e)}")
 
