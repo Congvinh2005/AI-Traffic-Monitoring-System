@@ -8,8 +8,13 @@
     <title>Hệ thống Hỗ trợ Lái xe Thông minh</title>
     <link
       rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
       body {
         font-family: "Segoe UI", sans-serif;
@@ -373,23 +378,28 @@
       /* Styles cho Location List Sidebar */
       .location-sidebar-container {
         display: flex;
-        gap: 20px;
+        flex-direction: row;
+        gap: 15px;
         background-color: #dcdff4;
-        padding: 20px;
+        padding: 15px;
         border-radius: 10px;
         width: 95%;
         margin: 0 auto;
         max-width: 1400px;
+        align-items: stretch;
+        height: 420px;
       }
 
       .location-sidebar {
-        width: 300px;
+        width: 280px;
+        min-width: 280px;
         background: white;
         border-radius: 10px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        height: 100%;
       }
 
       .location-sidebar-header {
@@ -505,29 +515,43 @@
       .location-map-container {
         flex: 1;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 15px;
+        min-width: 0;
+        height: 400px;
       }
 
       .map-wrapper {
         position: relative;
-        width: 100%;
-        height: 450px;
+        flex: 1;
+        min-width: 0;
+        height: 100%;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
 
-      .map-wrapper iframe {
+      #location-map {
         width: 100%;
         height: 100%;
-        border: none;
+        z-index: 1;
+      }
+
+      /* Style cho custom location markers */
+      .location-marker-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: white;
+        font-size: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       }
 
       .location-video-wrapper {
         position: relative;
-        width: 100%;
-        height: 250px;
+        width: 400px;
+        min-width: 400px;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -559,10 +583,25 @@
 
         .location-sidebar {
           width: 100%;
+          min-width: 100%;
         }
 
         .location-list {
           max-height: 300px;
+        }
+        
+        .location-map-container {
+          flex-direction: column;
+        }
+        
+        .location-video-wrapper {
+          width: 100%;
+          min-width: 100%;
+          height: 250px;
+        }
+        
+        #location-map {
+          min-height: 300px;
         }
       }
 
@@ -1025,16 +1064,9 @@
 
         <!-- Khu vực bản đồ và video -->
         <div class="location-map-container">
-          <!-- Bản đồ -->
+          <!-- Bản đồ Leaflet -->
           <div class="map-wrapper">
-            <iframe
-              id="location-map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d10145.722427221333!2d105.79770704728345!3d20.98546951307521!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135acc6bdc7f95f%3A0x58ffc66343a45247!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBDw7RuZyBuZ2jhu4cgR2lhbyB0aMO0bmcgVuG6rW4gdOG6o2k!5e1!3m2!1svi!2s!4v1747758021598!5m2!1svi!2s"
-              allowfullscreen=""
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-            >
-            </iframe>
+            <div id="location-map"></div>
           </div>
 
           <!-- Video feed -->
@@ -1368,6 +1400,13 @@
         section.style.display = "block";
         currentSectionId = sectionId;
 
+        // 🔥 FIX LEAFLET MAP - Resize map khi hiển thị section
+        if (sectionId === "sign" && window.locationMap) {
+          setTimeout(() => {
+            window.locationMap.invalidateSize();
+          }, 300);
+        }
+
         // Gửi mode lên server
         fetch("/set_mode", {
           method: "POST",
@@ -1673,6 +1712,21 @@
       const stopBtn = document.getElementById("stop-voice");
       const voiceOutput = document.getElementById("voice-output");
 
+      // Hàm xin quyền microphone
+      async function requestMicrophonePermission() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log("✅ Microphone permission granted");
+          // Stop stream ngay sau khi xin quyền
+          stream.getTracks().forEach(track => track.stop());
+          return true;
+        } catch (err) {
+          console.error("❌ Microphone permission denied:", err);
+          voiceOutput.textContent = "❌ Micro bị chặn! Click icon 🔒 để cho phép.";
+          return false;
+        }
+      }
+
       // Kiểm tra hỗ trợ Speech Recognition API
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -1686,6 +1740,27 @@
             startBtn.disabled = true;
             startBtn.style.opacity = "0.5";
             startBtn.title = "Tính năng không được hỗ trợ trên trình duyệt này";
+        }
+      } else {
+        // Kiểm tra permission microphone
+        if (navigator.permissions) {
+          navigator.permissions.query({ name: 'microphone' })
+            .then(result => {
+              if (result.state === 'denied') {
+                console.warn('Microphone permission denied');
+                if (voiceOutput) {
+                  voiceOutput.textContent = "⚠️ Micro bị chặn. Click vào icon ổ khóa 🔒 để cho phép microphone.";
+                }
+                if (startBtn) {
+                  startBtn.disabled = true;
+                  startBtn.style.opacity = "0.5";
+                  startBtn.title = "Microphone bị chặn bởi trình duyệt";
+                }
+              }
+            })
+            .catch(err => {
+              console.error('Error checking microphone permission:', err);
+            });
         }
       }
 
@@ -1714,6 +1789,22 @@
               }, 100);
             } else {
               voiceOutput.textContent = "🔇 Đã dừng lắng nghe.";
+            }
+          };
+
+          recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            
+            if (event.error === 'not-allowed') {
+              voiceOutput.textContent = "❌ Micro bị chặn! Click icon ổ khóa 🔒 → Cho phép microphone";
+              isListening = false;
+              startBtn.style.display = "inline-block";
+              stopBtn.style.display = "none";
+            } else if (event.error === 'permission-denied') {
+              voiceOutput.textContent = "❌ Bạn đã từ chối cho phép microphone. Vui lòng cấp quyền trong cài đặt trình duyệt.";
+              isListening = false;
+              startBtn.style.display = "inline-block";
+              stopBtn.style.display = "none";
             }
           };
 
@@ -1798,9 +1889,13 @@
 
       // Thêm event listeners cho nút bật/tắt giọng nói
       if (recognition) {
-          startBtn.addEventListener("click", () => {
+          startBtn.addEventListener("click", async () => {
             if (!isListening) {
-              recognition.start();
+              // Xin quyền mic trước khi start
+              const granted = await requestMicrophonePermission();
+              if (granted) {
+                recognition.start();
+              }
             }
           });
 
@@ -1816,46 +1911,46 @@
       
       // Dữ liệu các địa điểm
       const locationData = [
-        { 
-          id: "hanoi", 
-          name: "Hà Nội", 
-          type: "single",  // Thêm type cho backend
-          lat: 21.0285, 
+        {
+          id: "hanoi",
+          name: "Hà Nội",
+          type: "single",
+          lat: 21.0285,
           lng: 105.8542,
-          address: "Trung tâm Hà Nội",
+          address: "Hoàn Kiếm, Hà Nội",
           status: "active",
           statusText: "Đang hoạt động",
           class: "hanoi"
         },
-        { 
-          id: "hadong", 
-          name: "Hà Đông", 
-          type: "multiple",  // Thêm type cho backend
-          lat: 20.9854, 
-          lng: 105.7977,
-          address: "Quận Hà Đông",
+        {
+          id: "hadong",
+          name: "Hà Đông",
+          type: "multiple",
+          lat: 20.9720,
+          lng: 105.7820,
+          address: "Nguyễn Trãi, Hà Đông",
           status: "active",
           statusText: "Đang hoạt động",
           class: "hadong"
         },
-        { 
-          id: "thanhxuan", 
-          name: "Thanh Xuân", 
-          type: "thanhxuan",  // Thêm type cho backend
-          lat: 20.9950, 
+        {
+          id: "thanhxuan",
+          name: "Thanh Xuân",
+          type: "thanhxuan",
+          lat: 20.9950,
           lng: 105.8080,
-          address: "Quận Thanh Xuân",
+          address: "Khuất Duy Tiến, Thanh Xuân",
           status: "active",
           statusText: "Đang hoạt động",
           class: "thanhxuan"
         },
-        { 
-          id: "ngatuso", 
-          name: "Ngã Tư Sở", 
-          type: "ngatuso",  // Thêm type cho backend
-          lat: 21.0050, 
-          lng: 105.8150,
-          address: "Ngã tư Sở, Đống Đa",
+        {
+          id: "ngatuso",
+          name: "Ngã Tư Sở",
+          type: "ngatuso",
+          lat: 21.0065,
+          lng: 105.8270,
+          address: "Ngã Tư Sở, Đống Đa",
           status: "waiting",
           statusText: "Chờ cập nhật",
           class: "ngatuso"
@@ -1922,16 +2017,6 @@
         changeRegionPoints(location.type, location.lat, location.lng);
       }
 
-      // Cập nhật vị trí trên map
-      function updateMapLocation(lat, lng) {
-        const iframe = document.getElementById("location-map");
-        if (iframe) {
-          // Tạo URL mới với tọa độ
-          const newSrc = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3725.466674770758!2d${lng - 0.005}!3d${lat - 0.005}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjHCsDU5JzI2LjQiTiAxMDXCsDQ4JzQxLjQiRQ!5e1!3m2!1svi!2s!4v1747758021598!5m2!1svi!2s`;
-          iframe.src = newSrc;
-        }
-      }
-
       // Cập nhật video feed
       function updateVideoFeed(locationId) {
         const video = document.getElementById("video-feed-sign");
@@ -1953,11 +2038,103 @@
       // Khởi tạo danh sách địa điểm khi trang web loaded
       // Thêm vào window.onload
       const originalOnload = window.onload;
+      
+      // Biến toàn cục cho Leaflet map và markers
+      var locationMap = null;
+      var locationMarkers = {};
+      
       window.onload = function() {
         if (originalOnload) originalOnload();
         initLocationList();
         setInterval(updateLocationClock, 1000);
+        
+        // Khởi tạo Leaflet map
+        initLocationMap();
       };
+      
+      // Hàm khởi tạo map Leaflet
+      function initLocationMap() {
+        // Khởi tạo map với vị trí mặc định (Hà Nội)
+        locationMap = L.map('location-map', {
+          center: [21.0285, 105.8542],
+          zoom: 11,
+          zoomControl: true
+        });
+        
+        // Gán vào window để có thể gọi từ showSection
+        window.locationMap = locationMap;
+
+        // Thêm tile layer từ OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(locationMap);
+        
+        // Force resize sau khi map load
+        setTimeout(() => {
+          locationMap.invalidateSize();
+        }, 200);
+
+        // Tạo custom icons cho từng location
+        const locationIcons = {
+          hanoi: L.divIcon({
+            className: 'location-marker-icon',
+            html: '<div style="background-color: #f21818; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid white;"><i class="fa-solid fa-location-dot"></i></div>',
+            iconSize: [35, 35],
+            iconAnchor: [17, 35],
+            popupAnchor: [0, -35]
+          }),
+          hadong: L.divIcon({
+            className: 'location-marker-icon',
+            html: '<div style="background-color: #f218bb; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid white;"><i class="fa-solid fa-location-dot"></i></div>',
+            iconSize: [35, 35],
+            iconAnchor: [17, 35],
+            popupAnchor: [0, -35]
+          }),
+          thanhxuan: L.divIcon({
+            className: 'location-marker-icon',
+            html: '<div style="background-color: #490fdb; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid white;"><i class="fa-solid fa-location-dot"></i></div>',
+            iconSize: [35, 35],
+            iconAnchor: [17, 35],
+            popupAnchor: [0, -35]
+          }),
+          ngatuso: L.divIcon({
+            className: 'location-marker-icon',
+            html: '<div style="background-color: #85a337; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid white;"><i class="fa-solid fa-location-dot"></i></div>',
+            iconSize: [35, 35],
+            iconAnchor: [17, 35],
+            popupAnchor: [0, -35]
+          })
+        };
+        
+        // Thêm markers cho từng location
+        locationData.forEach(location => {
+          const marker = L.marker([location.lat, location.lng], {
+            icon: locationIcons[location.id]
+          }).addTo(locationMap);
+          
+          // Thêm popup cho marker
+          marker.bindPopup(`
+            <div style="text-align: center; padding: 5px;">
+              <strong style="color: #667eea; font-size: 16px;">${location.name}</strong><br>
+              <span style="color: #666; font-size: 14px;">${location.address}</span><br>
+              <span style="background: ${location.status === 'active' ? '#28a745' : '#ffc107'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 5px; display: inline-block;">${location.statusText}</span>
+            </div>
+          `);
+          
+          // Lưu marker vào object
+          locationMarkers[location.id] = marker;
+        });
+      }
+      
+      // Cập nhật hàm updateMapLocation để sử dụng Leaflet flyTo
+      function updateMapLocation(lat, lng) {
+        if (locationMap) {
+          locationMap.flyTo([lat, lng], 13, {
+            animate: true,
+            duration: 1.5
+          });
+        }
+      }
     </script>
   </body>
 </html>
