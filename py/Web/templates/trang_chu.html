@@ -22,6 +22,9 @@
         let startBtn = null;
         let stopBtn = null;
         let voiceOutput = null;
+        
+        // BroadcastChannel để đồng bộ microphone giữa các tab
+        const micChannel = new BroadcastChannel('mic_control_channel');
 
         if (SpeechRecognition) {
             // Khởi tạo nhận diện giọng nói
@@ -29,6 +32,30 @@
             recognition.lang = 'vi-VN';
             recognition.continuous = true;
             recognition.interimResults = true;
+            
+            // Lắng nghe tín hiệu từ các tab khác
+            micChannel.onmessage = function(event) {
+                if (event.data.type === 'release_mic') {
+                    console.log('Nhận tín hiệu nhả microphone từ tab khác');
+                    if (isListening && recognition) {
+                        recognition.stop();
+                        isListening = false;
+                        if (startBtn) startBtn.style.display = 'inline-block';
+                        if (stopBtn) stopBtn.style.display = 'none';
+                        if (voiceOutput) voiceOutput.textContent = '🔇 Microphone đã được chuyển sang tab khác';
+                    }
+                } else if (event.data.type === 'request_mic') {
+                    // Tab khác yêu cầu mic, nếu đang dùng thì nhả
+                    if (isListening) {
+                        console.log('Nhả microphone cho tab khác');
+                        recognition.stop();
+                        isListening = false;
+                        if (startBtn) startBtn.style.display = 'inline-block';
+                        if (stopBtn) stopBtn.style.display = 'none';
+                        if (voiceOutput) voiceOutput.textContent = '🔇 Microphone đã được chuyển sang tab khác';
+                    }
+                }
+            };
 
             // Map các từ khóa với các ứng dụng
             const appCommands = {

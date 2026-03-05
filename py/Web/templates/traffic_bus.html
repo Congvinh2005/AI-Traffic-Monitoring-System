@@ -400,6 +400,9 @@
         var recognition = null;
         var alertsPollingInterval = null;
         var currentAlerts = [];
+        
+        // BroadcastChannel để đồng bộ microphone giữa các tab
+        var micChannel = new BroadcastChannel('mic_control_channel');
 
         // Kiểm tra hỗ trợ Web Speech API
         var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -413,6 +416,9 @@
                 isVoiceListening = true;
                 document.getElementById('voiceToggleBtn').classList.add('listening');
                 document.getElementById('voiceSuggestions').style.display = 'block';
+                // Gửi tín hiệu yêu cầu nhả microphone cho các tab khác
+                micChannel.postMessage({ type: 'request_mic' });
+                console.log('Đã gửi yêu cầu nhả microphone sang các tab khác');
             };
 
             recognition.onend = function() {

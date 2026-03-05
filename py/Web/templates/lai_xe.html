@@ -1730,12 +1730,15 @@
       // Kiểm tra hỗ trợ Speech Recognition API
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+      // Biến để theo dõi trạng thái
+      let isListening = false;
+      let isProcessingCommand = false; // Cờ chống spam lệnh
+
       if (!SpeechRecognition) {
         console.error('Trình duyệt không hỗ trợ Web Speech API');
         if (voiceOutput) {
             voiceOutput.textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Chrome hoặc Edge.";
         }
-        // Vô hiệu hóa nút nếu API không được hỗ trợ
         if (startBtn) {
             startBtn.disabled = true;
             startBtn.style.opacity = "0.5";
@@ -1766,13 +1769,10 @@
 
       const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
-      // Biến để theo dõi trạng thái
-      let isListening = false;
-
       if (recognition) {
           recognition.lang = "vi-VN";
           recognition.continuous = true;
-          recognition.interimResults = true;
+          recognition.interimResults = false; // Tắt interim results để giảm delay
           recognition.maxAlternatives = 1;
 
           recognition.onstart = () => {
@@ -1780,96 +1780,150 @@
             voiceOutput.textContent = "🎧 Đang lắng nghe...";
             startBtn.style.display = "none";
             stopBtn.style.display = "inline-block";
+            console.log('Microphone đã bật');
           };
 
           recognition.onend = () => {
+            console.log('Microphone đã tắt, đang khởi động lại...');
+            // Luôn tự động restart để duy trì lắng nghe
             if (isListening) {
-              // Tự động restart ngay lập tức nếu vẫn đang lắng nghe
               setTimeout(() => {
-                recognition.start();
-              }, 100);
+                try {
+                  recognition.start();
+                } catch(e) {
+                  console.log('Không thể restart recognition:', e);
+                }
+              }, 50); // Giảm thời gian chờ xuống 50ms
             } else {
               voiceOutput.textContent = "🔇 Đã dừng lắng nghe.";
+              startBtn.style.display = "inline-block";
+              stopBtn.style.display = "none";
             }
           };
 
           recognition.onerror = (event) => {
             console.error("Speech recognition error:", event.error);
 
-            if (event.error === 'not-allowed') {
+            if (event.error === 'not-allowed' || event.error === 'permission-denied') {
               voiceOutput.textContent = "❌ Micro bị chặn! Click icon ổ khóa 🔒 → Cho phép microphone";
               isListening = false;
               startBtn.style.display = "inline-block";
               stopBtn.style.display = "none";
-            } else if (event.error === 'permission-denied') {
-              voiceOutput.textContent = "❌ Bạn đã từ chối cho phép microphone. Vui lòng cấp quyền trong cài đặt trình duyệt.";
-              isListening = false;
-              startBtn.style.display = "inline-block";
-              stopBtn.style.display = "none";
             } else if (isListening) {
+              // Restart nhanh hơn khi có lỗi
               setTimeout(() => {
-                recognition.start();
-              }, 100);
+                try {
+                  recognition.start();
+                } catch(e) {
+                  console.log('Không thể restart recognition:', e);
+                }
+              }, 50);
             }
           };
 
           recognition.onresult = (event) => {
-            let transcript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-              transcript += event.results[i][0].transcript;
-              if (event.results[i].isFinal) {
-                voiceOutput.textContent = `🗣 Lệnh: ${transcript.trim()}`;
-                transcript = transcript.trim().toLowerCase();
-
-                // Xử lý lệnh ngay lập tức
-                if (transcript.includes("mở giám sát tài xế")) {
-                  showSection("driver");
-                } else if (
-                  transcript.includes("mở biển báo giao thông") ||
-                  transcript.includes("cảnh báo")
-                ) {
-                  showSection("traffic");
-                } else if (
-                  transcript.includes("mở lưu lượng giao thông") ||
-                  transcript.includes("mở lưu lượng") ||
-                  transcript.includes("lưu lượng giao thông") ||
-                  transcript.includes("xem lưu lượng")
-                ) {
-                  showSection("sign");
-                } else if (
-                  transcript.includes("mở va chạm") ||
-                  transcript.includes("mở cảnh báo va chạm") ||
-                  transcript.includes("mở lệch làn") ||
-                  transcript.includes("mở cảnh báo lệch làn") ||
-                  transcript.includes("mở va chạm và lệch làn")
-                ) {
-                  showSection("vacham");
-                } else if (transcript.includes("dừng lại")) {
-                  stopMonitoring();
-                } else if (transcript.includes("tắt mic")) {
-                  stopVoiceRecognition();
-                } else if (transcript.includes("hà nội")) {
-                  selectLocation("hanoi");
-                } else if (transcript.includes("hà đông")) {
-                  selectLocation("hadong");
-                } else if (transcript.includes("thanh xuân")) {
-                  selectLocation("thanhxuan");
-                } else if (transcript.includes("ngã tư sở")) {
-                  selectLocation("ngatuso");
-                }
-
-                if (
-                  transcript.includes("trang chủ") ||
-                  transcript.includes("về trang chủ")
-                ) {
-                  speak("Đang chuyển về trang chủ");
-                  setTimeout(() => {
-                    window.location.href = "/";
-                  }, 1000);
-                  return;
-                }
-              }
+            // Lấy kết quả cuối cùng duy nhất
+            const lastResult = event.results[event.results.length - 1];
+            const transcript = lastResult[0].transcript.trim().toLowerCase();
+            
+            // Nếu đang xử lý lệnh thì bỏ qua
+            if (isProcessingCommand) {
+              console.log('Đang xử lý lệnh, bỏ qua:', transcript);
+              return;
             }
+
+            console.log('Nhận diện được:', transcript);
+            voiceOutput.textContent = `🗣 Lệnh: ${transcript}`;
+
+            // Xử lý lệnh với độ ưu tiên
+            isProcessingCommand = true;
+            
+            // Ưu tiên 1: Dừng giám sát
+            if (transcript.includes("dừng lại") || transcript.includes("dừng giám sát")) {
+              voiceOutput.textContent = "🗣 Đang dừng giám sát...";
+              stopMonitoring();
+              setTimeout(() => { isProcessingCommand = false; }, 1000);
+              return;
+            }
+
+            // Ưu tiên 2: Tắt mic
+            if (transcript.includes("tắt mic") || transcript.includes("tắt micro")) {
+              voiceOutput.textContent = "🗣 Đang tắt microphone...";
+              stopVoiceRecognition();
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            // Ưu tiên 3: Về trang chủ
+            if (transcript.includes("trang chủ") || transcript.includes("về trang chủ")) {
+              speak("Đang chuyển về trang chủ");
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 800);
+              setTimeout(() => { isProcessingCommand = false; }, 1000);
+              return;
+            }
+
+            // Ưu tiên 4: Mở các section
+            if (transcript.includes("giám sát tài") || transcript.includes("mở giám sát")) {
+              showSection("driver");
+              speak("Đang mở giám sát tài xế");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("biển báo") || transcript.includes("cảnh báo")) {
+              showSection("traffic");
+              speak("Đang mở cảnh báo biển báo");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("lưu lượng") || transcript.includes("xem lưu lượng")) {
+              showSection("sign");
+              speak("Đang mở lưu lượng giao thông");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("va chạm") || transcript.includes("lệch làn")) {
+              showSection("vacham");
+              speak("Đang mở cảnh báo va chạm");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            // Ưu tiên 5: Chọn địa điểm
+            if (transcript.includes("hà nội")) {
+              selectLocation("hanoi");
+              speak("Đã chọn Hà Nội");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("hà đông")) {
+              selectLocation("hadong");
+              speak("Đã chọn Hà Đông");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("thanh xuân")) {
+              selectLocation("thanhxuan");
+              speak("Đã chọn Thanh Xuân");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            if (transcript.includes("ngã tư")) {
+              selectLocation("ngatuso");
+              speak("Đã chọn Ngã Tư Sở");
+              setTimeout(() => { isProcessingCommand = false; }, 500);
+              return;
+            }
+
+            // Không hiểu lệnh
+            isProcessingCommand = false;
           };
       }
 
