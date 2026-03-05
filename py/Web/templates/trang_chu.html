@@ -41,7 +41,8 @@
                 'âm thanh': '.am-thanh a',
                 'dùng tay': '.hands a',
                 'lái xe': '.lai_xe a',
-                'tư vấn': '.tu_van a'
+                'tư vấn': '.tu_van a',
+                'quản lý': '.quanly a'
             };
 
             // Cờ ngăn chặn mở nhiều tab
@@ -114,6 +115,20 @@
                         speak('Đang mở tra cứu luật giao thông');
                         isProcessingCommand = true;
                         window.open(tuVanElement.href, '_blank', 'noopener,noreferrer');
+                        setTimeout(() => {
+                            isProcessingCommand = false;
+                        }, 2000);
+                    }
+                }
+
+                // Xử lý lệnh mở quản lý (nếu không tìm thấy trong appCommands)
+                if (transcript.includes('mở quản lý') || transcript.includes('quản lý xe') || transcript.includes('quản trị')) {
+                    const quanLyElement = document.querySelector('.quanly a');
+                    if (quanLyElement && quanLyElement.href) {
+                        console.log('Đang mở quản lý xe');
+                        speak('Đang mở trang quản lý xe');
+                        isProcessingCommand = true;
+                        window.open(quanLyElement.href, '_blank', 'noopener,noreferrer');
                         setTimeout(() => {
                             isProcessingCommand = false;
                         }, 2000);
@@ -389,6 +404,11 @@
                 <div class="app-item tu_van">
                     <a href="tu_van.html" target="_blank" rel="noopener noreferrer">
                         <img src="/static/attgt.jpg" alt="Tư vấn luật">
+                    </a>
+                </div>
+                <div class="app-item quanly">
+                    <a href="traffic_bus" target="_blank" rel="noopener noreferrer">
+                        <img src="/static/attgt.jpg" alt="Quản lý xe">
                     </a>
                 </div>
             </div>
