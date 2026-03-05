@@ -42,11 +42,15 @@
                 'dùng tay': '.hands a',
                 'lái xe': '.lai_xe a',
                 'tư vấn': '.tu_van a',
-                'quản lý': '.quanly a'
+                'mở quản lý': '.quanly a',
+                'quản lý xe': '.quanly a',
+                'quản trị': '.quanly a'
             };
 
             // Cờ ngăn chặn mở nhiều tab
             let isProcessingCommand = false;
+            let lastOpenedTab = null;
+            let lastOpenTime = 0;
 
             // Hàm đọc văn bản
             function speak(text) {
@@ -63,6 +67,19 @@
 
                 // Nếu đang xử lý lệnh thì bỏ qua
                 if (isProcessingCommand) {
+                    console.log('Đang xử lý lệnh khác, bỏ qua');
+                    return;
+                }
+
+                // Kiểm tra xem có phải kết quả tạm thời không (interim)
+                if (!result.isFinal) {
+                    return;
+                }
+
+                // Kiểm tra trùng: không mở cùng tab trong vòng 3 giây
+                const currentTime = Date.now();
+                if (lastOpenedTab && (currentTime - lastOpenTime) < 3000) {
+                    console.log('Quá gần lần mở trước, bỏ qua');
                     return;
                 }
 
@@ -79,8 +96,10 @@
                     return;
                 }
 
-                // Kiểm tra và thực hiện lệnh
-                for (const [command, selector] of Object.entries(appCommands)) {
+                // Kiểm tra và thực hiện lệnh - ưu tiên khớp dài nhất trước
+                const sortedCommands = Object.entries(appCommands).sort((a, b) => b[0].length - a[0].length);
+                
+                for (const [command, selector] of sortedCommands) {
                     if (transcript.includes(command)) {
                         console.log('Tìm thấy lệnh:', command);
                         const element = document.querySelector(selector);
@@ -90,6 +109,8 @@
 
                             // Đặt cờ để chặn mở nhiều tab
                             isProcessingCommand = true;
+                            lastOpenedTab = element.href;
+                            lastOpenTime = Date.now();
 
                             // Mở tab mới cho các app ngoài, trừ 'dùng tay' và 'lái xe'
                             if (command === 'dùng tay' || command === 'lái xe') {
@@ -98,10 +119,10 @@
                                 window.open(element.href, '_blank', 'noopener,noreferrer');
                             }
 
-                            // Reset cờ sau 2 giây
+                            // Reset cờ sau 3 giây
                             setTimeout(() => {
                                 isProcessingCommand = false;
-                            }, 2000);
+                            }, 3000);
                             break;
                         }
                     }
@@ -115,20 +136,6 @@
                         speak('Đang mở tra cứu luật giao thông');
                         isProcessingCommand = true;
                         window.open(tuVanElement.href, '_blank', 'noopener,noreferrer');
-                        setTimeout(() => {
-                            isProcessingCommand = false;
-                        }, 2000);
-                    }
-                }
-
-                // Xử lý lệnh mở quản lý (nếu không tìm thấy trong appCommands)
-                if (transcript.includes('mở quản lý') || transcript.includes('quản lý xe') || transcript.includes('quản trị')) {
-                    const quanLyElement = document.querySelector('.quanly a');
-                    if (quanLyElement && quanLyElement.href) {
-                        console.log('Đang mở quản lý xe');
-                        speak('Đang mở trang quản lý xe');
-                        isProcessingCommand = true;
-                        window.open(quanLyElement.href, '_blank', 'noopener,noreferrer');
                         setTimeout(() => {
                             isProcessingCommand = false;
                         }, 2000);
