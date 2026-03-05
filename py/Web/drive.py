@@ -1305,6 +1305,11 @@ def traffic_bus():
     # Serve file từ thư mục templates
     return send_file(os.path.join(os.path.dirname(__file__), 'templates', 'traffic_bus.html'))
 
+@app.route('/tu_van.html')
+def tu_van():
+    """Serve tu_van.html - Trang tư vấn luật giao thông"""
+    return send_file(os.path.join(os.path.dirname(__file__), 'templates', 'tu_van.html'))
+
 @app.route('/')
 def index():
     return render_template('trang_chu.html')
@@ -1549,23 +1554,337 @@ def api_send_chat_message():
         message = data.get('message', '')
         vehicle_id = data.get('vehicle_id')
         user_id = data.get('user_id', 'anonymous')
-        
+
         # Lưu tin nhắn vào database (nếu có)
         print(f"[CHAT] User {user_id} (xe {vehicle_id}): {message}")
-        
+
         # AI xử lý và tạo phản hồi
         bot_response = process_ai_chat_message(message, vehicle_id)
-        
+
         return jsonify({
             'status': 'success',
             'bot_response': bot_response
         })
-        
+
     except Exception as e:
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
+
+@app.route('/api/groq_law_chat', methods=['POST'])
+def api_groq_law_chat():
+    """API tư vấn luật giao thông bằng Groq AI"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+
+        print(f"[LAW CHAT] User hỏi: {message}")
+
+        # Gọi Groq API để tư vấn luật
+        response = call_groq_law_advisor(message)
+
+        return jsonify({
+            'status': 'success',
+            'response': response
+        })
+
+    except Exception as e:
+        print(f"Lỗi api_groq_law_chat: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+def call_groq_law_advisor(question):
+    """
+    Gọi Groq API để tư vấn luật giao thông
+    """
+    try:
+        from groq import Groq
+        import os
+        from dotenv import load_dotenv  # type: ignore
+
+        load_dotenv()
+        GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+
+        if not GROQ_API_KEY:
+            print("⚠️ Không tìm thấy GROQ_API_KEY")
+            return generate_law_response_fallback(question)
+
+        client = Groq(api_key=GROQ_API_KEY)
+
+        # === DỮ LIỆU LUẬT GIAO THÔNG VIỆT NAM (CẬP NHẬT 2026) ===
+        law_database = """
+**NGUỒN LUẬT:**
+- Luật Giao thông đường bộ 2008
+- Nghị định 100/2019/NĐ-CP (xử phạt vi phạm giao thông)
+- Nghị định 123/2021/NĐ-CP (sửa đổi, bổ sung)
+- Các văn bản hướng dẫn thi hành
+
+**MỨC PHẠT CHÍNH XÁC 2026:**
+
+### 1. PHẠT QUÁ TỐC ĐỘ:
+**Ô tô:**
+- Quá 5-10 km/h: 800.000đ (Điểm 100/2019/NĐ-CP)
+- Quá 10-20 km/h: 3-5 triệu đồng + tước GPLX 1-3 tháng
+- Quá 20-35 km/h: 6-8 triệu đồng + tước GPLX 2-4 tháng
+- Quá trên 35 km/h: 10-12 triệu đồng + tước GPLX 4-6 tháng
+
+**Xe máy:**
+- Quá 5-10 km/h: 400-600 nghìn đồng
+- Quá 10-20 km/h: 800 nghìn - 1 triệu đồng
+- Quá 20-35 km/h: 4-5 triệu đồng + tước GPLX 1-3 tháng
+- Quá trên 35 km/h: 6-8 triệu đồng + tước GPLX 2-4 tháng
+
+### 2. PHẠT NỒNG ĐỘ CỒN (Điều 5, Nghị định 100):
+**Ô tô:**
+- Mức 1 (chưa vượt quá 50mg/100ml máu hoặc 0.25mg/1lít khí thở): 6-8 triệu đồng + tước GPLX 10-12 tháng
+- Mức 2 (vượt quá 50-80mg/100ml máu hoặc 0.25-0.4mg/1lít khí thở): 16-18 triệu đồng + tước GPLX 16-18 tháng
+- Mức 3 (vượt quá 80mg/100ml máu hoặc 0.4mg/1lít khí thở): 30-40 triệu đồng + tước GPLX 22-24 tháng
+
+**Xe máy:**
+- Mức 1: 2-3 triệu đồng + tước GPLX 10-12 tháng
+- Mức 2: 4-5 triệu đồng + tước GPLX 16-18 tháng
+- Mức 3: 6-8 triệu đồng + tước GPLX 22-24 tháng
+
+### 3. PHẠT KHÔNG ĐỘI MŨ BẢO HIỂM (Điều 6, Nghị định 100):
+- Người điều khiển: 400-600 nghìn đồng
+- Người ngồi sau: 400-600 nghìn đồng
+- Trẻ em dưới 6 tuổi: Được miễn trừ
+
+### 4. PHẠT VƯỢT ĐÈN ĐỎ (Điều 5, Nghị định 100):
+**Ô tô:** 4-6 triệu đồng + tước GPLX 1-3 tháng
+**Xe máy:** 800 nghìn - 1 triệu đồng + tước GPLX 1-3 tháng
+
+### 5. PHẠT KHÔNG CÓ GIẤY PHÉP LÁI (Điều 21, Nghị định 100):
+**Ô tô:**
+- Không mang theo: 100-200 nghìn đồng
+- GPLX hết hạn dưới 3 tháng: 1-2 triệu đồng
+- GPLX hết hạn trên 3 tháng: 3-5 triệu đồng
+- Không có GPLX: 5-7 triệu đồng
+
+**Xe máy:**
+- Không mang theo: 100-200 nghìn đồng
+- Không có GPLX: 1-2 triệu đồng
+
+### 6. PHẠT SAI LÀN ĐƯỜNG:
+**Ô tô:** 3-5 triệu đồng + tước GPLX 1-3 tháng
+**Xe máy:** 400-600 nghìn đồng
+
+### 7. PHẠT ĐỖ XE SAI QUY ĐỊNH:
+**Ô tô:**
+- Đỗ xe không đúng nơi quy định: 200-300 nghìn đồng
+- Đỗ xe trên vỉa hè: 800 nghìn - 1 triệu đồng
+- Đỗ xe chắn lối ra vào: 4-6 triệu đồng
+
+**Xe máy:**
+- Đỗ xe không đúng nơi quy định: 100-200 nghìn đồng
+- Đỗ xe trên vỉa hè: 200-300 nghìn đồng
+
+### 8. HÌNH PHẠT BỔ SUNG:
+- Tạm giữ phương tiện: 7-10 ngày (với một số vi phạm)
+- Tước quyền sử dụng GPLX: 1-24 tháng tùy mức độ
+- Trục xuất người nước ngoài vi phạm
+
+**LƯU Ý QUAN TRỌNG:**
+- Đèn vàng: Phải dừng trước vạch dừng, trừ khi đã đi quá vạch thì được đi tiếp
+- Đèn xanh: Được phép đi, không bị phạt
+- Người điều khiển xe phải tuân thủ tín hiệu đèn giao thông
+- Nồng độ cồn: KHÔNG được lái xe nếu đã uống rượu bia (mức 0 với ô tô từ 2026)
+"""
+
+        # System prompt cho AI tư vấn luật
+        system_prompt = f"""
+Bạn là **Luật Sư Giao Thông AI** với 20 năm kinh nghiệm, chuyên tư vấn luật giao thông Việt Nam.
+
+**DỮ LIỆU LUẬT CẬP NHẬT 2026:**
+{law_database}
+
+**NHIỆM VỤ CỦA BẠN:**
+1. Trả lời chính xác dựa trên dữ liệu luật được cung cấp ở trên
+2. Trích dẫn điều luật, nghị định cụ thể khi có thể
+3. Phân biệt rõ các loại phương tiện (ôtô, xe máy, xe đạp, xe tải)
+4. Đề cập đến hình phạt chính và hình phạt bổ sung
+5. Sử dụng emoji phù hợp để làm rõ nghĩa
+6. Trình bày có cấu trúc, dễ đọc
+7. Luôn cập nhật theo quy định mới nhất 2026
+
+**PHONG CÁCH TRẢ LỜI:**
+- Thân thiện, nhiệt tình, chu đáo
+- Giải thích rõ ràng, dễ hiểu
+- Đưa ra ví dụ minh họa khi cần
+- Cảnh báo nguy hiểm khi vi phạm nghiêm trọng
+
+**CÁC CÂU HỎI THƯỜNG GẶP:**
+- "Vượt đèn đỏ phạt bao nhiêu?" → Dựa vào mục 4
+- "Nồng độ cồn phạt thế nào?" → Dựa vào mục 2
+- "Không đội mũ bảo hiểm?" → Dựa vào mục 3
+- "Quá tốc độ phạt sao?" → Dựa vào mục 1
+- "Không có bằng lái?" → Dựa vào mục 5
+- "Đèn xanh có bị phạt không?" → Trả lời KHÔNG, đèn xanh được đi
+- "Đèn vàng được đi không?" → Dựa vào lưu ý quan trọng
+
+**LUÔN NHẮC NGƯỜI DÙNG:**
+- Đội mũ bảo hiểm
+- Không uống rượu bia khi lái xe
+- Tuân thủ tốc độ quy định
+- Giữ khoảng cách an toàn
+"""
+
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ],
+            temperature=0.7,
+            max_tokens=1000,
+            top_p=1.0,
+            stream=False
+        )
+
+        response = chat_completion.choices[0].message.content
+        print(f"🤖 [GROQ LAW] Response: {response[:100]}...")
+        return response
+
+    except ImportError:
+        print("⚠️ Chưa cài groq. Chạy: pip install groq")
+        return generate_law_response_fallback(question)
+    except Exception as e:
+        print(f"❌ Lỗi Groq API: {e}")
+        return generate_law_response_fallback(question)
+
+def generate_law_response_fallback(question):
+    """
+    Fallback khi không có Groq API
+    """
+    q = question.lower()
+
+    # Kiểm tra câu hỏi có hợp lệ không
+    if 'đèn xanh' in q:
+        return """**✅ ĐÈN XANH KHÔNG BỊ PHẠT!**
+
+🚦 **Đèn xanh** là tín hiệu được phép đi, không vi phạm.
+
+⚠️ **Lưu ý:**
+• Vẫn phải giảm tốc độ khi qua giao lộ
+• Quan sát và nhường đường cho người đi bộ
+• Không được vượt xe khác trong giao lộ
+
+❌ **Chỉ bị phạt khi:**
+• Vượt đèn **ĐỎ** hoặc đèn **VÀNG** (khi chưa qua vạch dừng)
+• Gây tai nạn hoặc ùn tắc giao thông"""
+
+    if 'đèn vàng' in q:
+        return """**🚦 QUY ĐỊNH VỀ ĐÈN VÀNG**
+
+✅ **Được đi tiếp nếu:**
+• Đã đi quá vạch dừng khi đèn chuyển vàng
+
+❌ **Bị phạt nếu:**
+• Cố tình tăng tốc để vượt khi đèn vừa chuyển vàng
+• Chưa qua vạch dừng mà không dừng lại
+
+**Mức phạt vượt đèn vàng:**
+🚗 Ô tô: 4-6 triệu đồng
+🏍️ Xe máy: 800 nghìn - 1 triệu đồng
+⚠️ Tước GPLX 1-3 tháng"""
+
+    if any(x in q for x in ['tốc độ', 'chạy nhanh', 'vượt tốc']):
+        return """**📊 MỨC PHẠT QUÁ TỐC ĐỘ 2026**
+
+🚗 **Ô tô:**
+• Quá 5-10 km/h: 800.000đ
+• Quá 10-20 km/h: 3-5 triệu đồng
+• Quá 20-35 km/h: 6-8 triệu đồng
+• Quá trên 35 km/h: 10-12 triệu đồng + treo bằng 2-4 tháng
+
+🏍️ **Xe máy:**
+• Quá 5-10 km/h: 400-600 nghìn đồng
+• Quá 10-20 km/h: 800 nghìn - 1 triệu đồng
+• Quá 20-35 km/h: 4-5 triệu đồng
+• Quá trên 35 km/h: 6-8 triệu đồng
+
+⚠️ Có thể bị tạm giữ phương tiện 7-10 ngày"""
+
+    if any(x in q for x in ['nồng độ cồn', 'rượu', 'bia']):
+        return """**🍺 MỨC PHẠT NỒNG ĐỘ CỒN 2026**
+
+🚗 **Ô tô:**
+• Mức 1: 6-8 triệu đồng
+• Mức 2: 16-18 triệu đồng
+• Mức 3: 30-40 triệu đồng
+
+🏍️ **Xe máy:**
+• Mức 1: 2-3 triệu đồng
+• Mức 2: 4-5 triệu đồng
+• Mức 3: 6-8 triệu đồng
+
+⚠️ Tước GPLX 10-24 tháng, tạm giữ xe 7 ngày"""
+
+    if any(x in q for x in ['mũ bảo hiểm', 'nón bảo hiểm']):
+        return """**⛑️ PHẠT KHÔNG ĐỘI MŨ BẢO HIỂM**
+
+👤 Người điều khiển: 400-600 nghìn đồng
+👥 Người ngồi sau: 400-600 nghìn đồng
+
+✅ Miễn trừ: Trẻ em dưới 6 tuổi, người bị bệnh"""
+
+    if 'đèn đỏ' in q or ('vượt' in q and 'đèn' in q):
+        return """**🚦 PHẠT VƯỢT ĐÈN ĐỎ**
+
+🚗 Ô tô: 4-6 triệu đồng
+🏍️ Xe máy: 800 nghìn - 1 triệu đồng
+
+⚠️ Tước GPLX 1-3 tháng
+
+💡 **Lưu ý:** Đèn đỏ phải dừng trước vạch sơn. 
+Vượt đèn đỏ rất nguy hiểm, có thể gây tai nạn chết người!"""
+
+    if any(x in q for x in ['giấy phép lái xe', 'bằng lái', 'không có bằng']):
+        return """**📄 PHẠT KHÔNG CÓ GIẤY PHÉP LÁI**
+
+🚗 **Ô tô:**
+• Không mang theo: 100-200 nghìn đồng
+• Hết hạn: 1-5 triệu đồng
+• Không có GPLX: 5-7 triệu đồng
+
+🏍️ **Xe máy:**
+• Không mang theo: 100-200 nghìn đồng
+• Không có GPLX: 1-2 triệu đồng"""
+
+    if any(x in q for x in ['đăng ký xe', 'làm biển số', 'sang tên']):
+        return """**📝 THỦ TỤC ĐĂNG KÝ XE MÁY**
+
+**Hồ sơ gồm:**
+1. CCCD/CMND + photo
+2. Hóa đơn mua xe (bản gốc)
+3. Giấy khai đăng ký xe
+
+**Lệ phí:**
+• Hà Nội/TP.HCM: 500.000đ
+• Các tỉnh: 80.000đ
+
+⏱️ Thời gian: 2-3 ngày làm việc"""
+
+    return """Cảm ơn bạn đã đặt câu hỏi! 
+
+🤖 Tôi là trợ lý tư vấn luật giao thông. 
+
+**Tôi có thể giúp bạn:**
+• Tra cứu mức phạt vi phạm
+• Giải đáp tình huống giao thông
+• Hướng dẫn thủ tục hành chính
+
+**Ví dụ:**
+• "Phạt quá tốc độ bao nhiêu?"
+• "Phạt nồng độ cồn 2026?"
+• "Thủ tục đăng ký xe máy?"
+• "Đèn vàng được đi không?"
+
+💡 Hãy hỏi cụ thể để được tư vấn chính xác!"""
+
 
 # ==================== AI CHATBOT XỬ LÝ TIN NHẮN ====================
 
