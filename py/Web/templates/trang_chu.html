@@ -40,7 +40,8 @@
                 'youtube': '.youtube a',
                 'âm thanh': '.am-thanh a',
                 'dùng tay': '.hands a',
-                'lái xe': '.lai_xe a'
+                'lái xe': '.lai_xe a',
+                'tư vấn': '.tu_van a'
             };
 
             // Cờ ngăn chặn mở nhiều tab
@@ -85,23 +86,37 @@
                         if (element && element.href) {
                             console.log('Đang mở:', command);
                             speak(`Đang mở ${command}`);
-                            
+
                             // Đặt cờ để chặn mở nhiều tab
                             isProcessingCommand = true;
-                            
+
                             // Mở tab mới cho các app ngoài, trừ 'dùng tay' và 'lái xe'
                             if (command === 'dùng tay' || command === 'lái xe') {
                                 window.location.href = element.href;
                             } else {
                                 window.open(element.href, '_blank', 'noopener,noreferrer');
                             }
-                            
+
                             // Reset cờ sau 2 giây
                             setTimeout(() => {
                                 isProcessingCommand = false;
                             }, 2000);
                             break;
                         }
+                    }
+                }
+                
+                // Xử lý lệnh mở tư vấn luật (nếu không tìm thấy trong appCommands)
+                if (transcript.includes('mở tư vấn') || transcript.includes('tư vấn luật')) {
+                    const tuVanElement = document.querySelector('.tu_van a');
+                    if (tuVanElement && tuVanElement.href) {
+                        console.log('Đang mở tư vấn luật');
+                        speak('Đang mở tra cứu luật giao thông');
+                        isProcessingCommand = true;
+                        window.open(tuVanElement.href, '_blank', 'noopener,noreferrer');
+                        setTimeout(() => {
+                            isProcessingCommand = false;
+                        }, 2000);
                     }
                 }
             };
@@ -369,6 +384,11 @@
                 <div class="app-item lai_xe">
                     <a href="lai_xe_v2">
                         <img src="/static/anh_lai_xe.jpg" alt="Lái xe an toàn">
+                    </a>
+                </div>
+                <div class="app-item tu_van">
+                    <a href="tu_van.html" target="_blank" rel="noopener noreferrer">
+                        <img src="/static/attgt.jpg" alt="Tư vấn luật">
                     </a>
                 </div>
             </div>
