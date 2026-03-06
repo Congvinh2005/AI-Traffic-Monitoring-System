@@ -1709,10 +1709,12 @@
           });
       }
 
-      // hàm đọc văn bản
+      // hàm đọc văn bản (nhanh, không chờ)
       function speak(text) {
+        window.speechSynthesis.cancel(); // Dừng đọc cũ
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "vi-VN";
+        utterance.rate = 1.5; // Đọc nhanh hơn (1.5x)
         window.speechSynthesis.speak(utterance);
       }
 
@@ -1779,8 +1781,8 @@
 
       if (recognition) {
           recognition.lang = "vi-VN";
-          recognition.continuous = true;
-          recognition.interimResults = true;
+          recognition.continuous = false; // Tắt continuous để nhanh có kết quả cuối cùng
+          recognition.interimResults = true; // Hiển thị lời nói liên tục
           recognition.maxAlternatives = 1;
 
           recognition.onstart = () => {
@@ -1792,10 +1794,10 @@
 
           recognition.onend = () => {
             if (isListening) {
-              // Tự động restart ngay lập tức nếu vẫn đang lắng nghe
+              // Tự động restart nhanh hơn nếu vẫn đang lắng nghe
               setTimeout(() => {
                 recognition.start();
-              }, 100);
+              }, 50);
             } else {
               voiceOutput.textContent = "🔇 Đã dừng lắng nghe.";
             }
@@ -1817,7 +1819,7 @@
             } else if (isListening) {
               setTimeout(() => {
                 recognition.start();
-              }, 100);
+              }, 50);
             }
           };
 
@@ -1825,9 +1827,14 @@
             let transcript = "";
             for (let i = event.resultIndex; i < event.results.length; ++i) {
               transcript += event.results[i][0].transcript;
+              
+              // Hiển thị lời nói liên tục (cả interim và final)
+              const result = event.results[i];
+              voiceOutput.textContent = `🗣 ${result.isFinal ? '✓' : '🎤'} ${transcript.trim()}`;
+              
               if (event.results[i].isFinal) {
-                voiceOutput.textContent = `🗣 Lệnh: ${transcript.trim()}`;
                 transcript = transcript.trim().toLowerCase();
+                console.log('Nhận diện được:', transcript);
 
                 // Xử lý lệnh ngay lập tức
                 if (transcript.includes("mở giám sát tài xế")) {
@@ -1871,9 +1878,7 @@
                   transcript.includes("về trang chủ")
                 ) {
                   speak("Đang chuyển về trang chủ");
-                  setTimeout(() => {
-                    window.location.href = "/";
-                  }, 1000);
+                  window.location.href = "/";
                   return;
                 }
               }

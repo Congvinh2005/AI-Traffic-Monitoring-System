@@ -27,8 +27,8 @@
             // Khởi tạo nhận diện giọng nói
             recognition = new SpeechRecognition();
             recognition.lang = 'vi-VN';
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.continuous = false; // Tắt continuous để nhanh có kết quả cuối cùng
+            recognition.interimResults = true; // Hiển thị lời nói liên tục
 
             // Map các từ khóa với các ứng dụng
             const appCommands = {
@@ -41,7 +41,7 @@
                 'âm thanh': '.am-thanh a',
                 'dùng tay': '.hands a',
                 'lái xe': '.lai_xe a',
-                'tư vấn': '.tu_van a',
+                'mở tư vấn': '.tu_van a',
                 'mở quản lý': '.quanly a',
                 'quản lý xe': '.quanly a',
                 'quản trị': '.quanly a'
@@ -51,11 +51,16 @@
             let isProcessingCommand = false;
             let lastOpenedTab = null;
             let lastOpenTime = 0;
+            let lastCommand = '';
+            let lastCommandTime = 0;
 
-            // Hàm đọc văn bản
+            // Hàm đọc văn bản (nhanh, không chờ)
             function speak(text) {
+                window.speechSynthesis.cancel(); // Dừng đọc cũ
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'vi-VN';
+                utterance.rate = 1.5; // Đọc nhanh hơn (1.5x)
+                utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
             }
 
@@ -63,54 +68,52 @@
             recognition.onresult = function (event) {
                 const result = event.results[event.results.length - 1];
                 const transcript = result[0].transcript.toLowerCase().trim();
-                console.log('Nhận diện được:', transcript);
 
-                // Nếu đang xử lý lệnh thì bỏ qua
-                if (isProcessingCommand) {
-                    console.log('Đang xử lý lệnh khác, bỏ qua');
-                    return;
+                // Hiển thị lời nói liên tục (cả interim và final)
+                if (voiceOutput) {
+                    voiceOutput.textContent = `🗣 ${result.isFinal ? '✓' : '🎤'} ${transcript}`;
                 }
 
-                // Kiểm tra xem có phải kết quả tạm thời không (interim)
+                // Chỉ xử lý lệnh khi có kết quả cuối cùng
                 if (!result.isFinal) {
                     return;
                 }
 
-                // Kiểm tra trùng: không mở cùng tab trong vòng 3 giây
-                const currentTime = Date.now();
-                if (lastOpenedTab && (currentTime - lastOpenTime) < 3000) {
-                    console.log('Quá gần lần mở trước, bỏ qua');
-                    return;
-                }
+                console.log('Nhận diện được:', transcript);
 
-                if (voiceOutput) {
-                    voiceOutput.textContent = `🗣 Lệnh: ${transcript}`;
+                // Kiểm tra trùng lệnh: không xử lý cùng lệnh trong vòng 3 giây
+                const currentTime = Date.now();
+                if (lastCommand && (currentTime - lastCommandTime) < 3000 && transcript.includes(lastCommand)) {
+                    console.log('Lệnh trùng, bỏ qua');
+                    return;
                 }
 
                 // Kiểm tra lệnh về trang chủ
                 if (transcript.includes("trang chủ") || transcript.includes("về trang chủ")) {
                     speak("Đang chuyển về trang chủ");
-                    setTimeout(() => {
-                        window.location.href = "/";
-                    }, 1000);
+                    window.location.href = "/";
                     return;
                 }
 
                 // Kiểm tra và thực hiện lệnh - ưu tiên khớp dài nhất trước
                 const sortedCommands = Object.entries(appCommands).sort((a, b) => b[0].length - a[0].length);
-                
+
                 for (const [command, selector] of sortedCommands) {
                     if (transcript.includes(command)) {
                         console.log('Tìm thấy lệnh:', command);
                         const element = document.querySelector(selector);
                         if (element && element.href) {
                             console.log('Đang mở:', command);
-                            speak(`Đang mở ${command}`);
-
+                            
                             // Đặt cờ để chặn mở nhiều tab
                             isProcessingCommand = true;
                             lastOpenedTab = element.href;
                             lastOpenTime = Date.now();
+                            lastCommand = command;
+                            lastCommandTime = Date.now();
+
+                            // Đọc phản hồi nhanh (không chờ)
+                            speak(`Đang mở ${command}`);
 
                             // Mở tab mới cho các app ngoài, trừ 'dùng tay' và 'lái xe'
                             if (command === 'dùng tay' || command === 'lái xe') {
@@ -127,20 +130,9 @@
                         }
                     }
                 }
-                
-                // Xử lý lệnh mở tư vấn luật (nếu không tìm thấy trong appCommands)
-                if (transcript.includes('mở tư vấn') || transcript.includes('tư vấn luật')) {
-                    const tuVanElement = document.querySelector('.tu_van a');
-                    if (tuVanElement && tuVanElement.href) {
-                        console.log('Đang mở tư vấn luật');
-                        speak('Đang mở tra cứu luật giao thông');
-                        isProcessingCommand = true;
-                        window.open(tuVanElement.href, '_blank', 'noopener,noreferrer');
-                        setTimeout(() => {
-                            isProcessingCommand = false;
-                        }, 2000);
-                    }
-                }
+
+                // Xử lý lệnh mở tư vấn luật và quản lý - chỉ xử lý trong appCommands
+                // Không cần xử lý riêng vì đã có trong appCommands
             };
 
             // Xử lý lỗi
@@ -163,7 +155,7 @@
                     // Tự động restart nếu vẫn đang lắng nghe
                     setTimeout(() => {
                         recognition.start();
-                    }, 100);
+                    }, 50); // Restart nhanh hơn (50ms)
                 }
             };
 
@@ -174,7 +166,7 @@
                 if (isListening) {
                     setTimeout(() => {
                         recognition.start();
-                    }, 100);
+                    }, 50); // Restart nhanh hơn (50ms)
                 } else {
                     if (voiceOutput) {
                         voiceOutput.textContent = "🔇 Đã dừng lắng nghe.";
@@ -409,12 +401,12 @@
                     </a>
                 </div>
                 <div class="app-item tu_van">
-                    <a href="tu_van.html" target="_blank" rel="noopener noreferrer">
+                    <a href="tu_van.html">
                         <img src="/static/attgt.jpg" alt="Tư vấn luật">
                     </a>
                 </div>
                 <div class="app-item quanly">
-                    <a href="traffic_bus" target="_blank" rel="noopener noreferrer">
+                    <a href="traffic_bus">
                         <img src="/static/attgt.jpg" alt="Quản lý xe">
                     </a>
                 </div>
