@@ -818,14 +818,21 @@ def collision_monitor():
                                 obstacle_count += 1
                                 if conf > max_conf:
                                     max_conf = conf
-                        
-                        # Vẽ mask với labels và confidence
-                        frame = result.plot(labels=True, conf=True, line_width=2)
+                                
+                                # Vẽ bounding box và mask với label tùy chỉnh
+                                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                # Vẽ mask
+                                frame = result.plot(labels=False, conf=False, line_width=2)
+                                # Vẽ bounding box màu đỏ
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                                label = f"Chuong ngai vat {conf:.2f}"
+                                cv2.putText(frame, label, (x1, y1 - 10),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     else:
                         # Nếu chỉ có masks mà không có boxes
                         obstacle_detected = True
                         obstacle_count += len(result.masks)
-                        frame = result.plot(labels=True, conf=True, line_width=2)
+                        frame = result.plot(labels=False, conf=False, line_width=2)
                 
                 # Xử lý boxes riêng (nếu không có masks)
                 elif result.boxes is not None:
@@ -833,16 +840,16 @@ def collision_monitor():
                         x1, y1, x2, y2 = map(int, box.xyxy[0])
                         conf = float(box.conf[0])
                         cls = int(box.cls[0])
-                        
+
                         if conf > 0.3:  # Chỉ xét khi confidence > 30%
                             obstacle_detected = True
                             obstacle_count += 1
                             if conf > max_conf:
                                 max_conf = conf
-                            
+
                             # Vẽ bounding box màu đỏ nổi bật
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                            label = f"Vat can {conf:.2f}"
+                            label = f"Chuong ngai vat {conf:.2f}"
                             cv2.putText(frame, label, (x1, y1 - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
