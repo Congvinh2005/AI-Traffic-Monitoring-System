@@ -63,6 +63,7 @@ bienbao_sound = pygame.mixer.Sound("py/Sound/chu_y_bien_bao.wav")
 tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
 lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
 va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
+di_cham_lai_sound = pygame.mixer.Sound("py/Sound/di_cham_lai.wav")
 
 # Thời gian tối thiểu giữa các cảnh báo (giây)
 WARNING_INTERVALS = {
@@ -113,6 +114,7 @@ bienbao_model = YOLO("py/weights/best2.pt")
 model_vehicle = YOLO("py/weights/yolov8n.pt")   # Phát hiện phương tiện
 model_lane = YOLO("py/weights/lech_lan.pt")
        # Mô hình YOLO đã huấn luyện lại vạch kẻ đường
+model_hole = YOLO("py/weights/best_hole.pt")  # Mô hình phát hiện ổ gà/vật cản
 
 # ======================= Các thông số ===========================
 EAR_THRESHOLD = 0.30
@@ -304,7 +306,8 @@ warnings = {
     "sign": "",
     "hand": "",
     "collision": "",
-    "lane": ""
+    "lane": "",
+    "obstacle": ""
 }
 
 # Thêm biến để kiểm soát luồng video
@@ -772,11 +775,15 @@ def collision_monitor():
     global warnings, video_writer, is_recording, active_video_stream, last_collision_warning
     try:
         active_video_stream = 'vacham'
-        cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
+        # Sử dụng video hole.mp4 để phát hiện vật cản/ổ gà
+        cap = cv2.VideoCapture("py/video_input/hole.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
-        
+
+        last_obstacle_warning = 0
+        obstacle_warning_interval = 2.0  # Khoảng thời gian giữa các cảnh báo vật cản
+
         while active_video_stream == 'vacham':
             ret, frame = cap.read()
             if not ret:
@@ -791,6 +798,64 @@ def collision_monitor():
             # Reset warnings
             warnings["collision"] = ""
             warnings["lane"] = ""
+            warnings["obstacle"] = ""
+
+            # Phát hiện vật cản/ổ gà bằng model_hole (best_hole.pt) - Tích hợp từ test2.py
+            results_hole = model_hole(frame, verbose=False)
+            obstacle_detected = False
+            obstacle_count = 0
+            max_conf = 0.0
+
+            for result in results_hole:
+                # Xử lý masks (segmentation)
+                if result.masks is not None:
+                    # Lấy thông tin boxes và confidence
+                    if result.boxes is not None:
+                        for i, box in enumerate(result.boxes):
+                            conf = float(box.conf[0])
+                            if conf > 0.3:  # Chỉ xét khi confidence > 30%
+                                obstacle_detected = True
+                                obstacle_count += 1
+                                if conf > max_conf:
+                                    max_conf = conf
+                        
+                        # Vẽ mask với labels và confidence
+                        frame = result.plot(labels=True, conf=True, line_width=2)
+                    else:
+                        # Nếu chỉ có masks mà không có boxes
+                        obstacle_detected = True
+                        obstacle_count += len(result.masks)
+                        frame = result.plot(labels=True, conf=True, line_width=2)
+                
+                # Xử lý boxes riêng (nếu không có masks)
+                elif result.boxes is not None:
+                    for box in result.boxes:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        conf = float(box.conf[0])
+                        cls = int(box.cls[0])
+                        
+                        if conf > 0.3:  # Chỉ xét khi confidence > 30%
+                            obstacle_detected = True
+                            obstacle_count += 1
+                            if conf > max_conf:
+                                max_conf = conf
+                            
+                            # Vẽ bounding box màu đỏ nổi bật
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                            label = f"Vat can {conf:.2f}"
+                            cv2.putText(frame, label, (x1, y1 - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+            # Nếu phát hiện vật cản/ổ gà với confidence cao, cảnh báo
+            if obstacle_detected and max_conf > 0.3:
+                warnings["obstacle"] = f"VẬT CẢN PHÍA TRƯỚC! ({obstacle_count})"
+                if current_time - last_obstacle_warning >= obstacle_warning_interval:
+                    di_cham_lai_sound.play()
+                    last_obstacle_warning = current_time
+                    # Gửi cảnh báo vào chatbot
+                    add_ai_alert("obstacle", f"⚠️ PHÁT HIỆN {obstacle_count} VẬT CẢN/Ổ GÀ PHÍA TRƯỚC!", current_monitoring_vehicle_id)
+            else:
+                warnings["obstacle"] = ""
 
             # Phát hiện phương tiện
             results_v = model_vehicle(frame)[0]

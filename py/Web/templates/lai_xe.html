@@ -1160,6 +1160,9 @@
           <div id="lane-warning-vacham" class="warning-item no-warning">
             Lệch làn: Không có
           </div>
+          <div id="obstacle-warning-vacham" class="warning-item no-warning">
+            Vật cản: Không có
+          </div>
         </div>
       </div>
       <div class="status-panel">
@@ -1522,6 +1525,11 @@
                 `lane-warning-${sectionId}`,
                 warnings.lane,
                 "Lệch làn"
+              );
+              updateWarningItem(
+                `obstacle-warning-${sectionId}`,
+                warnings.obstacle,
+                "Vật cản"
               );
             }
           })
