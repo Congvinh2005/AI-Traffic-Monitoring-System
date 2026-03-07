@@ -109,12 +109,12 @@ if not os.path.exists('recordings'):
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("py/shape_predictor_68_face_landmarks.dat")
 phone_mau = YOLO("py/weights/yolov8n.pt")
-seatbelt_mau = YOLO("py/weights/lasttx.pt")
-bienbao_model = YOLO("py/weights/best2.pt")
+seatbelt_mau = YOLO("py/weights/day_an_toan.pt")
+bienbao_model = YOLO("py/weights/bien_bao.pt")
 model_vehicle = YOLO("py/weights/yolov8n.pt")   # Phát hiện phương tiện
 model_lane = YOLO("py/weights/lech_lan.pt")
        # Mô hình YOLO đã huấn luyện lại vạch kẻ đường
-model_hole = YOLO("py/weights/best_hole.pt")  # Mô hình phát hiện ổ gà/vật cản
+model_hole = YOLO("py/weights/vat_can.pt")  # Mô hình phát hiện ổ gà/vật cản
 
 # ======================= Các thông số ===========================
 EAR_THRESHOLD = 0.30
@@ -776,7 +776,7 @@ def collision_monitor():
     try:
         active_video_stream = 'vacham'
         # Sử dụng video hole.mp4 để phát hiện vật cản/ổ gà
-        cap = cv2.VideoCapture("py/video_input/hole.mp4")
+        cap = cv2.VideoCapture("py/video_input/qua_duong.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
