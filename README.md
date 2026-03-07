@@ -179,8 +179,8 @@
 | 4 | 📱 **Dùng điện thoại** | 🔴 Critical | YOLOv8 | `not_phone.wav` | Sử dụng điện thoại khi lái xe |
 | 5 | ⚠️ **Không dây an toàn** | 🔴 Critical | YOLOv8 | `seatbelt_alert.wav` | Vi phạm an toàn, không đeo seatbelt |
 | 6 | 🙌 **Không cầm vô lăng** | 🟡 Warning | MediaPipe Hands | `tay_lai_xe.wav` | Tay không đúng vị trí |
-| 7 | 🚨 **Va chạm** | 🔴 Critical | Custom Logic | `va_cham.wav` | Phát hiện va chạm sắp xảy ra |
-| 8 | ⚠️ **Lệch làn** | 🟡 Warning | Custom Logic | `lech_lan.wav` | Xe đi chệch làn đường |
+| 7 | 🚨 **Va chạm** | 🔴 Critical | YOLOv8 + Custom Logic | `va_cham.wav` | Phát hiện người, phương tiện, chướng ngại vật phía trước |
+| 8 | ⚠️ **Lệch làn** | 🟡 Warning | YOLO + Hough Line | `lech_lan.wav` | Xe đi chệch làn đường |
 
 ### Chi tiết kỹ thuật
 
@@ -258,14 +258,49 @@ if no hands detected or hands not on wheel:
 #### 7. 🚨 Va chạm (Collision Warning)
 
 ```python
-# Custom logic: Tính khoảng cách và tốc độ
-distance = calculate_distance(vehicle, obstacle)
-time_to_collision = distance / relative_speed
+# YOLOv8 detection + Custom logic
+# Phát hiện: Người (person), Phương tiện (car, truck, bus, motorbike), Chướng ngại vật
 
-if time_to_collision < 2 seconds:
-    add_ai_alert('collision', 'VA CHẠM SẮP XẢY RA!')
-    play_sound('va_cham.wav')
+results = model_vehicle(frame)
+
+for box in results.boxes:
+    label = model.names[int(box.cls[0])]
+    
+    if label in ['person', 'car', 'truck', 'bus', 'motorbike']:
+        # Ước tính khoảng cách từ chiều cao bounding box
+        distance = estimate_distance(y1, y2)
+        
+        # Ngưỡng khoảng cách khác nhau tùy đối tượng
+        if label == 'person':
+            critical_distance = 12  # Dưới 12m → Nguy hiểm
+            warning_distance = 20   # Dưới 20m → Cảnh báo
+            alert_message = "🚨 PHÁT HIỆN NGƯỜI TRƯỚC ĐẦU XE!"
+        else:
+            critical_distance = 8
+            warning_distance = 15
+            alert_message = "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!"
+        
+        # Xử lý cảnh báo
+        if distance < critical_distance:
+            add_ai_alert('collision', alert_message)
+            play_sound('va_cham.wav')
+            color = (0, 0, 255)  # Đỏ
+        elif distance < warning_distance:
+            warnings['collision'] = "GIỮ KHOẢNG CÁCH!"
+            color = (0, 255, 255)  # Vàng
+        else:
+            color = (0, 255, 0)  # Xanh lá
 ```
+
+**Đối tượng phát hiện:**
+- 👤 **Người (person)**: Ngưỡng an toàn cao nhất (12m/20m)
+- 🚗 **Phương tiện**: Car, Truck, Bus, Motorbike
+- 🚧 **Chướng ngại vật**: Vật cản, ổ gà, vũng nước
+
+**Visual indicators:**
+- Vòng tròn đỏ quanh người khi phát hiện
+- Khoảng cách hiển thị thời gian thực
+- Màu sắc thay đổi theo mức độ nguy hiểm
 
 #### 8. ⚠️ Lệch làn (Lane Departure)
 
