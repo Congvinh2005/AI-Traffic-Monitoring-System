@@ -55,7 +55,7 @@ latest_warning = ""
 lock = threading.Lock()
 pygame.init()
 chopmat_sound = pygame.mixer.Sound("py/Sound/nham_mat.wav")
-ngap_sound = pygame.mixer.Sound("py/Sound/buon_ngu.wav")
+ngap_sound = pygame.mixer.Sound("py/Sound/ngap_ngu.wav")
 phone_baodong = pygame.mixer.Sound("py/Sound/not_phone.wav")
 seatbelt_baodong = pygame.mixer.Sound("py/Sound/seatbelt_alert.wav")
 dau_quay_sound = pygame.mixer.Sound("py/Sound/chuylaixe.wav")
@@ -798,7 +798,7 @@ def collision_monitor():
     try:
         active_video_stream = 'vacham'
         # Sử dụng video hole.mp4 để phát hiện vật cản/ổ gà
-        cap = cv2.VideoCapture("py/video_input/qua_duong.mp4")
+        cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)

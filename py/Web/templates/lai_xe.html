@@ -47,7 +47,7 @@
         justify-content: center;
         gap: 20px;
         flex-wrap: wrap;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
       }
 
       button {
@@ -65,6 +65,20 @@
       button:hover {
         background-color: #1565c0;
         transform: translateY(-2px);
+      }
+
+      #voice-output {
+        text-align: center;
+        font-size: 16px;
+        color: #1c1d1e;
+        font-weight: 600;
+        margin: 5px auto 5px 400px;
+        max-width: 1000px;
+        min-height: 20px;
+        padding: 2px 5px;
+        background-color: #e3f2fd;
+        border-radius: 8px;
+        display: block;
       }
 
       .anh_img {
@@ -98,6 +112,14 @@
       p {
         font-size: 18px;
         line-height: 1.6;
+      }
+
+      .section span {
+        display: block;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333;
+        margin-bottom: 10px;
       }
 
       .container {
@@ -974,7 +996,10 @@
         <i class="fa-solid fa-microphone"></i> Bật giọng nói
       </button>
       <button id="stop-voice" style="display: none">🔇 Tắt giọng nói</button>
-      <p id="voice-output"></p>
+    </div>
+
+    <div class="">
+          <p id="voice-output"></p>
     </div>
 
     <div id="img" class="anh_img">
@@ -1276,13 +1301,13 @@
     <div id="vacham" class="section">
       <h2>🚗 Cảnh báo va chạm và lệch làn</h2>
       <h2></h2>
-      <span>
-        báo tài xế khi xe có nguy cơ đâm vào phương tiện phía trước do không giữ
-        khoảng cách an toàn.</span
+      <p>
+        Cảnh báo tài xế khi xe có nguy cơ đâm vào phương tiện phía trước do không giữ
+        khoảng cách an toàn.</p
       >
-      <span
+      <p
         >Nhắc nhở lệch làn hoặc thông báo khi xe rời khỏi làn đường một cách
-        không chủ ý.</span
+        không chủ ý.</p
       >
       <div class="container">
         <div class="video-container">
