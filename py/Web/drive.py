@@ -109,12 +109,12 @@ if not os.path.exists('recordings'):
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("py/shape_predictor_68_face_landmarks.dat")
 phone_mau = YOLO("py/weights/yolov8n.pt")
-seatbelt_mau = YOLO("py/weights/lasttx.pt")
-bienbao_model = YOLO("py/weights/best2.pt")
+seatbelt_mau = YOLO("py/weights/day_an_toan.pt")
+bienbao_model = YOLO("py/weights/bien_bao.pt")
 model_vehicle = YOLO("py/weights/yolov8n.pt")   # Phát hiện phương tiện
 model_lane = YOLO("py/weights/lech_lan.pt")
        # Mô hình YOLO đã huấn luyện lại vạch kẻ đường
-model_hole = YOLO("py/weights/best_hole.pt")  # Mô hình phát hiện ổ gà/vật cản
+model_hole = YOLO("py/weights/vat_can.pt")  # Mô hình phát hiện ổ gà/vật cản
 
 # ======================= Các thông số ===========================
 EAR_THRESHOLD = 0.30
@@ -716,24 +716,33 @@ warning_interval = 1.0  # Khoảng thời gian giữa các cảnh báo (giây)
 collision_alert_sent = False
 lane_alert_sent = False
 
-def process_collision_warning(frame, distance, current_time):
+def process_collision_warning(frame, distance, current_time, object_type='vehicle'):
+    """
+    Xử lý cảnh báo va chạm (deprecated - dùng logic mới trực tiếp trong loop)
+    object_type: 'person' hoặc 'vehicle'
+    """
     global last_collision_warning, warnings, collision_alert_sent
-
-    # Kiểm tra nếu cảnh báo va chạm bị tắt
-    if not warning_states.get("collision", True):
-        warnings["collision"] = ""
-        return
-
-    if distance < 8:
+    
+    # Xác định ngưỡng dựa trên loại đối tượng
+    if object_type == 'person':
+        critical_distance = 12
+        warning_distance = 20
+        alert_message = "🚨 PHÁT HIỆN NGƯỜI TRƯỚC ĐẦU XE!"
+    else:
+        critical_distance = 8
+        warning_distance = 15
+        alert_message = "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!"
+    
+    if distance < critical_distance:
         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
         if current_time - last_collision_warning >= warning_interval:
             va_cham_sound.play()
             last_collision_warning = current_time
             # Gửi cảnh báo vào chatbot
             if not collision_alert_sent:
-                add_ai_alert("collision", "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!", current_monitoring_vehicle_id)
+                add_ai_alert("collision", alert_message, current_monitoring_vehicle_id)
                 collision_alert_sent = True
-    elif distance < 15:
+    elif distance < warning_distance:
         warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
     else:
         warnings["collision"] = ""
@@ -789,7 +798,7 @@ def collision_monitor():
     try:
         active_video_stream = 'vacham'
         # Sử dụng video hole.mp4 để phát hiện vật cản/ổ gà
-        cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
+        cap = cv2.VideoCapture("py/video_input/qua_duong.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
@@ -903,22 +912,56 @@ def collision_monitor():
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
                     label = model_vehicle.names[cls]
 
-                    if label in ['car', 'truck', 'bus', 'motorbike']:
-                        distance = estimate_distance(y1, y2)
-                        process_collision_warning(frame, distance, current_time)
+                if label in ['car', 'truck', 'bus', 'motorbike', 'person']:
+                    distance = estimate_distance(y1, y2)
+                    
+                    # Xác định ngưỡng khoảng cách dựa trên đối tượng
+                    if label == 'person':
+                        # Người: ngưỡng an toàn cao hơn (nguy hiểm hơn)
+                        critical_distance = 12  # Dưới 12m là nguy hiểm
+                        warning_distance = 20   # Dưới 20m là cảnh báo
+                        alert_message = "🚨 PHÁT HIỆN NGƯỜI TRƯỚC ĐẦU XE!"
+                    else:
+                        # Phương tiện/chướng ngại vật
+                        critical_distance = 8
+                        warning_distance = 15
+                        alert_message = "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!"
+                    
+                    # Xử lý cảnh báo va chạm
+                    if distance < critical_distance:
+                        warnings["collision"] = "CẢNH BÁO VA CHẠM!"
+                        if current_time - last_collision_warning >= warning_interval:
+                            va_cham_sound.play()
+                            last_collision_warning = current_time
+                            # Gửi cảnh báo vào chatbot
+                            if not collision_alert_sent:
+                                add_ai_alert("collision", alert_message, current_monitoring_vehicle_id)
+                                collision_alert_sent = True
+                        color = (0, 0, 255)  # Đỏ
+                    elif distance < warning_distance:
+                        warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
+                        color = (0, 255, 255)  # Vàng
+                        collision_alert_sent = False
+                    else:
+                        warnings["collision"] = ""
+                        color = (0, 255, 0)  # Xanh lá
+                        collision_alert_sent = False
 
-                        # Chọn màu và cảnh báo dựa trên khoảng cách
-                        if distance < 8:
-                            color = (0, 0, 255)  # Đỏ
-                        elif distance < 15:
-                            color = (0, 255, 255)  # Vàng
-                        else:
-                            color = (0, 255, 0)  # Xanh lá
-
-                        # Vẽ bounding box, nhãn và khoảng cách
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                        cv2.putText(frame, f'{label} {conf:.2f} | {distance:.1f}m', (x1, y1 - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                    # Vẽ bounding box, nhãn và khoảng cách
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    
+                    # Thêm nhãn đối tượng và khoảng cách
+                    label_text = f'{label} {conf:.2f} | {distance:.1f}m'
+                    if label == 'person':
+                        label_text = f'NGUOI {conf:.2f} | {distance:.1f}m'
+                    
+                    cv2.putText(frame, label_text, (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                    
+                    # Vẽ thêm indicator đặc biệt cho người
+                    if label == 'person' and distance < warning_distance:
+                        # Vẽ vòng tròn đỏ quanh người
+                        cv2.circle(frame, ((x1 + x2) // 2, (y1 + y2) // 2), 10, (0, 0, 255), -1)
 
             # Nhận diện làn bằng YOLO - Chỉ khi cảnh báo lệch làn được bật
             if need_lane_detection:
