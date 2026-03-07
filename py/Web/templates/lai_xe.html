@@ -640,6 +640,9 @@
         border-radius: 10px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
+        margin-left: auto;
+        margin-right: auto;
+        
       }
 
       .region-stats {
@@ -1154,14 +1157,41 @@
         </div>
         <div class="alert-panel">
           <h2>CẢNH BÁO</h2>
-          <div id="collision-warning-vacham" class="warning-item no-warning">
-            Va chạm: Không có
+
+          <div class="warning-with-toggle">
+            <div id="collision-warning-vacham" class="warning-item no-warning">
+              Va chạm: Không có
+            </div>
+            <input
+              type="checkbox"
+              class="switch-toggle"
+              id="collision-warning-toggle"
+              checked
+            />
           </div>
-          <div id="lane-warning-vacham" class="warning-item no-warning">
-            Lệch làn: Không có
+
+          <div class="warning-with-toggle">
+            <div id="lane-warning-vacham" class="warning-item no-warning">
+              Lệch làn: Không có
+            </div>
+            <input
+              type="checkbox"
+              class="switch-toggle"
+              id="lane-warning-toggle"
+              checked
+            />
           </div>
-          <div id="obstacle-warning-vacham" class="warning-item no-warning">
-            Vật cản: Không có
+
+          <div class="warning-with-toggle">
+            <div id="obstacle-warning-vacham" class="warning-item no-warning">
+              Vật cản: Không có
+            </div>
+            <input
+              type="checkbox"
+              class="switch-toggle"
+              id="obstacle-warning-toggle"
+              checked
+            />
           </div>
         </div>
       </div>
@@ -1214,6 +1244,9 @@
         phone: true,
         seatbelt: true,
         hand: true,
+        collision: true,
+        lane: true,
+        obstacle: true,
       };
 
       // Cập nhật thời gian hoạt động cho tất cả các section mỗi giây
@@ -1240,8 +1273,15 @@
       function handleWarningToggle(warningType, e) {
         warningStates[warningType] = e.target.checked;
         const warningContainer = e.target.closest(".warning-with-toggle");
+        
+        // Xác định section hiện tại để tìm đúng element
+        let sectionId = "driver"; // mặc định
+        if (warningType === "collision" || warningType === "lane" || warningType === "obstacle") {
+          sectionId = "vacham";
+        }
+        
         const warningElement = document.getElementById(
-          `${warningType}-warning-driver`
+          `${warningType}-warning-${sectionId}`
         );
 
         fetch("/toggle_warning", {
@@ -1258,11 +1298,24 @@
           .then((data) => {
             if (data.status === "success") {
               if (!warningStates[warningType]) {
-                warningElement.textContent = `${
-                  warningType.charAt(0).toUpperCase() + warningType.slice(1)
-                }: Cảnh báo đã tắt`;
+                // Hiển thị trạng thái tắt
+                const typeNames = {
+                  "eye": "Mắt",
+                  "yawn": "Ngáp",
+                  "head": "Đầu",
+                  "phone": "Điện thoại",
+                  "seatbelt": "Dây an toàn",
+                  "hand": "Tay lái",
+                  "collision": "Va chạm",
+                  "lane": "Lệch làn",
+                  "obstacle": "Vật cản"
+                };
+                warningElement.textContent = `${typeNames[warningType] || warningType}: Cảnh báo đã tắt`;
                 warningElement.classList.add("no-warning");
                 warningElement.classList.remove("warning");
+              } else {
+                // Khi bật lại, để updateWarnings cập nhật nội dung
+                warningElement.textContent = warningType.charAt(0).toUpperCase() + warningType.slice(1) + ": Bình thường";
               }
             } else {
               console.error(
@@ -1299,6 +1352,15 @@
       document
         .getElementById("hand-warning-toggle")
         .addEventListener("change", (e) => handleWarningToggle("hand", e));
+      document
+        .getElementById("collision-warning-toggle")
+        .addEventListener("change", (e) => handleWarningToggle("collision", e));
+      document
+        .getElementById("lane-warning-toggle")
+        .addEventListener("change", (e) => handleWarningToggle("lane", e));
+      document
+        .getElementById("obstacle-warning-toggle")
+        .addEventListener("change", (e) => handleWarningToggle("obstacle", e));
 
       // Đảm bảo tất cả các toggle switch được bật mặc định khi trang được tải
       window.onload = function () {

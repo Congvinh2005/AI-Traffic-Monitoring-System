@@ -291,7 +291,10 @@ warning_states = {
     "head": True,
     "phone": True,
     "seatbelt": True,
-    "hand": True
+    "hand": True,
+    "collision": True,
+    "lane": True,
+    "obstacle": True
 }
 
 warnings = {
@@ -716,6 +719,11 @@ lane_alert_sent = False
 def process_collision_warning(frame, distance, current_time):
     global last_collision_warning, warnings, collision_alert_sent
 
+    # Kiểm tra nếu cảnh báo va chạm bị tắt
+    if not warning_states.get("collision", True):
+        warnings["collision"] = ""
+        return
+
     if distance < 8:
         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
         if current_time - last_collision_warning >= warning_interval:
@@ -733,6 +741,11 @@ def process_collision_warning(frame, distance, current_time):
 
 def process_lane_warning(frame, left_found, right_found):
     global warnings, lane_alert_sent
+
+    # Kiểm tra nếu cảnh báo lệch làn bị tắt
+    if not warning_states.get("lane", True):
+        warnings["lane"] = ""
+        return
 
     if not (left_found and right_found):
         warnings["lane"] = "CẢNH BÁO LỆCH LÀN!"
@@ -776,7 +789,7 @@ def collision_monitor():
     try:
         active_video_stream = 'vacham'
         # Sử dụng video hole.mp4 để phát hiện vật cản/ổ gà
-        cap = cv2.VideoCapture("py/video_input/hole.mp4")
+        cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
@@ -800,104 +813,123 @@ def collision_monitor():
             warnings["lane"] = ""
             warnings["obstacle"] = ""
 
-            # Phát hiện vật cản/ổ gà bằng model_hole (best_hole.pt) - Tích hợp từ test2.py
-            results_hole = model_hole(frame, verbose=False)
-            obstacle_detected = False
-            obstacle_count = 0
-            max_conf = 0.0
+            # Kiểm tra xem có cần nhận diện không (chỉ nhận diện khi ít nhất 1 cảnh báo được bật)
+            need_collision_detection = warning_states.get("collision", True)
+            need_lane_detection = warning_states.get("lane", True)
+            need_obstacle_detection = warning_states.get("obstacle", True)
+            
+            # Nếu tất cả cảnh báo đều tắt, bỏ qua nhận diện để tiết kiệm tài nguyên
+            if not (need_collision_detection or need_lane_detection or need_obstacle_detection):
+                # Vẫn vẽ frame bình thường nhưng không nhận diện gì
+                ret, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = buffer.tobytes()
+                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                continue
 
-            for result in results_hole:
-                # Xử lý masks (segmentation)
-                if result.masks is not None:
-                    # Lấy thông tin boxes và confidence
-                    if result.boxes is not None:
-                        for i, box in enumerate(result.boxes):
+            # Phát hiện vật cản/ổ gà bằng model_hole (best_hole.pt) - Chỉ khi được bật
+            if need_obstacle_detection:
+                results_hole = model_hole(frame, verbose=False)
+                obstacle_detected = False
+                obstacle_count = 0
+                max_conf = 0.0
+
+                for result in results_hole:
+                    # Xử lý masks (segmentation)
+                    if result.masks is not None:
+                        # Lấy thông tin boxes và confidence
+                        if result.boxes is not None:
+                            for i, box in enumerate(result.boxes):
+                                conf = float(box.conf[0])
+                                if conf > 0.3:  # Chỉ xét khi confidence > 30%
+                                    obstacle_detected = True
+                                    obstacle_count += 1
+                                    if conf > max_conf:
+                                        max_conf = conf
+
+                                    # Vẽ bounding box và mask với label tùy chỉnh
+                                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                    # Vẽ mask
+                                    frame = result.plot(labels=False, conf=False, line_width=2)
+                                    # Vẽ bounding box màu đỏ
+                                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                                    label = f"Chuong ngai vat {conf:.2f}"
+                                    cv2.putText(frame, label, (x1, y1 - 10),
+                                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        else:
+                            # Nếu chỉ có masks mà không có boxes
+                            obstacle_detected = True
+                            obstacle_count += len(result.masks)
+                            frame = result.plot(labels=False, conf=False, line_width=2)
+
+                    # Xử lý boxes riêng (nếu không có masks)
+                    elif result.boxes is not None:
+                        for box in result.boxes:
+                            x1, y1, x2, y2 = map(int, box.xyxy[0])
                             conf = float(box.conf[0])
+                            cls = int(box.cls[0])
+
                             if conf > 0.3:  # Chỉ xét khi confidence > 30%
                                 obstacle_detected = True
                                 obstacle_count += 1
                                 if conf > max_conf:
                                     max_conf = conf
-                                
-                                # Vẽ bounding box và mask với label tùy chỉnh
-                                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                                # Vẽ mask
-                                frame = result.plot(labels=False, conf=False, line_width=2)
-                                # Vẽ bounding box màu đỏ
+
+                                # Vẽ bounding box màu đỏ nổi bật
                                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
                                 label = f"Chuong ngai vat {conf:.2f}"
                                 cv2.putText(frame, label, (x1, y1 - 10),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                    else:
-                        # Nếu chỉ có masks mà không có boxes
-                        obstacle_detected = True
-                        obstacle_count += len(result.masks)
-                        frame = result.plot(labels=False, conf=False, line_width=2)
-                
-                # Xử lý boxes riêng (nếu không có masks)
-                elif result.boxes is not None:
-                    for box in result.boxes:
-                        x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        conf = float(box.conf[0])
-                        cls = int(box.cls[0])
 
-                        if conf > 0.3:  # Chỉ xét khi confidence > 30%
-                            obstacle_detected = True
-                            obstacle_count += 1
-                            if conf > max_conf:
-                                max_conf = conf
-
-                            # Vẽ bounding box màu đỏ nổi bật
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                            label = f"Chuong ngai vat {conf:.2f}"
-                            cv2.putText(frame, label, (x1, y1 - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-            # Nếu phát hiện vật cản/ổ gà với confidence cao, cảnh báo
-            if obstacle_detected and max_conf > 0.3:
-                warnings["obstacle"] = f"VẬT CẢN PHÍA TRƯỚC! ({obstacle_count})"
-                if current_time - last_obstacle_warning >= obstacle_warning_interval:
-                    di_cham_lai_sound.play()
-                    last_obstacle_warning = current_time
-                    # Gửi cảnh báo vào chatbot
-                    add_ai_alert("obstacle", f"⚠️ PHÁT HIỆN {obstacle_count} VẬT CẢN/Ổ GÀ PHÍA TRƯỚC!", current_monitoring_vehicle_id)
+                # Nếu phát hiện vật cản/ổ gà với confidence cao, cảnh báo
+                if obstacle_detected and max_conf > 0.3:
+                    warnings["obstacle"] = f"VẬT CẢN PHÍA TRƯỚC! ({obstacle_count})"
+                    if current_time - last_obstacle_warning >= obstacle_warning_interval:
+                        di_cham_lai_sound.play()
+                        last_obstacle_warning = current_time
+                        # Gửi cảnh báo vào chatbot
+                        add_ai_alert("obstacle", f"⚠️ PHÁT HIỆN {obstacle_count} VẬT CẢN/Ổ GÀ PHÍA TRƯỚC!", current_monitoring_vehicle_id)
+                else:
+                    warnings["obstacle"] = ""
             else:
-                warnings["obstacle"] = ""
+                # Không nhận diện vật cản
+                obstacle_detected = False
 
-            # Phát hiện phương tiện
-            results_v = model_vehicle(frame)[0]
-            for box in results_v.boxes:
-                cls = int(box.cls[0])
-                conf = float(box.conf[0])
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                label = model_vehicle.names[cls]
+            # Phát hiện phương tiện - Chỉ khi cảnh báo va chạm được bật
+            if need_collision_detection:
+                results_v = model_vehicle(frame)[0]
+                for box in results_v.boxes:
+                    cls = int(box.cls[0])
+                    conf = float(box.conf[0])
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    label = model_vehicle.names[cls]
 
-                if label in ['car', 'truck', 'bus', 'motorbike']:
-                    distance = estimate_distance(y1, y2)
-                    process_collision_warning(frame, distance, current_time)
+                    if label in ['car', 'truck', 'bus', 'motorbike']:
+                        distance = estimate_distance(y1, y2)
+                        process_collision_warning(frame, distance, current_time)
 
-                    # Chọn màu và cảnh báo dựa trên khoảng cách
-                    if distance < 8:
-                        color = (0, 0, 255)  # Đỏ
-                    elif distance < 15:
-                        color = (0, 255, 255)  # Vàng
-                    else:
-                        color = (0, 255, 0)  # Xanh lá
+                        # Chọn màu và cảnh báo dựa trên khoảng cách
+                        if distance < 8:
+                            color = (0, 0, 255)  # Đỏ
+                        elif distance < 15:
+                            color = (0, 255, 255)  # Vàng
+                        else:
+                            color = (0, 255, 0)  # Xanh lá
 
-                    # Vẽ bounding box, nhãn và khoảng cách
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(frame, f'{label} {conf:.2f} | {distance:.1f}m', (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                        # Vẽ bounding box, nhãn và khoảng cách
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                        cv2.putText(frame, f'{label} {conf:.2f} | {distance:.1f}m', (x1, y1 - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-            # Nhận diện làn bằng YOLO
-            results_l = model_lane(frame)[0]
-            frame = draw_lane_points(frame, results_l, width)
+            # Nhận diện làn bằng YOLO - Chỉ khi cảnh báo lệch làn được bật
+            if need_lane_detection:
+                results_l = model_lane(frame)[0]
+                frame = draw_lane_points(frame, results_l, width)
 
-            # Nhận diện làn bằng Hough truyền thống
-            frame, classic_lines = draw_lane_classic(frame)
+                # Nhận diện làn bằng Hough truyền thống
+                frame, classic_lines = draw_lane_classic(frame)
 
-            # Kết hợp cảnh báo lệch làn từ cả 2 nguồn
-            frame = detect_lane_deviation_combined(results_l, frame, width, classic_lines)
+                # Kết hợp cảnh báo lệch làn từ cả 2 nguồn
+                frame = detect_lane_deviation_combined(results_l, frame, width, classic_lines)
 
             # Resize frame trước khi ghi
             frame = cv2.resize(frame, (frame_width, frame_height))
