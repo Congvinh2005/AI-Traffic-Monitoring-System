@@ -51,7 +51,7 @@ latest_warning = ""
 lock = threading.Lock()
 pygame.init()
 chopmat_sound = pygame.mixer.Sound("py/Sound/nham_mat.wav")
-ngap_sound = pygame.mixer.Sound("py/Sound/buon_ngu.wav")
+ngap_sound = pygame.mixer.Sound("py/Sound/ngap_ngu.wav")
 phone_baodong = pygame.mixer.Sound("py/Sound/not_phone.wav")
 seatbelt_baodong = pygame.mixer.Sound("py/Sound/seatbelt_alert.wav")
 dau_quay_sound = pygame.mixer.Sound("py/Sound/chuylaixe.wav")
@@ -59,6 +59,7 @@ bienbao_sound = pygame.mixer.Sound("py/Sound/chu_y_bien_bao.wav")
 tay_lai_sound = pygame.mixer.Sound("py/Sound/tay_lai_xe.wav")
 lech_lan_sounds = pygame.mixer.Sound("py/Sound/lech_lan.wav")
 va_cham_sound = pygame.mixer.Sound("py/Sound/va_cham.wav")
+di_cham_lai_sound = pygame.mixer.Sound("py/Sound/di_cham_lai.wav")  # Từ drive.py
 
 # Thời gian tối thiểu giữa các cảnh báo (giây)
 WARNING_INTERVALS = {
@@ -87,6 +88,27 @@ def can_play_warning(warning_type):
         return True
     return False
 
+def play_sound(sound_name):
+    """Phát âm thanh an toàn (từ drive.py)"""
+    sound_map = {
+        'chopmat': chopmat_sound,
+        'ngap': ngap_sound,
+        'phone': phone_baodong,
+        'seatbelt': seatbelt_baodong,
+        'dau_quay': dau_quay_sound,
+        'bienbao': bienbao_sound,
+        'tay_lai': tay_lai_sound,
+        'lech_lan': lech_lan_sounds,
+        'va_cham': va_cham_sound,
+        'di_cham': di_cham_lai_sound
+    }
+    sound = sound_map.get(sound_name)
+    if sound:
+        try:
+            sound.play()
+        except:
+            pass
+
 # ======================= Biến ghi hình ===========================
 video_writer = None
 is_recording = False
@@ -101,16 +123,19 @@ recording_mode = None  # Lưu chế độ đang ghi (driver, sign, vacham, road)
 if not os.path.exists('recordings'):
     os.makedirs('recordings')
 
+
+
+
 # Dlib & YOLO models
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("py/shape_predictor_68_face_landmarks.dat")
 phone_mau = YOLO("py/weights/yolov8n.pt")
-seatbelt_mau = YOLO("py/weights/lasttx.pt")
-bienbao_model = YOLO("py/weights/best2.pt")
+seatbelt_mau = YOLO("py/weights/day_an_toan.pt")
+bienbao_model = YOLO("py/weights/bien_bao.pt")
 model_vehicle = YOLO("py/weights/yolov8n.pt")   # Phát hiện phương tiện
 model_lane = YOLO("py/weights/lech_lan.pt")
        # Mô hình YOLO đã huấn luyện lại vạch kẻ đường
-
+model_hole = YOLO("py/weights/vat_can.pt")  # Mô hình phát hiện ổ gà/vật cản
 # ======================= Các thông số ===========================
 EAR_THRESHOLD = 0.30
 EAR_MIN_DURATION = 2
@@ -264,7 +289,10 @@ warning_states = {
     "head": True,
     "phone": True,
     "seatbelt": True,
-    "hand": True
+    "hand": True,
+    "collision": True,
+    "lane": True,
+    "obstacle": True
 }
 
 warnings = {
@@ -279,7 +307,8 @@ warnings = {
     "sign": "",
     "hand": "",
     "collision": "",
-    "lane": ""
+    "lane": "",
+    "obstacle": ""
 }
 
 # Thêm biến để kiểm soát luồng video
@@ -613,6 +642,10 @@ warning_interval = 1.0  # Khoảng thời gian giữa các cảnh báo (giây)
 collision_alert_sent = False
 lane_alert_sent = False
 
+# Biến cho cảnh báo vật cản/ổ gà (từ drive.py)
+last_obstacle_warning = 0
+obstacle_warning_interval = 2.0
+
 def process_collision_warning(frame, distance, current_time, object_type='vehicle'):
     """
     Xử lý cảnh báo va chạm (deprecated - dùng logic mới trực tiếp trong loop)
@@ -687,13 +720,14 @@ def detect_lane_deviation_combined(results_l, frame, width, classic_lines):
 
 def collision_monitor():
     global warnings, video_writer, is_recording, active_video_stream, last_collision_warning
+    global last_obstacle_warning
     try:
         active_video_stream = 'vacham'
         cap = cv2.VideoCapture("py/video_input/lech_lan.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         cap.set(cv2.CAP_PROP_FPS, 20)
-        
+
         while active_video_stream == 'vacham':
             ret, frame = cap.read()
             if not ret:
@@ -708,6 +742,60 @@ def collision_monitor():
             # Reset warnings
             warnings["collision"] = ""
             warnings["lane"] = ""
+            warnings["obstacle"] = ""
+
+            # Phát hiện vật cản/ổ gà bằng model_hole (từ drive.py)
+            results_hole = model_hole(frame, verbose=False)
+            obstacle_detected = False
+            obstacle_count = 0
+            max_conf = 0.0
+
+            for result in results_hole:
+                if result.masks is not None:
+                    if result.boxes is not None:
+                        for i, box in enumerate(result.boxes):
+                            conf = float(box.conf[0])
+                            if conf > 0.3:
+                                obstacle_detected = True
+                                obstacle_count += 1
+                                if conf > max_conf:
+                                    max_conf = conf
+
+                                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                frame = result.plot(labels=False, conf=False, line_width=2)
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                                label = f"Chuong ngai vat {conf:.2f}"
+                                cv2.putText(frame, label, (x1, y1 - 10),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    else:
+                        obstacle_detected = True
+                        obstacle_count += len(result.masks)
+                        frame = result.plot(labels=False, conf=False, line_width=2)
+
+                elif result.boxes is not None:
+                    for box in result.boxes:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        conf = float(box.conf[0])
+                        cls = int(box.cls[0])
+
+                        if conf > 0.3:
+                            obstacle_detected = True
+                            obstacle_count += 1
+                            if conf > max_conf:
+                                max_conf = conf
+
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                            label = f"Chuong ngai vat {conf:.2f}"
+                            cv2.putText(frame, label, (x1, y1 - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+            # Nếu phát hiện vật cản/ổ gà với confidence cao, cảnh báo
+            if obstacle_detected and max_conf > 0.3:
+                warnings["obstacle"] = f"VẬT CẢN PHÍA TRƯỚC! ({obstacle_count})"
+                if current_time - last_obstacle_warning >= obstacle_warning_interval:
+                    di_cham_lai_sound.play()  # Sử dụng âm thanh từ drive.py
+                    last_obstacle_warning = current_time
+                    add_ai_alert("obstacle", f"⚠️ PHÁT HIỆN {obstacle_count} VẬT CẢN/Ổ GÀ PHÍA TRƯỚC!", current_monitoring_vehicle_id)
 
             # Phát hiện phương tiện
             results_v = model_vehicle(frame)[0]
@@ -719,8 +807,8 @@ def collision_monitor():
 
                 if label in ['car', 'truck', 'bus', 'motorbike', 'person']:
                     distance = estimate_distance(y1, y2)
-                    
-                    # Xác định ngưỡng khoảng cách dựa trên đối tượng
+
+                    # Xác định ngưỡng khoảng cách dựa trên đối tượng (từ drive.py)
                     if label == 'person':
                         # Người: ngưỡng an toàn cao hơn (nguy hiểm hơn)
                         critical_distance = 12  # Dưới 12m là nguy hiểm
@@ -731,7 +819,7 @@ def collision_monitor():
                         critical_distance = 8
                         warning_distance = 15
                         alert_message = "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!"
-                    
+
                     # Xử lý cảnh báo va chạm
                     if distance < critical_distance:
                         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
@@ -754,15 +842,15 @@ def collision_monitor():
 
                     # Vẽ bounding box, nhãn và khoảng cách
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                    
+
                     # Thêm nhãn đối tượng và khoảng cách
                     label_text = f'{label} {conf:.2f} | {distance:.1f}m'
                     if label == 'person':
                         label_text = f'NGUOI {conf:.2f} | {distance:.1f}m'
-                    
+
                     cv2.putText(frame, label_text, (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-                    
+
                     # Vẽ thêm indicator đặc biệt cho người
                     if label == 'person' and distance < warning_distance:
                         # Vẽ vòng tròn đỏ quanh người
@@ -1823,13 +1911,27 @@ def toggle_warning():
 def index():
     return render_template('trang_chu.html')
 
+@app.route('/chatbot_admin')
+def chatbot_admin():
+    """Trang Chatbot Admin - Quản lý và giám sát AI"""
+    return render_template('chatbot_admin.html')
+
+@app.route('/tu_van_luat')
+def tu_van_luat():
+    """Trang Tư Vấn Luật Giao Thông"""
+    return render_template('tu_van_luat.html')
+
+@app.route('/tu_van.html')
+def tu_van():
+    """Serve tu_van.html - Trang tư vấn luật giao thông (từ drive.py)"""
+    return send_file(os.path.join(os.path.dirname(__file__), 'templates', 'tu_van.html'))
+
 @app.route('/traffic_bus')
 def traffic_bus():
-    """Serve traffic_bus.html từ Flask"""
-    # Serve file từ thư mục gốc (ngoài py/Web)
-    return send_file(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'traffic_bus.html'))
+    """Serve traffic_bus.html từ Flask (từ drive.py)"""
+    return send_file(os.path.join(os.path.dirname(__file__), 'templates', 'traffic_bus.html'))
 
-@app.route('/lai_xe')
+@app.route('/lai_xe_v2')
 def settings():
     return render_template('lai_xe.html')
 
@@ -2065,6 +2167,151 @@ def api_send_chat_message():
             'status': 'error',
             'message': str(e)
         }), 400
+
+@app.route('/api/groq_law_chat', methods=['POST'])
+def api_groq_law_chat():
+    """API tư vấn luật giao thông bằng Groq AI (từ drive.py)"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+
+        print(f"[LAW CHAT] User hỏi: {message}")
+
+        # Gọi Groq API để tư vấn luật
+        response = call_groq_law_advisor(message)
+
+        return jsonify({
+            'status': 'success',
+            'response': response
+        })
+
+    except Exception as e:
+        print(f"Lỗi api_groq_law_chat: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+def call_groq_law_advisor(question):
+    """
+    Gọi Groq API để tư vấn luật giao thông (từ drive.py)
+    """
+    try:
+        from groq import Groq
+        import os
+        from dotenv import load_dotenv
+
+        load_dotenv()
+        GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+
+        if not GROQ_API_KEY:
+            print("⚠️ Không tìm thấy GROQ_API_KEY")
+            return generate_law_response_fallback(question)
+
+        client = Groq(api_key=GROQ_API_KEY)
+
+        # === DỮ LIỆU LUẬT GIAO THÔNG VIỆT NAM (CẬP NHẬT 2026) ===
+        law_database = """
+**MỨC PHẠT CHÍNH XÁC 2026:**
+
+### 1. PHẠT QUÁ TỐC ĐỘ:
+**Ô tô:**
+- Quá 5-10 km/h: 800.000đ
+- Quá 10-20 km/h: 3-5 triệu đồng + tước GPLX 1-3 tháng
+- Quá 20-35 km/h: 6-8 triệu đồng + tước GPLX 2-4 tháng
+- Quá trên 35 km/h: 10-12 triệu đồng + tước GPLX 4-6 tháng
+
+### 2. PHẠT NỒNG ĐỘ CỒN:
+**Ô tô:**
+- Mức 1: 6-8 triệu đồng + tước GPLX 10-12 tháng
+- Mức 2: 16-18 triệu đồng + tước GPLX 16-18 tháng
+- Mức 3: 30-40 triệu đồng + tước GPLX 22-24 tháng
+
+### 3. PHẠT KHÔNG ĐỘI MŨ BẢO HIỂM: 400-600 nghìn đồng
+
+### 4. PHẠT VƯỢT ĐÈN ĐỎ:
+**Ô tô:** 4-6 triệu đồng + tước GPLX 1-3 tháng
+**Xe máy:** 800 nghìn - 1 triệu đồng + tước GPLX 1-3 tháng
+"""
+
+        system_prompt = f"""
+Bạn là **Luật Sư Giao Thông AI** với 20 năm kinh nghiệm.
+
+**DỮ LIỆU LUẬT:**
+{law_database}
+
+**NHIỆM VỤ:**
+1. Trả lời chính xác dựa trên dữ liệu luật
+2. Trích dẫn điều luật cụ thể
+3. Sử dụng emoji phù hợp
+4. Luôn nhắc người dùng tuân thủ luật giao thông
+
+Trả lời bằng tiếng Việt, thân thiện, dễ hiểu.
+"""
+
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ],
+            temperature=0.7,
+            max_tokens=1000,
+            top_p=1.0,
+            stream=False
+        )
+
+        response = chat_completion.choices[0].message.content
+        print(f"🤖 [GROQ LAW] Response: {response[:100]}...")
+        return response
+
+    except ImportError:
+        print("⚠️ Chưa cài groq. Chạy: pip install groq")
+        return generate_law_response_fallback(question)
+    except Exception as e:
+        print(f"❌ Lỗi Groq API: {e}")
+        return generate_law_response_fallback(question)
+
+def generate_law_response_fallback(question):
+    """
+    Fallback khi không có Groq API (từ drive.py)
+    """
+    q = question.lower()
+
+    if 'đèn xanh' in q:
+        return """**✅ ĐÈN XANH KHÔNG BỊ PHẠT!**
+
+🚦 **Đèn xanh** là tín hiệu được phép đi, không vi phạm."""
+
+    if 'đèn vàng' in q:
+        return """**🚦 QUY ĐỊNH VỀ ĐÈN VÀNG**
+
+✅ **Được đi tiếp nếu:** Đã đi quá vạch dừng khi đèn chuyển vàng
+❌ **Bị phạt nếu:** Chưa qua vạch dừng mà không dừng lại"""
+
+    if any(x in q for x in ['tốc độ', 'chạy nhanh', 'vượt tốc']):
+        return """**📊 MỨC PHẠT QUÁ TỐC ĐỘ 2026**
+
+🚗 **Ô tô:** Quá 5-10 km/h: 800.000đ | Quá 10-20 km/h: 3-5 triệu đồng
+🏍️ **Xe máy:** Quá 5-10 km/h: 400-600 nghìn đồng"""
+
+    if any(x in q for x in ['nồng độ cồn', 'rượu', 'bia']):
+        return """**🍺 MỨC PHẠT NỒNG ĐỘ CỒN 2026**
+
+🚗 **Ô tô:** Mức 1: 6-8 triệu đồng | Mức 3: 30-40 triệu đồng
+🏍️ **Xe máy:** Mức 1: 2-3 triệu đồng | Mức 3: 6-8 triệu đồng"""
+
+    if any(x in q for x in ['mũ bảo hiểm', 'nón bảo hiểm']):
+        return """**⛑️ PHẠT KHÔNG ĐỘI MŨ BẢO HIỂM**: 400-600 nghìn đồng"""
+
+    if 'đèn đỏ' in q:
+        return """**🚦 PHẠT VƯỢT ĐÈN ĐỎ**
+
+🚗 Ô tô: 4-6 triệu đồng + tước GPLX 1-3 tháng
+🏍️ Xe máy: 800 nghìn - 1 triệu đồng + tước GPLX 1-3 tháng"""
+
+    return """Cảm ơn bạn đã đặt câu hỏi! 🤖 Tôi là Luật Sư Giao Thông AI. Hãy hỏi cụ thể để được tư vấn!"""
+
 
 def generate_bot_response(message):
     """Sinh phản hồi tự động cho chatbot"""
