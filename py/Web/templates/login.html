@@ -331,6 +331,12 @@
             transform: translateY(0);
         }
 
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .divider {
             text-align: center;
             margin: 30px 0;
@@ -410,6 +416,45 @@
             border-color: #333;
         }
 
+        /* Alert Messages */
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .login-container {
@@ -465,8 +510,47 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
         .icon_traffic {
             font-size: 50px;
+        }
+
+        /* Default accounts info */
+        .default-accounts {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .default-accounts h4 {
+            color: #1a1a2e;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .account-item:last-child {
+            border-bottom: none;
+        }
+
+        .account-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .account-credentials {
+            color: #4a9eff;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -484,8 +568,7 @@
         <!-- Left Side - Project Information -->
         <div class="project-info">
             <div class="project-icon">
-                <!-- <i class="fa-solid fa-traffic-light"></i> -->
-                 <span class="icon_traffic">🚗</span>
+                <span class="icon_traffic">🚗</span>
             </div>
             <h1 class="project-title">AI Traffic Monitoring</h1>
             <p class="project-subtitle">
@@ -493,29 +576,22 @@
             </p>
             <ul class="features">
                 <li>
-                    <!-- <i class="fa-solid fa-circle-check"></i> -->
-                        <span>🎥</span>
+                    <span>🎥</span>
                     <span>Giám sát camera thời gian thực</span>
                 </li>
                 <li>
-                    <!-- <i class="fa-solid fa-circle-check"></i> -->
                     <span>🤖</span>
                     <span>Phát hiện vi phạm bằng AI</span>
                 </li>
                 <li>
-                    <!-- <i class="fa-solid fa-circle-check"></i> -->
-                                         <span>❗</span>
+                    <span>❗</span>
                     <span>Theo dõi vị trí phương tiện</span>
                 </li>
                 <li>
-                    <!-- <i class="fa-solid fa-circle-check"></i> -->
-                    
-                                        <span>⚠️</span>
-
+                    <span>⚠️</span>
                     <span>Cảnh báo tự động</span>
                 </li>
                 <li>
-                    <!-- <i class="fa-solid fa-circle-check"></i> -->
                     <span>📊</span>
                     <span>Báo cáo & thống kê chi tiết</span>
                 </li>
@@ -529,14 +605,17 @@
                 <p>Vui lòng nhập thông tin tài khoản của bạn</p>
             </div>
 
+            <!-- Alert Messages -->
+            <div id="alertContainer"></div>
+
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <label for="username">Tên đăng nhập</label>
                     <div class="input-wrapper">
-                        <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
                             placeholder="Nhập tên đăng nhập"
                             required
                             autocomplete="username"
@@ -548,10 +627,10 @@
                 <div class="form-group">
                     <label for="password">Mật khẩu</label>
                     <div class="input-wrapper">
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
                             placeholder="Nhập mật khẩu"
                             required
                             autocomplete="current-password"
@@ -562,32 +641,29 @@
 
                 <div class="form-options">
                     <label class="remember-me">
-                        <input type="checkbox" name="remember">
+                        <input type="checkbox" name="remember" id="remember">
                         <span>Ghi nhớ đăng nhập</span>
                     </label>
                     <a href="#" class="forgot-password">Quên mật khẩu?</a>
                 </div>
 
-                <button type="submit" class="login-btn">
+                <button type="submit" class="login-btn" id="loginBtn">
                     <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
                 </button>
             </form>
 
-            <!-- <div class="divider">
-                <span>Hoặc đăng nhập với</span>
+            <!-- Default Accounts Info (for testing) -->
+            <div class="default-accounts">
+                <h4>📋 Tài khoản mặc định (Demo)</h4>
+                <div class="account-item">
+                    <span class="account-label">Admin:</span>
+                    <span class="account-credentials">admin / admin123</span>
+                </div>
+                <div class="account-item">
+                    <span class="account-label">User:</span>
+                    <span class="account-credentials">user / user123</span>
+                </div>
             </div>
-
-            <div class="social-login">
-                <button class="social-btn google" title="Google">
-                    <i class="fa-brands fa-google"></i>
-                </button>
-                <button class="social-btn facebook" title="Facebook">
-                    <i class="fa-brands fa-facebook-f"></i>
-                </button>
-                <button class="social-btn github" title="GitHub">
-                    <i class="fa-brands fa-github"></i>
-                </button>
-            </div> -->
         </div>
     </div>
 
@@ -607,21 +683,88 @@
             }
         }
 
-        // Handle login form submission
-        function handleLogin(event) {
-            event.preventDefault();
+        // Show alert message
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-error' : 'alert-info';
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}" style="display: block;">
+                    <strong>${icon}</strong> ${message}
+                </div>
+            `;
             
-            // Show loading
-            document.getElementById('loading').style.display = 'flex';
-            
-            // Simulate login process (replace with actual API call)
+            // Auto hide after 5 seconds
             setTimeout(() => {
-                // Redirect to dashboard
-                window.location.href = 'Dasdborad.html';
-            }, 1500);
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.style.display = 'none';
+                }
+            }, 5000);
+        }
+
+        // Handle login form submission
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            const loginBtn = document.getElementById('loginBtn');
+
+            // Disable button and show loading
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng nhập...';
+            document.getElementById('loading').style.display = 'flex';
+
+            try {
+                // Call login API
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, remember })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    
+                    // Redirect based on role
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 1000);
+                } else {
+                    showAlert(data.message, 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Có lỗi xảy ra. Vui lòng thử lại sau.', 'error');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Check authentication status on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    window.location.href = data.redirect;
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
         }
 
         // Social login handlers
@@ -629,12 +772,13 @@
             btn.addEventListener('click', function() {
                 const provider = this.classList.contains('google') ? 'Google' :
                                this.classList.contains('facebook') ? 'Facebook' : 'GitHub';
-                alert('Đăng nhập với ' + provider + ' sẽ được triển khai sớm!');
+                showAlert('Đăng nhập với ' + provider + ' sẽ được triển khai sớm!', 'info');
             });
         });
 
         // Initialize
         createParticles();
+        checkAuth();
     </script>
 </body>
 </html>
