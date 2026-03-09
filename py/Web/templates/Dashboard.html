@@ -1946,6 +1946,39 @@ tr:hover {
   border: 1px solid rgba(74,158,255,0.3);
 }
 
+/* Logout Button */
+.logout-btn {
+  width: 100%;
+  padding: 10px 15px;
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 82, 82, 0.3);
+}
+
+.logout-btn:hover {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.5);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+.logout-btn i {
+  font-size: 16px;
+}
+
 </style>
 </head>
 
@@ -2052,7 +2085,7 @@ tr:hover {
       <span>Tài xế</span>
     </div>
 
-    <div class="menu-section">📡 Giám sát &  🔔Thông báo</div>
+    <div class="menu-section">📡 Giám sát </div>
     <div class="menu-item" data-page="ai-warnings">
       <i class="fa-solid fa-triangle-exclamation"></i>
       <span>Cảnh báo AI</span>
@@ -2064,11 +2097,21 @@ tr:hover {
     </div>
 
 
-    <div class="menu-section">📈 Báo cáo & Thống kê</div>
+    <div class="menu-section">📈 Báo cáo </div>
     <div class="menu-item" data-page="statistics">
       <i class="fa-solid fa-chart-column"></i>
       <span>Thống kê và phân tích</span>
     </div>
+
+
+    <div class="menu-item" data-page="statistics">
+ <button class="logout-btn" onclick="logout()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Đăng xuất</span>
+    </button>    </div>
+
+
+    
     
 
   </div>
@@ -5510,7 +5553,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAdminAlertsData();
   loadNotificationsData();
   loadNotificationHistoryData();
-  
+
   // Show quick actions on hover near top-left
   document.addEventListener('mousemove', (e) => {
     if (e.clientX < 300 && e.clientY < 100 && e.clientY > 60) {
@@ -5520,6 +5563,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// ==================== LOGOUT FUNCTION ====================
+function logout() {
+  fetch('/api/logout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      window.location.href = '/login';
+    } else {
+      alert('Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.');
+    }
+  })
+  .catch(error => {
+    console.error('Logout error:', error);
+    alert('Không thể kết nối máy chủ. Vui lòng thử lại sau.');
+  });
+}
 
 // ==================== KEYBOARD SHORTCUTS ====================
 document.addEventListener('keydown', (e) => {
