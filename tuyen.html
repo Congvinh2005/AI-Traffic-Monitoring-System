@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Tuyến - AI Traffic Monitor</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root {
+  --sidebar-bg: #212E41;
+  --sidebar-hover: #2a3852;
+  --sidebar-active: #2F394F;
+  --header-bg: #1B2338;
+  --bg-main: #151C2C;
+  --bg-card: #1e2a40;
+  --bg-card-alt: #253550;
+  --bg-input: #2a3852;
+  --text-primary: #e8e8e8;
+  --text-secondary: #b0b0b0;
+  --text-muted: #757575;
+  --accent: #4a9eff;
+  --accent-hover: #3a8eef;
+  --success: #00c853;
+  --warning: #ffc107;
+  --danger: #ff5252;
+  --border-color: #2d3e5a;
+  --shadow: 0 4px 15px rgba(0,0,0,0.4);
+  --transition: all 0.3s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  background: var(--sidebar-bg);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-logo i {
+  font-size: 28px;
+  color: var(--accent);
+  animation: pulse 2s infinite;
+}
+
+.sidebar-logo span {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.sidebar-menu {
+  padding: 15px 10px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  margin-bottom: 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.menu-item:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+.menu-item.active {
+  background: var(--sidebar-active);
+  color: var(--accent);
+}
+
+.menu-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.menu-section {
+  padding: 10px 15px 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 15px;
+}
+
+.sidebar-footer {
+  padding: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--sidebar-hover);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sidebar-user:hover {
+  background: var(--sidebar-active);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #2a7eff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.user-info { flex: 1; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.user-role { font-size: 11px; color: var(--text-muted); }
+
+/* ===== HEADER ===== */
+.header {
+  background: var(--header-bg);
+  color: var(--text-primary);
+  padding: 12px 25px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  margin-left: 260px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.search-box { position: relative; }
+
+.search-box input {
+  padding: 8px 15px 8px 35px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 200px;
+  transition: var(--transition);
+}
+
+.search-box input:focus {
+  background: var(--bg-card);
+  outline: none;
+  width: 250px;
+  border-color: var(--accent);
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.notification {
+  position: relative;
+  cursor: pointer;
+  font-size: 18px;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.notification:hover {
+  transform: scale(1.1);
+  color: var(--text-primary);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.header-spacer { flex: 1; }
+
+.sidebar-toggle {
+  display: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-right: 15px;
+}
+
+/* ===== CONTAINER ===== */
+.container {
+  padding: 12px;
+  max-width: 100%;
+  margin-left: 260px;
+  margin-top: 0;
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+}
+
+body.dark-mode .page-title {
+  color: var(--primary-light);
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.4);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+}
+
+body.dark-mode .btn-outline {
+  border-color: var(--primary-light);
+  color: var(--primary-light);
+}
+
+.btn-outline:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* ===== STATS ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  border-left: 4px solid var(--accent);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.stat-card.success { border-left-color: var(--success); }
+.stat-card.warning { border-left-color: var(--warning); }
+.stat-card.danger { border-left-color: var(--danger); }
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.stat-icon.blue { background: rgba(74, 158, 255, 0.15); color: var(--accent); }
+.stat-icon.green { background: rgba(0, 200, 83, 0.15); color: var(--success); }
+.stat-icon.orange { background: rgba(255, 193, 7, 0.15); color: var(--warning); }
+.stat-icon.red { background: rgba(255, 82, 82, 0.15); color: var(--danger); }
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ===== LAYOUT ===== */
+.routes-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 20px;
+}
+
+/* ===== MAP SECTION ===== */
+.map-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.map-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.map-container {
+  height: 500px;
+}
+
+.map-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ===== ROUTE LIST ===== */
+.route-list-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+}
+
+.list-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.list-search {
+  position: relative;
+}
+
+.list-search input {
+  padding: 8px 15px 8px 35px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  width: 200px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.list-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.list-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.route-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 10px;
+}
+
+.route-item {
+  background: var(--bg-card-alt);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid transparent;
+}
+
+.route-item:hover {
+  border-color: var(--accent);
+  transform: translateX(5px);
+}
+
+.route-item.active {
+  border-color: var(--accent);
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.route-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.route-code {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(26, 35, 126, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+body.dark-mode .route-code {
+  background: rgba(26, 35, 126, 0.3);
+}
+
+.route-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-active {
+  background: rgba(0, 200, 83, 0.15);
+  color: var(--success);
+}
+
+.status-pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ff8f00;
+}
+
+.route-name {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-light);
+}
+
+body.dark-mode .route-name {
+  color: var(--text-dark);
+}
+
+.route-points {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.point {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.point-start {
+  color: var(--success);
+}
+
+.point-end {
+  color: var(--danger);
+}
+
+.route-arrow {
+  color: #999;
+}
+
+.route-info {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: #777;
+}
+
+.route-info-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+body.dark-mode .route-info {
+  color: #aaa;
+}
+
+.route-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.route-actions .btn {
+  flex: 1;
+  justify-content: center;
+  padding: 6px;
+  font-size: 11px;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--card-light);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: modalSlide 0.3s ease;
+}
+
+body.dark-mode .modal {
+  background: var(--card-dark);
+}
+
+@keyframes modalSlide {
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+body.dark-mode .modal-header {
+  border-color: rgba(255,255,255,0.1);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+}
+
+.modal-close:hover {
+  color: var(--text-light);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-light);
+}
+
+body.dark-mode .form-label {
+  color: var(--text-dark);
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--card-light);
+  color: var(--text-light);
+}
+
+body.dark-mode .form-input,
+body.dark-mode .form-select {
+  background: var(--card-dark);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text-dark);
+}
+
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+body.dark-mode .modal-footer {
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--card-light);
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--primary);
+}
+
+body.dark-mode .toast {
+  background: var(--card-dark);
+}
+
+.toast.success { border-left-color: var(--success); }
+.toast.warning { border-left-color: var(--warning); }
+.toast.danger { border-left-color: var(--danger); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .routes-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .route-list-section {
+    max-height: none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <i class="fa-solid fa-traffic-light"></i>
+    <span>AI Traffic</span>
+  </div>
+  
+  <div class="sidebar-menu">
+    <div class="menu-section">Chính</div>
+    <a href="/dashboard" class="menu-item">
+      <i class="fa-solid fa-gauge"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="/vehicles" class="menu-item">
+      <i class="fa-solid fa-car"></i>
+      <span>Xe</span>
+    </a>
+    <a href="/routes" class="menu-item active">
+      <i class="fa-solid fa-route"></i>
+      <span>Tuyến</span>
+    </a>
+    <a href="/drivers" class="menu-item">
+      <i class="fa-solid fa-users"></i>
+      <span>Tài xế</span>
+    </a>
+    
+    <div class="menu-section">Giám sát</div>
+    <a href="#" class="menu-item">
+      <i class="fa-solid fa-video"></i>
+      <span>Camera</span>
+    </a>
+    <a href="#" class="menu-item">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span>Bản đồ</span>
+    </a>
+    <a href="#" class="menu-item">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Cảnh báo</span>
+    </a>
+    
+    <div class="menu-section">Báo cáo</div>
+    <a href="/reports" class="menu-item">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Thống kê</span>
+    </a>
+    <a href="#" class="menu-item">
+      <i class="fa-solid fa-file-export"></i>
+      <span>Xuất dữ liệu</span>
+    </a>
+  </div>
+  
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">AD</div>
+      <div class="user-info">
+        <div class="user-name">Admin</div>
+        <div class="user-role">Quản trị viên</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fa-solid fa-bars"></i>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-right">
+    <div class="search-box">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" placeholder="Tìm kiếm...">
+    </div>
+    <div class="notification" onclick="showNotifications()">
+      <i class="fa-solid fa-bell"></i>
+      <span class="notification-badge">5</span>
+    </div>
+    <div class="avatar" style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #2a7eff); display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: var(--transition);">AD</div>
+  </div>
+</div>
+
+<!-- CONTAINER -->
+<div class="container">
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-title">
+    <i class="fa-solid fa-route"></i>
+    <span>Quản lý Tuyến đường</span>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-outline" onclick="exportRoutes()">
+      <i class="fa-solid fa-file-export"></i> Xuất Excel
+    </button>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <i class="fa-solid fa-plus"></i> Thêm tuyến mới
+    </button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid">
+  <div class="stat-card success">
+    <div class="stat-icon green">
+      <i class="fa-solid fa-road"></i>
+    </div>
+    <div class="stat-value" id="activeRoutes">28</div>
+    <div class="stat-label">Tuyến đang hoạt động</div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <i class="fa-solid fa-map"></i>
+    </div>
+    <div class="stat-value" id="totalRoutes">35</div>
+    <div class="stat-label">Tổng số tuyến</div>
+  </div>
+  
+  <div class="stat-card warning">
+    <div class="stat-icon orange">
+      <i class="fa-solid fa-clock"></i>
+    </div>
+    <div class="stat-value" id="avgDuration">45</div>
+    <div class="stat-label">Thời gian TB (phút)</div>
+  </div>
+  
+  <div class="stat-card success">
+    <div class="stat-icon blue">
+      <i class="fa-solid fa-users"></i>
+    </div>
+    <div class="stat-value" id="todayPassengers">1,247</div>
+    <div class="stat-label">Hành khách hôm nay</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="routes-layout">
+
+<!-- MAP -->
+<div class="map-section">
+  <div class="map-header">
+    <div class="map-title">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span>Bản đồ tuyến đường</span>
+    </div>
+    <button class="btn btn-outline" onclick="toggleTraffic()">
+      <i class="fa-solid fa-traffic-light"></i> Giao thông
+    </button>
+  </div>
+  <div class="map-container">
+    <iframe 
+      src="https://maps.google.com/maps?q=21.028511,105.854164&z=12&output=embed"
+      allowfullscreen>
+    </iframe>
+  </div>
+</div>
+
+<!-- ROUTE LIST -->
+<div class="route-list-section">
+  <div class="list-header">
+    <div class="list-title">
+      <i class="fa-solid fa-list"></i>
+      <span>Danh sách tuyến</span>
+    </div>
+    <div class="list-search">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" placeholder="Tìm tuyến..." id="routeSearch">
+    </div>
+  </div>
+  
+  <div class="route-list" id="routeList">
+    
+    <!-- Route 1 -->
+    <div class="route-item active" onclick="selectRoute(this)">
+      <div class="route-header">
+        <span class="route-code">T001</span>
+        <span class="route-status status-active">Hoạt động</span>
+      </div>
+      <div class="route-name">Mỹ Đình - Hải Phòng</div>
+      <div class="route-points">
+        <span class="point point-start">
+          <i class="fa-solid fa-circle-dot"></i> Bến xe Mỹ Đình
+        </span>
+        <span class="route-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        <span class="point point-end">
+          <i class="fa-solid fa-location-dot"></i> Bến xe Hải Phòng
+        </span>
+      </div>
+      <div class="route-info">
+        <span class="route-info-item">
+          <i class="fa-solid fa-ruler-horizontal"></i> 102 km
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-clock"></i> 120 phút
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-bus"></i> 12 xe/ngày
+        </span>
+      </div>
+      <div class="route-actions">
+        <button class="btn btn-primary" onclick="viewRoute('T001')">
+          <i class="fa-solid fa-eye"></i> Xem
+        </button>
+        <button class="btn btn-outline" onclick="editRoute('T001')">
+          <i class="fa-solid fa-pen"></i> Sửa
+        </button>
+      </div>
+    </div>
+
+    <!-- Route 2 -->
+    <div class="route-item" onclick="selectRoute(this)">
+      <div class="route-header">
+        <span class="route-code">T002</span>
+        <span class="route-status status-active">Hoạt động</span>
+      </div>
+      <div class="route-name">Nội Bài - Trung tâm Hà Nội</div>
+      <div class="route-points">
+        <span class="point point-start">
+          <i class="fa-solid fa-circle-dot"></i> Sân bay Nội Bài
+        </span>
+        <span class="route-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        <span class="point point-end">
+          <i class="fa-solid fa-location-dot"></i> Hồ Hoàn Kiếm
+        </span>
+      </div>
+      <div class="route-info">
+        <span class="route-info-item">
+          <i class="fa-solid fa-ruler-horizontal"></i> 28 km
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-clock"></i> 45 phút
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-taxi"></i> 45 xe/ngày
+        </span>
+      </div>
+      <div class="route-actions">
+        <button class="btn btn-primary" onclick="viewRoute('T002')">
+          <i class="fa-solid fa-eye"></i> Xem
+        </button>
+        <button class="btn btn-outline" onclick="editRoute('T002')">
+          <i class="fa-solid fa-pen"></i> Sửa
+        </button>
+      </div>
+    </div>
+
+    <!-- Route 3 -->
+    <div class="route-item" onclick="selectRoute(this)">
+      <div class="route-header">
+        <span class="route-code">T003</span>
+        <span class="route-status status-active">Hoạt động</span>
+      </div>
+      <div class="route-name">Hồ Tây - Lăng Bác</div>
+      <div class="route-points">
+        <span class="point point-start">
+          <i class="fa-solid fa-circle-dot"></i> Hồ Tây
+        </span>
+        <span class="route-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        <span class="point point-end">
+          <i class="fa-solid fa-location-dot"></i> Lăng Chủ tịch
+        </span>
+      </div>
+      <div class="route-info">
+        <span class="route-info-item">
+          <i class="fa-solid fa-ruler-horizontal"></i> 8 km
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-clock"></i> 25 phút
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-car"></i> 28 xe/ngày
+        </span>
+      </div>
+      <div class="route-actions">
+        <button class="btn btn-primary" onclick="viewRoute('T003')">
+          <i class="fa-solid fa-eye"></i> Xem
+        </button>
+        <button class="btn btn-outline" onclick="editRoute('T003')">
+          <i class="fa-solid fa-pen"></i> Sửa
+        </button>
+      </div>
+    </div>
+
+    <!-- Route 4 -->
+    <div class="route-item" onclick="selectRoute(this)">
+      <div class="route-header">
+        <span class="route-code">T004</span>
+        <span class="route-status status-pending">Chờ duyệt</span>
+      </div>
+      <div class="route-name">Cầu Giấy - Long Biên</div>
+      <div class="route-points">
+        <span class="point point-start">
+          <i class="fa-solid fa-circle-dot"></i> Cầu Giấy
+        </span>
+        <span class="route-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        <span class="point point-end">
+          <i class="fa-solid fa-location-dot"></i> Long Biên
+        </span>
+      </div>
+      <div class="route-info">
+        <span class="route-info-item">
+          <i class="fa-solid fa-ruler-horizontal"></i> 15 km
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-clock"></i> 35 phút
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-truck"></i> 8 xe/ngày
+        </span>
+      </div>
+      <div class="route-actions">
+        <button class="btn btn-primary" onclick="viewRoute('T004')">
+          <i class="fa-solid fa-eye"></i> Xem
+        </button>
+        <button class="btn btn-outline" onclick="editRoute('T004')">
+          <i class="fa-solid fa-pen"></i> Sửa
+        </button>
+      </div>
+    </div>
+
+    <!-- Route 5 -->
+    <div class="route-item" onclick="selectRoute(this)">
+      <div class="route-header">
+        <span class="route-code">T005</span>
+        <span class="route-status status-active">Hoạt động</span>
+      </div>
+      <div class="route-name">Nhà hát lớn - Bát Tràng</div>
+      <div class="route-points">
+        <span class="point point-start">
+          <i class="fa-solid fa-circle-dot"></i> Nhà hát lớn
+        </span>
+        <span class="route-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        <span class="point point-end">
+          <i class="fa-solid fa-location-dot"></i> Làng gốm Bát Tràng
+        </span>
+      </div>
+      <div class="route-info">
+        <span class="route-info-item">
+          <i class="fa-solid fa-ruler-horizontal"></i> 18 km
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-clock"></i> 40 phút
+        </span>
+        <span class="route-info-item">
+          <i class="fa-solid fa-van-shuttle"></i> 15 xe/ngày
+        </span>
+      </div>
+      <div class="route-actions">
+        <button class="btn btn-primary" onclick="viewRoute('T005')">
+          <i class="fa-solid fa-eye"></i> Xem
+        </button>
+        <button class="btn btn-outline" onclick="editRoute('T005')">
+          <i class="fa-solid fa-pen"></i> Sửa
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<!-- ADD ROUTE MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-plus-circle"></i> Thêm tuyến mới
+      </div>
+      <button class="modal-close" onclick="closeAddModal()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Mã tuyến</label>
+          <input type="text" class="form-input" placeholder="VD: T006">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tên tuyến</label>
+          <input type="text" class="form-input" placeholder="VD: Giáp Bát - Mỹ Đình">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Điểm đón</label>
+        <input type="text" class="form-input" placeholder="Địa chỉ điểm đón">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Điểm trả</label>
+        <input type="text" class="form-input" placeholder="Địa chỉ điểm trả">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quãng đường (km)</label>
+          <input type="number" class="form-input" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Thời gian TB (phút)</label>
+          <input type="number" class="form-input" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Số xe/ngày</label>
+          <input type="number" class="form-input" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trạng thái</label>
+          <select class="form-select">
+            <option>Hoạt động</option>
+            <option>Chờ duyệt</option>
+            <option>Tạm dừng</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAddModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="saveRoute()">
+        <i class="fa-solid fa-save"></i> Lưu tuyến
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ===== SIDEBAR TOGGLE ===== */
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+}
+
+/* ===== NAVIGATION ===== */
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ===== TOAST ===== */
+function showToast(type, title, message) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icons = { success: 'fa-check-circle', warning: 'fa-exclamation-triangle', danger: 'fa-times-circle', info: 'fa-info-circle' };
+
+  toast.innerHTML = `
+    <div class="toast-icon"><i class="fa-solid ${icons[type]}"></i></div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-times"></i></div>
+  `;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function showNotifications() {
+  showToast('info', 'Thông báo', 'Bạn có 5 cảnh báo chưa xem');
+}
+
+/* ===== MODAL ===== */
+function openAddModal() {
+  document.getElementById('addModal').classList.add('active');
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('active');
+}
+
+function saveRoute() {
+  showToast('success', 'Thành công', 'Đã thêm tuyến mới vào hệ thống');
+  closeAddModal();
+}
+
+/* ===== ROUTE ACTIONS ===== */
+function selectRoute(element) {
+  document.querySelectorAll('.route-item').forEach(item => item.classList.remove('active'));
+  element.classList.add('active');
+}
+
+function viewRoute(code) {
+  showToast('info', 'Thông tin tuyến', `Đang xem chi tiết tuyến ${code}`);
+}
+
+function editRoute(code) {
+  showToast('info', 'Chỉnh sửa', `Đang chỉnh sửa tuyến ${code}`);
+}
+
+function exportRoutes() {
+  showToast('success', 'Xuất file', 'Đang xuất danh sách tuyến ra Excel...');
+}
+
+function toggleTraffic() {
+  showToast('info', 'Bản đồ', 'Đã bật lớp giao thông');
+}
+
+/* ===== SEARCH ===== */
+document.getElementById('routeSearch').addEventListener('input', function(e) {
+  const search = e.target.value.toLowerCase();
+  document.querySelectorAll('.route-item').forEach(item => {
+    const name = item.querySelector('.route-name').textContent.toLowerCase();
+    const code = item.querySelector('.route-code').textContent.toLowerCase();
+    item.style.display = (name.includes(search) || code.includes(search)) ? '' : 'none';
+  });
+});
+
+/* ===== ANIMATE STATS ===== */
+function animateValue(id, start, end, duration) {
+  const obj = document.getElementById(id);
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    obj.innerHTML = Math.floor(progress * (end - start) + start);
+    if (progress < 1) window.requestAnimationFrame(step);
+  };
+  window.requestAnimationFrame(step);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  animateValue('activeRoutes', 0, 28, 1000);
+  setTimeout(() => animateValue('totalRoutes', 0, 35, 1000), 200);
+  setTimeout(() => animateValue('avgDuration', 0, 45, 1000), 400);
+  setTimeout(() => animateValue('todayPassengers', 0, 1247, 1000), 600);
+});
+</script>
+
+</body>
+</html>

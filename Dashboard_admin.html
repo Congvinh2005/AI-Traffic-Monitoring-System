@@ -1,0 +1,2812 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Traffic Monitor - Dashboard</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root {
+  --sidebar-bg: #212E41;
+  --sidebar-hover: #2a3852;
+  --sidebar-active: #2F394F;
+  --header-bg: #1B2338;
+  --bg-main: #151C2C;
+  --bg-card: #1e2a40;
+  --bg-card-alt: #253550;
+  --bg-input: #2a3852;
+  --text-primary: #e8e8e8;
+  --text-secondary: #b0b0b0;
+  --text-muted: #757575;
+  --accent: #4a9eff;
+  --accent-hover: #3a8eef;
+  --success: #00c853;
+  --warning: #ffc107;
+  --danger: #ff5252;
+  --border-color: #2d3e5a;
+  --shadow: 0 4px 15px rgba(0,0,0,0.4);
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  transition: var(--transition);
+  overflow-x: hidden;
+}
+
+/* ===== LAYOUT WRAPPER ===== */
+.layout-wrapper {
+  display: grid;
+  grid-template-areas: 
+    "header header"
+    "sidebar main";
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  background: var(--bg-main);
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  /* padding: 20px; */
+  /* border-bottom: 1px solid var(--border-color); */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-logo i {
+  font-size: 28px;
+  color: var(--accent);
+  animation: pulse 2s infinite;
+}
+
+.sidebar-logo span {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.sidebar-menu {
+  padding: 15px 10px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  margin-bottom: 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.menu-item:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+.menu-item.active {
+  background: var(--sidebar-active);
+  color: var(--accent);
+}
+
+.menu-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.menu-section {
+  padding: 10px 15px 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 15px;
+}
+
+.sidebar-footer {
+  padding: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--sidebar-hover);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sidebar-user:hover {
+  background: var(--sidebar-active);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #2a7eff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-role {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===== HEADER ===== */
+.header {
+  grid-area: header;
+  background: var(--header-bg);
+  color: var(--text-primary);
+  padding: 12px 25px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  padding: 8px 15px 8px 35px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 200px;
+  transition: var(--transition);
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-box input:focus {
+  background: var(--bg-card);
+  outline: none;
+  width: 250px;
+  border-color: var(--accent);
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.notification {
+  position: relative;
+  cursor: pointer;
+  font-size: 18px;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.notification:hover {
+  transform: scale(1.1);
+  color: var(--text-primary);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+/* ===== MAIN CONTAINER ===== */
+.container {
+  grid-area: main;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+/* ===== KPI CARDS NEW ===== */
+.kpi-section {
+  margin-bottom: 15px;
+  max-width: 100%;
+}
+
+.kpi-grid-new {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.kpi-card-new {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: var(--transition);
+  border-left: 4px solid;
+}
+
+.kpi-card-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.kpi-card-new.border-green { border-left-color: #22c55e; }
+.kpi-card-new.border-blue { border-left-color: #3b82f6; }
+.kpi-card-new.border-orange { border-left-color: #f97316; }
+.kpi-card-new.border-red { border-left-color: #ef4444; }
+.kpi-card-new.border-emerald { border-left-color: #10b981; }
+
+.kpi-content-new {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kpi-label-new {
+  font-size: 11px;
+  color: #131314;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.kpi-value-new {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.kpi-value-new.text-orange { color: #f97316; }
+.kpi-value-new.text-red { color: #ef4444; }
+
+.kpi-sub-new {
+  font-size: 14px;
+  font-weight: normal;
+  color: #9ca3af;
+}
+
+.kpi-icon-new {
+  font-size: 32px;
+}
+
+.kpi-icon-new.text-green { color: #22c55e; }
+.kpi-icon-new.text-blue { color: #3b82f6; }
+.kpi-icon-new.text-orange { color: #f97316; }
+.kpi-icon-new.text-red { color: #ef4444; }
+.kpi-icon-new.text-emerald { color: #10b981; }
+
+/* Responsive for new KPI */
+@media (max-width: 1200px) {
+  .kpi-grid-new {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid-new {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== KPI CARDS OLD (keep for reference) ===== */
+
+/* ===== DASHBOARD GRID ===== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-grid-full {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+  max-width: 100%;
+  transition: var(--transition);
+}
+
+.dashboard-grid-full.map-expanded {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+}
+
+.dashboard-grid-full.map-expanded .map-section-full {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-grid-full.map-expanded .map-container-full {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ===== CAMERA SECTION FULL ===== */
+.camera-section-full {
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  transition: var(--transition);
+}
+
+.camera-grid-full {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.camera-grid-full .camera-item {
+  aspect-ratio: 16/9;
+  min-height: 80px;
+  transition: var(--transition);
+}
+
+/* Map Expanded Mode - Camera Minimized */
+.dashboard-grid-full.map-expanded .camera-section-full {
+  order: 2;
+}
+
+.dashboard-grid-full.map-expanded .camera-grid-full {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.dashboard-grid-full.map-expanded .camera-grid-full .camera-item {
+  aspect-ratio: 16/9;
+  min-height: 70px;
+}
+
+/* ===== MAP SECTION FULL ===== */
+.map-section-full {
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  transition: var(--transition);
+}
+
+.map-section-full.map-expanded {
+  order: 1;
+}
+
+.map-container-full {
+  flex: 1;
+  border-radius: 5px;
+  overflow: hidden;
+  min-height: 380px;
+  width: 100%;
+  transition: var(--transition);
+}
+
+.dashboard-grid-full.map-expanded .map-container-full {
+  min-height: 550px;
+}
+
+.map-container-full iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ===== CAMERA SECTION ===== */
+.camera-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.section-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.action-btn {
+  padding: 4px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: var(--transition);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.action-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.camera-item {
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid var(--border-color);
+}
+
+.camera-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  border-color: var(--accent);
+}
+
+.camera-item video,
+.camera-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.live-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--danger);
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.camera-status {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+/* ===== MAP SECTION ===== */
+.map-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  min-width: 450px;
+}
+
+.map-container {
+  flex: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 450px;
+  width: 100%;
+}
+
+.map-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.map-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.map-stat {
+  flex: 1;
+  background: var(--bg-card-alt);
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.map-stat strong {
+  display: block;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+/* ===== CHART SECTION ===== */
+.chart-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.chart-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.chart-tab {
+  padding: 6px 15px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.chart-tab.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.chart-tab:hover:not(.active) {
+  background: var(--bg-card-alt);
+  color: var(--text-primary);
+}
+
+.chart-container {
+  height: 250px;
+  position: relative;
+}
+
+/* ===== TABLE SECTION ===== */
+.table-section {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 100%;
+}
+
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 11px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.table-search {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 11px;
+  width: 150px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.search-btn {
+  padding: 5px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.reset-btn {
+  padding: 5px 12px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reset-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+th {
+  background: var(--bg-card-alt);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Column widths */
+th:nth-child(1),  /* STT */
+td:nth-child(1) { width: 45px; text-align: center; }
+
+th:nth-child(2),  /* Hình ảnh */
+td:nth-child(2) { width: 60px; text-align: center; }
+
+th:nth-child(3),  /* Biển số */
+td:nth-child(3) { width: 100px; }
+
+th:nth-child(4),  /* Loại xe */
+td:nth-child(4) { width: 80px; }
+
+th:nth-child(5),  /* Tài xế */
+td:nth-child(5) { width: 120px; }
+
+th:nth-child(6),  /* SĐT */
+td:nth-child(6) { width: 100px; }
+
+th:nth-child(7),  /* Vị trí */
+td:nth-child(7) { width: 120px; }
+
+th:nth-child(8),  /* Tuyến */
+td:nth-child(8) { width: 150px; }
+
+th:nth-child(9),  /* Thời gian */
+td:nth-child(9) { width: 110px; }
+
+th:nth-child(10), /* Trạng thái */
+td:nth-child(10) { width: 85px; text-align: center; }
+
+th:nth-child(11), /* Vi phạm AI */
+td:nth-child(11) { width: 120px; }
+
+th:nth-child(12), /* Điểm */
+td:nth-child(12) { width: 65px; text-align: center; }
+
+th:nth-child(13), /* Hành động */
+td:nth-child(13) { width: 260px; text-align: center; }
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+tr:hover {
+  background: var(--bg-card-alt);
+}
+
+.vehicle-img {
+  width: 45px;
+  height: 45px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.plate-number {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-running {
+  background: rgba(0, 200, 83, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(0, 200, 83, 0.3);
+}
+
+.status-stopped {
+  background: rgba(255, 193, 7, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-offline {
+  background: rgba(117, 117, 117, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(117, 117, 117, 0.3);
+}
+
+.violation-badge {
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 8px;
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--danger);
+  font-weight: 600;
+  border: 1px solid rgba(255, 82, 82, 0.3);
+}
+
+.score-badge {
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-block;
+  min-width: 35px;
+}
+
+.score-high {
+  background: rgba(0, 200, 83, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(0, 200, 83, 0.3);
+}
+
+.score-medium {
+  background: rgba(255, 193, 7, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.score-low {
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 3px;
+  flex-wrap: nowrap;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  justify-content: center;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.btn-action {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-action i {
+  font-size: 11px;
+}
+
+.btn-call {
+  background: rgba(0, 200, 83, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(0, 200, 83, 0.3);
+  min-width: 60px;
+}
+
+.btn-call:hover {
+  background: var(--success);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+}
+
+.btn-alert {
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  min-width: 60px;
+}
+
+.btn-alert:hover {
+  background: var(--danger);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
+}
+
+.btn-camera {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  min-width: 65px;
+}
+
+.btn-camera:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.btn-report {
+  background: rgba(117, 117, 117, 0.15);
+  color: var(--text-secondary);
+  border: 1px solid rgba(117, 117, 117, 0.3);
+  min-width: 60px;
+}
+
+.btn-report:hover {
+  background: #757575;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(117, 117, 117, 0.3);
+}
+
+/* Responsive for action buttons */
+@media (max-width: 1200px) {
+  .btn-action {
+    padding: 3px 5px;
+    font-size: 8px;
+    min-width: 45px;
+  }
+
+  .btn-action span {
+    display: none;
+  }
+
+  .btn-action i {
+    font-size: 14px;
+  }
+
+  .btn-call,
+  .btn-alert,
+  .btn-camera,
+  .btn-report {
+    min-width: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .btn-action {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 6px 10px;
+  }
+
+  .btn-action span {
+    display: inline;
+  }
+}
+
+/* ===== PAGINATION ===== */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.pagination-info {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: 3px;
+}
+
+.page-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: var(--transition);
+  color: var(--text-primary);
+}
+
+.page-btn:hover,
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .dashboard-grid,
+  .dashboard-grid-full {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid-full.map-expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .map-section,
+  .map-section-full {
+    min-height: 300px;
+    min-width: auto;
+  }
+
+  .map-container-full {
+    min-height: 320px;
+  }
+
+  .dashboard-grid-full.map-expanded .map-container-full {
+    min-height: 480px;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-wrapper {
+    grid-template-areas: 
+      "header"
+      "main";
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: var(--transition);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .header {
+    margin-left: 0;
+  }
+
+  .container {
+    margin-left: 0;
+    padding: 8px;
+  }
+
+  .search-box input {
+    width: 120px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .camera-grid,
+  .camera-grid-full {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid-full.map-expanded .camera-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-grid-full.map-expanded .camera-grid-full .camera-item {
+    min-height: 80px;
+  }
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sidebar-hover);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* ===== TOAST NOTIFICATION ===== */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--bg-card);
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--accent);
+  border: 1px solid var(--border-color);
+}
+
+.toast.warning { border-left-color: var(--warning); }
+.toast.danger { border-left-color: var(--danger); }
+.toast.success { border-left-color: var(--success); }
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-icon {
+  font-size: 20px;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.toast-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.toast-close {
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.toast-close:hover {
+  color: var(--text-primary);
+}
+
+/* ===== SIDEBAR TOGGLE (MOBILE) ===== */
+.sidebar-toggle {
+  display: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-right: 15px;
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: block;
+  }
+}
+
+/* ===== CHAT WIDGET ===== */
+#chatWidget {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 350px;
+  height: 450px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  z-index: 999;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #0056b3, #003d80);
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header-title { font-weight: bold; font-size: 16px; }
+.chat-header-sub { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+.chat-close { cursor: pointer; font-size: 20px; }
+
+.chat-body {
+  flex: 1;
+  padding: 15px;
+  background: #f9f9f9;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg-system {
+  background: #e9ecef;
+  color: #333;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  max-width: 85%;
+  align-self: flex-start;
+}
+
+.msg-user {
+  background: var(--accent);
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  max-width: 85%;
+  align-self: flex-end;
+}
+
+.chat-footer {
+  padding: 10px;
+  border-top: 1px solid #eee;
+  background: white;
+  display: flex;
+  align-items: center;
+}
+
+.chat-input {
+  flex: 1;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 5px;
+  background: #f1f2f6;
+  outline: none;
+  color: #333;
+}
+
+.chat-send-btn {
+  background: #0056b3;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  margin-left: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== FLOATING BUTTONS ===== */
+#chatToggleBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  background: #0056b3;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  z-index: 998;
+  font-size: 24px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+#chatToggleBtn:hover {
+  background: #007bff;
+  transform: scale(1.1);
+}
+
+#voiceToggleBtn {
+  position: fixed;
+  bottom: 90px;
+  left: 20px;
+  width: 55px;
+  height: 55px;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(220,53,69,0.4);
+  z-index: 998;
+  font-size: 22px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+#voiceToggleBtn:hover {
+  background: linear-gradient(135deg, #e74c3c, #dc3545);
+  transform: scale(1.1);
+}
+
+#voiceToggleBtn.listening {
+  animation: pulseFast 0.5s infinite;
+  background: linear-gradient(135deg, #28a745, #218838);
+}
+
+@keyframes pulseFast {
+  0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.7); }
+  50% { box-shadow: 0 0 0 10px rgba(40,167,69,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+}
+
+/* ===== AI ALERTS PANEL ===== */
+#aiAlertsPanel {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  width: 320px;
+  max-height: 400px;
+  background: var(--bg-card);
+  border-radius: 10px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  z-index: 997;
+  display: none;
+  border: 1px solid var(--border-color);
+}
+
+.alerts-header {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 10px 10px 0 0;
+}
+
+.alerts-title { font-weight: bold; font-size: 14px; }
+.alerts-close { cursor: pointer; font-size: 18px; }
+
+.alerts-body {
+  padding: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.alert-item {
+  background: rgba(255, 193, 7, 0.15);
+  border-left: 4px solid #ffc107;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  animation: slideIn 0.3s ease-out;
+  color: var(--text-primary);
+}
+
+.alert-item.critical {
+  background: rgba(220, 53, 69, 0.15);
+  border-left-color: #dc3545;
+}
+
+.alert-item.warning {
+  background: rgba(255, 193, 7, 0.15);
+  border-left-color: #ffc107;
+}
+
+.alert-item.info {
+  background: rgba(23, 162, 184, 0.15);
+  border-left-color: #17a2b8;
+}
+
+.alert-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+/* ===== VOICE SUGGESTIONS ===== */
+#voiceSuggestions {
+  position: fixed;
+  bottom: 160px;
+  left: 20px;
+  width: 280px;
+  background: var(--bg-card);
+  border-radius: 10px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  z-index: 996;
+  display: none;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.suggestion-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.suggestion-item {
+  background: var(--bg-input);
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: var(--text-primary);
+}
+
+.suggestion-item:hover { background: var(--sidebar-hover); }
+.suggestion-item i { margin-right: 8px; color: var(--accent); }
+</style>
+</head>
+
+<body>
+
+<!-- ===== LAYOUT WRAPPER ===== -->
+<div class="layout-wrapper">
+  <!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fa-solid fa-bars"></i>
+  </div>
+   <div class="sidebar-logo">
+    <span>🚦 AI Traffic Monitoring UTT</span>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-right">
+    <button class="action-btn" onclick="toggleAlertsPanel(true)">
+      <i class="fa-solid fa-bell"></i> Cảnh Báo AI
+    </button>
+    <button class="action-btn" onclick="location.reload()">
+      <i class="fa-solid fa-refresh"></i> Làm Mới
+    </button>
+    <div class="search-box">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" placeholder="Tìm biển số, tài xế...">
+    </div>
+    <div class="notification" onclick="showNotifications()">
+      <i class="fa-solid fa-bell"></i>
+      <span class="notification-badge">5</span>
+    </div>
+    <span>Admin</span>
+
+    <div class="avatar" title="Admin" style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #2a7eff); display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: var(--transition);">AD</div>
+  </div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+ 
+  
+  <div class="sidebar-menu">
+    <div class="menu-section">Chính</div>
+    <div class="menu-item active">
+      <i class="fa-solid fa-gauge"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="menu-item">
+      <i class="fa-solid fa-car"></i>
+      <span>Xe</span>
+    </div>
+    <div class="menu-item">
+      <i class="fa-solid fa-route"></i>
+      <span>Tuyến</span>
+    </div>
+    <div class="menu-item">
+      <i class="fa-solid fa-users"></i>
+      <span>Tài xế</span>
+    </div>
+    
+    <div class="menu-section">Giám sát</div>
+    <!-- <div class="menu-item">
+      <i class="fa-solid fa-video"></i>
+      <span>Giám sát AI</span>
+    </div> -->
+    <div class="menu-item">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span>Phân tích an toàn</span>
+    </div>
+    <div class="menu-item">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Cảnh báo</span>
+    </div>
+    
+    <div class="menu-section">Báo cáo</div>
+    <div class="menu-item">
+      <i class="fa-solid fa-video"></i>
+      <span>Báo cáo vi phạm</span>
+    </div>
+     <div class="menu-item">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Thống kê</span>
+    </div>
+   
+  </div>
+<!--   
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">AD</div>
+      <div class="user-info">
+        <div class="user-name">Admin</div>
+        <div class="user-role">Quản trị viên</div>
+      </div>
+    </div>
+  </div> -->
+</div>
+
+
+
+<!-- ===== MAIN CONTAINER ===== -->
+<div class="container">
+
+<!-- ===== KPI CARDS ===== -->
+<div class="kpi-section">
+  <div class="kpi-grid-new">
+
+    <div class="kpi-card-new border-green">
+      <div class="kpi-content-new">
+        <i class="fas fa-car kpi-icon-new text-green"></i>
+        <div>
+          <p class="kpi-label-new">Xe hoạt động</p>
+          <h3 class="kpi-value-new" id="vehicleCount">48</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card-new border-blue">
+      <div class="kpi-content-new">
+        <i class="fas fa-paper-plane kpi-icon-new text-blue"></i>
+        <div>
+          <p class="kpi-label-new">Chuyến hôm nay</p>
+          <h3 class="kpi-value-new" id="tripCount">124</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card-new border-orange">
+      <div class="kpi-content-new">
+        <i class="fas fa-exclamation-triangle kpi-icon-new text-orange"></i>
+        <div>
+          <p class="kpi-label-new">Cảnh báo AI</p>
+          <h3 class="kpi-value-new text-orange" id="alertCount">5</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card-new border-red">
+      <div class="kpi-content-new">
+        <i class="fas fa-ban kpi-icon-new text-red"></i>
+        <div>
+          <p class="kpi-label-new">Vi phạm</p>
+          <h3 class="kpi-value-new text-red" id="violationCount">4</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card-new border-emerald">
+      <div class="kpi-content-new">
+        <i class="fas fa-shield-alt kpi-icon-new text-emerald"></i>
+        <div>
+          <p class="kpi-label-new">Điểm an toàn</p>
+          <h3 class="kpi-value-new">86 <span class="kpi-sub-new">/100</span></h3>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== DASHBOARD GRID ===== -->
+<div class="dashboard-grid-full map-expanded">
+
+<!-- ===== CAMERA SECTION ===== -->
+<div class="camera-section-full">
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fa-solid fa-video"></i>
+      <span>Giám sát Camera</span>
+    </div>
+    <div class="section-actions">
+      <button class="action-btn" onclick="expandCameras()">
+        <i class="fa-solid fa-compress"></i> Thu nhỏ
+      </button>
+      <button class="action-btn" onclick="refreshCameras()">
+        <i class="fa-solid fa-rotate-right"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="camera-grid-full">
+
+    <div class="camera-item">
+      <div class="camera-overlay">
+        <span class="live-indicator"></span>
+        Camera Tài Xế
+      </div>
+      <video autoplay muted loop playsinline>
+        <source src="/py/video_input/lech_lan.mp4" type="video/mp4">
+      </video>
+      <div class="camera-status">
+        <i class="fa-solid fa-wifi"></i> Online
+      </div>
+    </div>
+
+    <div class="camera-item">
+      <div class="camera-overlay">
+        <span class="live-indicator"></span>
+        Camera Trước
+      </div>
+      <video autoplay muted loop playsinline>
+        <source src="/py/video_input/car4.mp4" type="video/mp4">
+      </video>
+      <div class="camera-status">
+        <i class="fa-solid fa-wifi"></i> Online
+      </div>
+    </div>
+
+    <div class="camera-item">
+      <div class="camera-overlay">
+        <span class="live-indicator"></span>
+        Camera Khách
+      </div>
+      <video autoplay muted loop playsinline>
+        <source src="/py/video_input/car2.mp4" type="video/mp4">
+      </video>
+      <div class="camera-status">
+        <i class="fa-solid fa-wifi"></i> Online
+      </div>
+    </div>
+
+    <div class="camera-item">
+      <div class="camera-overlay">
+        <span class="live-indicator"></span>
+        Camera Lùi
+      </div>
+      <video autoplay muted loop playsinline>
+        <source src="/py/video_input/car1.mp4" type="video/mp4">
+      </video>
+      <div class="camera-status">
+        <i class="fa-solid fa-wifi"></i> Online
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== MAP SECTION ===== -->
+<div class="map-section-full">
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span>Bản đồ hoạt động</span>
+    </div>
+    <div class="section-actions">
+      <button class="action-btn" onclick="toggleTrafficLayer()"><i class="fa-solid fa-traffic-light"></i> Giao thông</button>
+      <button class="action-btn" onclick="refreshMap()"><i class="fa-solid fa-rotate-right"></i> Làm mới</button>
+    </div>
+  </div>
+
+  <div class="map-container-full" id="map" style="height: 500px; border-radius: 8px; width: 100%;"></div>
+
+  
+</div>
+
+</div>
+
+<!-- ===== TABLE SECTION ===== -->
+<div class="table-section">
+  <div class="section-header" style="margin-bottom: 15px;">
+    <div class="section-title">
+      <i class="fa-solid fa-truck"></i>
+      <span>Danh sách chuyến đang chạy</span>
+    </div>
+    <button class="action-btn" onclick="exportTable()">
+      <i class="fa-solid fa-file-export"></i> Xuất Excel
+    </button>
+  </div>
+  
+  <div class="table-controls">
+    <div class="filter-group">
+      <select class="filter-select" id="statusFilter">
+        <option value="all">Tất cả trạng thái</option>
+        <option value="running">Đang chạy</option>
+        <option value="stopped">Đã dừng</option>
+        <option value="offline">Offline</option>
+      </select>
+      <select class="filter-select" id="violationFilter">
+        <option value="all">Tất cả vi phạm</option>
+        <option value="phone">Dùng điện thoại</option>
+        <option value="seatbelt">Không thắt dây</option>
+        <option value="drowsy">Buồn ngủ</option>
+        <option value="lane">Lệch làn</option>
+      </select>
+    </div>
+    <div class="table-search">
+      <input type="text" class="search-input" id="searchPlate" placeholder="🔍 Biển số xe..." style="width: 150px;">
+      <input type="text" class="search-input" id="searchDriver" placeholder="👤 Tài xế..." style="width: 150px;">
+      <button class="search-btn" onclick="searchVehicle()">
+        <i class="fa-solid fa-search"></i> Tìm
+      </button>
+      <button class="reset-btn" onclick="resetSearch()">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Hình ảnh</th>
+          <th>Biển số</th>
+          <th>Loại xe</th>
+          <th>Tài xế</th>
+          <th>SĐT</th>
+          <th>Vị trí</th>
+          <th>Tuyến</th>
+          <th>Thời gian</th>
+          <th>Trạng thái</th>
+          <th>Vi phạm AI</th>
+          <th>Điểm</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="tripTableBody">
+        <tr>
+          <td>1</td>
+          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td class="plate-number">29B-222.22</td>
+          <td>Xe khách</td>
+          <td>Trần Văn Hoan</td>
+          <td>0909 888 999</td>
+          <td>Ngã tư Mỹ Đình</td>
+          <td>Mỹ Đình → Hải Phòng</td>
+          <td>08:00 02/11/2026</td>
+          <td><span class="status-badge status-running">Đang chạy</span></td>
+          <td><span class="violation-badge">📱 Dùng điện thoại</span></td>
+          <td><span class="score-badge score-medium">7.5</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-call" onclick="callDriver('0909888999')" title="Gọi tài xế">
+                <i class="fa-solid fa-phone"></i>
+                <span>Gọi</span>
+              </button>
+              <button class="btn-action btn-alert" onclick="sendWarning('29B-222.22')" title="Cảnh báo">
+                <i class="fa-solid fa-bell"></i>
+                <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-camera" onclick="viewCamera('29B-222.22')" title="Xem camera">
+                <i class="fa-solid fa-video"></i>
+                <span>Camera</span>
+              </button>
+              <button class="btn-action btn-report" onclick="viewReport('29B-222.22')" title="Báo cáo">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Báo cáo</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td class="plate-number">30G-666.66</td>
+          <td>Taxi</td>
+          <td>Vũ Thị Hồng</td>
+          <td>0912 345 678</td>
+          <td>Hồ Tây</td>
+          <td>Hồ Tây → Lăng Bác</td>
+          <td>08:15 02/11/2026</td>
+          <td><span class="status-badge status-running">Đang chạy</span></td>
+          <td><span class="violation-badge">⚠️ Không thắt dây</span></td>
+          <td><span class="score-badge score-high">8.5</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-call" onclick="callDriver('0912345678')" title="Gọi tài xế">
+                <i class="fa-solid fa-phone"></i>
+                <span>Gọi</span>
+              </button>
+              <button class="btn-action btn-alert" onclick="sendWarning('30G-666.66')" title="Cảnh báo">
+                <i class="fa-solid fa-bell"></i>
+                <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-camera" onclick="viewCamera('30G-666.66')" title="Xem camera">
+                <i class="fa-solid fa-video"></i>
+                <span>Camera</span>
+              </button>
+              <button class="btn-action btn-report" onclick="viewReport('30G-666.66')" title="Báo cáo">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Báo cáo</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td class="plate-number">29A-111.11</td>
+          <td>Ô tô</td>
+          <td>Nguyễn Văn Đức</td>
+          <td>0988 777 666</td>
+          <td>Nội Bài</td>
+          <td>Nội Bài → Hà Nội</td>
+          <td>08:30 02/11/2026</td>
+          <td><span class="status-badge status-running">Đang chạy</span></td>
+          <td><span class="violation-badge">😴 Buồn ngủ</span></td>
+          <td><span class="score-badge score-low">5.5</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-call" onclick="callDriver('0988777666')" title="Gọi tài xế">
+                <i class="fa-solid fa-phone"></i>
+                <span>Gọi</span>
+              </button>
+              <button class="btn-action btn-alert" onclick="sendWarning('29A-111.11')" title="Cảnh báo">
+                <i class="fa-solid fa-bell"></i>
+                <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-camera" onclick="viewCamera('29A-111.11')" title="Xem camera">
+                <i class="fa-solid fa-video"></i>
+                <span>Camera</span>
+              </button>
+              <button class="btn-action btn-report" onclick="viewReport('29A-111.11')" title="Báo cáo">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Báo cáo</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td class="plate-number">29LD-777.77</td>
+          <td>Xe du lịch</td>
+          <td>Công ty Travel</td>
+          <td>0933 222 111</td>
+          <td>Nhà hát lớn</td>
+          <td>Nhà hát lớn → Bát Tràng</td>
+          <td>08:45 02/11/2026</td>
+          <td><span class="status-badge status-stopped">Đã dừng</span></td>
+          <td><span class="violation-badge">🔄 Lệch làn</span></td>
+          <td><span class="score-badge score-medium">7.0</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-call" onclick="callDriver('0933222111')" title="Gọi tài xế">
+                <i class="fa-solid fa-phone"></i>
+                <span>Gọi</span>
+              </button>
+              <button class="btn-action btn-alert" onclick="sendWarning('29LD-777.77')" title="Cảnh báo">
+                <i class="fa-solid fa-bell"></i>
+                <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-camera" onclick="viewCamera('29LD-777.77')" title="Xem camera">
+                <i class="fa-solid fa-video"></i>
+                <span>Camera</span>
+              </button>
+              <button class="btn-action btn-report" onclick="viewReport('29LD-777.77')" title="Báo cáo">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Báo cáo</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td class="plate-number">30F-888.88</td>
+          <td>Xe tải</td>
+          <td>Lê Văn Minh</td>
+          <td>0977 666 555</td>
+          <td>Cầu Giấy</td>
+          <td>Cầu Giấy → Long Biên</td>
+          <td>09:00 02/11/2026</td>
+          <td><span class="status-badge status-running">Đang chạy</span></td>
+          <td><span class="violation-badge">✅ Bình thường</span></td>
+          <td><span class="score-badge score-high">9.0</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-call" onclick="callDriver('0977666555')" title="Gọi tài xế">
+                <i class="fa-solid fa-phone"></i>
+                <span>Gọi</span>
+              </button>
+              <button class="btn-action btn-alert" onclick="sendWarning('30F-888.88')" title="Cảnh báo">
+                <i class="fa-solid fa-bell"></i>
+                <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-camera" onclick="viewCamera('30F-888.88')" title="Xem camera">
+                <i class="fa-solid fa-video"></i>
+                <span>Camera</span>
+              </button>
+              <button class="btn-action btn-report" onclick="viewReport('30F-888.88')" title="Báo cáo">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Báo cáo</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="pagination">
+    <div class="pagination-info">
+      Hiển thị 1-5 trong tổng số 124 chuyến
+    </div>
+    <div class="pagination-buttons">
+      <button class="page-btn"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <button class="page-btn">...</button>
+      <button class="page-btn">25</button>
+      <button class="page-btn"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== FLOATING BUTTONS ===== -->
+<div id="chatToggleBtn" onclick="toggleChat(true)">
+  <i class="fa-solid fa-comment-dots"></i>
+</div>
+
+<div id="voiceToggleBtn" onclick="toggleVoiceRecognition()" title="Ra lệnh bằng giọng nói">
+  <i class="fa-solid fa-microphone"></i>
+</div>
+
+<!-- ===== AI ALERTS PANEL ===== -->
+<div id="aiAlertsPanel">
+  <div class="alerts-header">
+    <span class="alerts-title">🔔 Cảnh Báo AI Thời Gian Thực</span>
+    <span class="alerts-close" onclick="toggleAlertsPanel(false)">&times;</span>
+  </div>
+  <div class="alerts-body" id="alertsBody">
+    <div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">
+      <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px;"></i>
+      <br>Không có cảnh báo nào
+    </div>
+  </div>
+</div>
+
+<!-- ===== VOICE SUGGESTIONS ===== -->
+<div id="voiceSuggestions">
+  <div class="suggestion-title">🎤 Lệnh gợi ý (click để nói):</div>
+  <div class="suggestion-item" onclick="voiceCommand('hiển thị xe 29B-222.22')">
+    <i class="fa-solid fa-bus"></i> Hiển thị xe 29B-222.22
+  </div>
+  <div class="suggestion-item" onclick="voiceCommand('mở camera')">
+    <i class="fa-solid fa-video"></i> Mở camera
+  </div>
+  <div class="suggestion-item" onclick="voiceCommand('gọi hỗ trợ')">
+    <i class="fa-solid fa-headset"></i> Gọi hỗ trợ
+  </div>
+  <div class="suggestion-item" onclick="voiceCommand('xem tất cả cảnh báo')">
+    <i class="fa-solid fa-triangle-exclamation"></i> Xem tất cả cảnh báo
+  </div>
+  <div class="suggestion-item" onclick="voiceCommand('tìm xe gần nhất')">
+    <i class="fa-solid fa-location-crosshairs"></i> Tìm xe gần nhất
+  </div>
+</div>
+
+<!-- ===== CHAT WIDGET ===== -->
+<div id="chatWidget">
+  <div class="chat-header">
+    <div style="display: flex; align-items: center;">
+      <div style="background: white; color:#0056b3; width: 35px; height: 35px; border-radius: 50%; display:flex; align-items:center; justify-content:center; margin-right: 10px; font-weight:bold;">V</div>
+      <div>
+        <div class="chat-header-title">Vietravel Supporter</div>
+        <div class="chat-header-sub">Xin chào quý khách</div>
+      </div>
+    </div>
+    <div class="chat-close" onclick="toggleChat(false)">&times;</div>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div style="text-align: center; color: #999; font-size: 12px; margin-bottom: 10px;">Vietravel - Đã gửi vừa xong</div>
+    <div class="msg-system">
+      <div style="display:flex; gap:10px;">
+        <div style="background:#007bff; color:white; width:25px; height:25px; min-width:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:12px;">V</div>
+        <div>
+          Xin chào quý khách! Vietravel Supporter có thể giúp gì cho quý khách?
+          <button class="start-btn" style="background:#0056b3; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-top:10px; width:100%; font-weight:bold;" onclick="addSystemMsg('Mời bạn nhập yêu cầu hỗ trợ hoặc gọi trực tiếp cho tài xế.')">Bắt đầu trò chuyện</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-footer">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." onkeypress="handleEnter(event)">
+    <button class="chat-send-btn" onclick="sendUserMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+</div>
+<!-- End Layout Wrapper -->
+
+<script>
+/* ===== SIDEBAR TOGGLE ===== */
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+}
+
+/* ===== NAVIGATION ===== */
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ===== SEARCH VEHICLE ===== */
+function searchVehicle() {
+  const plateInput = document.getElementById('searchPlate').value.trim().toUpperCase();
+  const driverInput = document.getElementById('searchDriver').value.trim().toLowerCase();
+  
+  if (!plateInput && !driverInput) {
+    showToast('warning', 'Thông báo', 'Vui lòng nhập biển số hoặc tên tài xế');
+    return;
+  }
+  
+  let foundVehicle = null;
+  
+  // Search by plate or driver or both
+  for (const vehicle of vehicles) {
+    const matchPlate = plateInput && vehicle.plate.toUpperCase().includes(plateInput);
+    const matchDriver = driverInput && vehicle.driver.toLowerCase().includes(driverInput);
+    
+    // If both inputs, need both matches; if one input, need one match
+    if ((plateInput && driverInput) && matchPlate && matchDriver) {
+      foundVehicle = vehicle;
+      break;
+    } else if (plateInput && !driverInput && matchPlate) {
+      foundVehicle = vehicle;
+      break;
+    } else if (!plateInput && driverInput && matchDriver) {
+      foundVehicle = vehicle;
+      break;
+    }
+  }
+  
+  if (foundVehicle) {
+    focusVehicle(foundVehicle.id);
+    showToast('success', 'Đã tìm thấy', `Xe ${foundVehicle.plate} - Tài xế: ${foundVehicle.driver}`);
+    
+    // Also filter the table
+    filterTableBySearch(plateInput, driverInput);
+  } else {
+    showToast('warning', 'Không tìm thấy', 'Không có xe nào phù hợp với thông tin tìm kiếm');
+    // Hide all table rows if no match
+    document.querySelectorAll('#tripTableBody tr').forEach(row => {
+      row.style.display = 'none';
+    });
+  }
+}
+
+function filterTableBySearch(plateInput, driverInput) {
+  document.querySelectorAll('#tripTableBody tr').forEach(row => {
+    const rowPlate = row.querySelector('.plate-number')?.textContent.toUpperCase() || '';
+    const rowDriver = row.cells[4]?.textContent.toLowerCase() || ''; // Tài xế column
+    
+    const matchPlate = plateInput && rowPlate.includes(plateInput);
+    const matchDriver = driverInput && rowDriver.includes(driverInput);
+    
+    // Show row if matches search criteria
+    if ((plateInput && driverInput) && matchPlate && matchDriver) {
+      row.style.display = '';
+    } else if (plateInput && !driverInput && matchPlate) {
+      row.style.display = '';
+    } else if (!plateInput && driverInput && matchDriver) {
+      row.style.display = '';
+    } else if (!plateInput && !driverInput) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+function resetSearch() {
+  document.getElementById('searchPlate').value = '';
+  document.getElementById('searchDriver').value = '';
+  // Reset table filter
+  document.querySelectorAll('#tripTableBody tr').forEach(row => {
+    row.style.display = '';
+  });
+  showToast('info', 'Đã làm mới', 'Đã xóa bộ tìm kiếm');
+}
+
+/* ===== TOAST NOTIFICATION ===== */
+function showToast(type, title, message) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icons = {
+    success: 'fa-check-circle',
+    warning: 'fa-exclamation-triangle',
+    danger: 'fa-times-circle',
+    info: 'fa-info-circle'
+  };
+
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fa-solid ${icons[type]}"></i>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <div class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-times"></i>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+/* ===== ACTION FUNCTIONS ===== */
+function callDriver(phone) {
+  showToast('info', 'Đang gọi...', `Số điện thoại: ${phone}`);
+}
+
+function sendWarning(plate) {
+  showToast('warning', 'Cảnh báo đã gửi', `Biển số: ${plate}`);
+}
+
+function viewCamera(plate) {
+  showToast('info', 'Camera', `Đang kết nối camera xe ${plate}...`);
+}
+
+function viewReport(plate) {
+  showToast('info', 'Báo cáo', `Đang tải báo cáo xe ${plate}...`);
+}
+
+function expandCameras() {
+  const dashboard = document.querySelector('.dashboard-grid-full');
+  const btn = event.target.closest('.action-btn');
+  const icon = btn.querySelector('i');
+  const text = btn.childNodes[btn.childNodes.length - 1];
+
+  dashboard.classList.toggle('map-expanded');
+  const isExpanded = dashboard.classList.contains('map-expanded');
+
+  if (isExpanded) {
+    icon.className = 'fa-solid fa-compress';
+    text.textContent = ' Thu nhỏ';
+    showToast('success', 'Chế độ xem', 'Đã phóng to bản đồ');
+    setTimeout(() => {
+      if (map) {
+        map.invalidateSize();
+      }
+    }, 300);
+  } else {
+    icon.className = 'fa-solid fa-expand';
+    text.textContent = ' Phóng to';
+    showToast('success', 'Chế độ xem', 'Đã thu nhỏ bản đồ');
+    setTimeout(() => {
+      if (map) {
+        map.invalidateSize();
+      }
+    }, 300);
+  }
+}
+
+function refreshCameras() {
+  showToast('info', 'Làm mới', 'Đang tải lại camera...');
+  setTimeout(() => {
+    showToast('success', 'Hoàn tất', 'Camera đã được làm mới');
+  }, 1000);
+}
+
+function exportTable() {
+  showToast('success', 'Xuất file', 'Đang xuất dữ liệu Excel...');
+}
+
+function showNotifications() {
+  showToast('info', 'Thông báo', 'Bạn có 5 cảnh báo chưa xem');
+}
+
+/* ===== COUNT UP ANIMATION ===== */
+function animateValue(element, start, end, duration) {
+  const obj = document.getElementById(element);
+  let startTimestamp = null;
+
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    obj.innerHTML = Math.floor(progress * (end - start) + start);
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+
+  window.requestAnimationFrame(step);
+}
+
+/* ===== TABLE SEARCH & FILTER ===== */
+// Allow Enter key to search
+document.getElementById('searchPlate')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') searchVehicle();
+});
+document.getElementById('searchDriver')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') searchVehicle();
+});
+
+/* ===== FILTER ===== */
+document.getElementById('statusFilter')?.addEventListener('change', function(e) {
+  const status = e.target.value;
+  document.querySelectorAll('#tripTableBody tr').forEach(row => {
+    const badge = row.querySelector('.status-badge');
+    if (status === 'all') {
+      row.style.display = '';
+    } else if (status === 'running' && badge?.classList.contains('status-running')) {
+      row.style.display = '';
+    } else if (status === 'stopped' && badge?.classList.contains('status-stopped')) {
+      row.style.display = '';
+    } else if (status === 'offline' && badge?.classList.contains('status-offline')) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
+/* ===== LEAFLET MAP ===== */
+var map = null;
+var markers = {};
+var trafficLayer = null;
+
+// Car & Bus icons
+var carIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048315.png";
+var busIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048333.png";
+var CarIcon = L.icon({ iconUrl: carIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
+var BusIcon = L.icon({ iconUrl: busIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
+
+function calculateETA(km, speed) {
+  if (speed <= 0) return "Không xác định";
+  var hours = km / speed;
+  var minutes = Math.round(hours * 60);
+  if (minutes < 60) return minutes + " phút";
+  return Math.floor(minutes / 60) + " giờ " + (minutes % 60) + " phút";
+}
+
+const vehicles = [
+  { id: 1, plate: "29A-111.11", type: "car", driver: "Nguyễn Văn Đức", phone: "0988 777 666", speed: 45, remainingKm: 12.5, currentAddress: "Võ Chí Công", route: "Nội Bài -> Võ Chí Công", lat: 21.0450, lng: 105.8100, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+1", videoDashcam: "/py/video_input/car1.mp4", imgDriver: "https://randomuser.me/api/portraits/men/67.jpg" },
+  { id: 2, plate: "29B-222.22", type: "bus", driver: "Trần Văn Hoan", phone: "0909 888 999", speed: 0, remainingKm: 5, currentAddress: "Bến xe Mỹ Đình", route: "Mỹ Đình -> Hải Phòng", lat: 21.0300, lng: 105.7800, status: 0, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+2", videoDashcam: "/py/video_input/car2.mp4", imgDriver: "https://randomuser.me/api/portraits/men/32.jpg" },
+  { id: 3, plate: "30G-666.66", type: "car", driver: "Vũ Thị Hồng", phone: "0912 345 678", speed: 40, remainingKm: 3.2, currentAddress: "Hồ Tây", route: "Hồ Tây -> Lăng Bác", lat: 21.0400, lng: 105.8350, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+3", videoDashcam: "/py/video_input/car3.mp4", imgDriver: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { id: 4, plate: "29LD-777.77", type: "bus", driver: "Lê Văn Minh", phone: "0933 222 111", speed: 60, remainingKm: 15, currentAddress: "Cầu Chương Dương", route: "Nhà Hát Lớn -> Bát Tràng", lat: 21.0250, lng: 105.8600, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+4", videoDashcam: "/py/video_input/car4.mp4", imgDriver: "https://randomuser.me/api/portraits/men/85.jpg" },
+  { id: 5, plate: "30F-888.88", type: "car", driver: "Phạm Văn Hùng", phone: "0977 666 555", speed: 50, remainingKm: 25, currentAddress: "Cầu Giấy", route: "Cầu Giấy -> Long Biên", lat: 21.0350, lng: 105.8200, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+5", videoDashcam: "/py/video_input/car5.mp4", imgDriver: "https://randomuser.me/api/portraits/men/22.jpg" },
+  { id: 6, plate: "30E-999.99", type: "car", driver: "Hoàng Thị Lan", phone: "0966 555 444", speed: 35, remainingKm: 8, currentAddress: "Đống Đa", route: "Đống Đa -> Hai Bà Trưng", lat: 21.0150, lng: 105.8300, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+6", videoDashcam: "/py/video_input/car6.mp4", imgDriver: "https://randomuser.me/api/portraits/women/68.jpg" }
+];
+
+function initMap() {
+  map = L.map('map').setView([21.0285, 105.8542], 12);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  vehicles.forEach(vehicle => {
+    let iconObj = (vehicle.type === 'car') ? CarIcon : BusIcon;
+    let statusText = vehicle.status === 1 ? "Đang chạy" : "Đang dừng";
+    let statusClass = vehicle.status === 1 ? "tag-run" : "tag-stop";
+
+    const marker = L.marker([vehicle.lat, vehicle.lng], {icon: iconObj}).addTo(map);
+
+    let statusHtml = (vehicle.status === 1)
+      ? '<div style="background:#e2e6ea; padding:8px; border-radius:5px; margin:10px 0; border-left:4px solid #28a745;"><span style="background:#28a745; color:white; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;">ĐANG CHẠY</span> - ' + vehicle.speed + ' km/h<br><span style="font-size:12px;">🏁 Cách đích: <b>' + vehicle.remainingKm + ' km</b></span><br><span style="font-size:12px;">⏱️ ETA: <b>' + calculateETA(vehicle.remainingKm, vehicle.speed) + '</b></span></div>'
+      : '<div style="background:#e2e6ea; padding:8px; border-radius:5px; margin:10px 0; border-left:4px solid #dc3545;"><span style="background:#dc3545; color:white; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;">ĐANG DỪNG</span><br><span style="font-size:12px; color:#666;">Phương tiện đang tắt máy hoặc dừng đỗ.</span></div>';
+
+    const popupContent = `
+      <div style="font-size:16px; font-weight:bold; margin-bottom:5px; color:#1a237e; text-align:center;">${vehicle.plate}</div>
+      ${statusHtml}
+      <div style="margin-bottom:5px;"><strong>Vị trí:</strong> <span style="color:#d63031; font-weight:bold;">${vehicle.currentAddress}</span></div>
+      <div style="margin-bottom:5px;"><strong>Tài xế:</strong> ${vehicle.driver}</div>
+      <div style="margin-bottom:5px;"><strong>Lộ trình:</strong> ${vehicle.route}</div>
+      <div style="margin-bottom:5px;"><strong>SĐT:</strong> ${vehicle.phone}</div>
+      <div style="text-align:center; margin:10px 0;">
+        <button onclick="callDriver('${vehicle.phone}')" style="background:#28a745; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold; margin-right:5px;">📞 Gọi</button>
+        <button onclick="sendWarning('${vehicle.plate}')" style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">📢 Cảnh báo</button>
+      </div>
+    `;
+
+    marker.bindPopup(popupContent);
+    markers[vehicle.id] = marker;
+  });
+
+  simulateMovement();
+  updateMapStats();
+}
+
+function updateMapStats() {
+  const running = vehicles.filter(v => v.status === 1).length;
+  const stopped = vehicles.filter(v => v.status === 0).length;
+  document.getElementById('mapVehicles').textContent = vehicles.length;
+  document.getElementById('mapRunning').textContent = running;
+  document.getElementById('mapStopped').textContent = stopped;
+}
+
+function simulateMovement() {
+  setInterval(() => {
+    vehicles.forEach(vehicle => {
+      if(vehicle.status === 1) {
+        vehicle.lat += (Math.random() - 0.5) * 0.0004;
+        vehicle.lng += (Math.random() - 0.5) * 0.0004;
+        if(vehicle.remainingKm > 0) vehicle.remainingKm -= 0.01;
+        if (markers[vehicle.id]) {
+          markers[vehicle.id].setLatLng([vehicle.lat, vehicle.lng]);
+        }
+      }
+    });
+    updateMapStats();
+  }, 2000);
+}
+
+function toggleTrafficLayer() {
+  if (trafficLayer) {
+    map.removeLayer(trafficLayer);
+    trafficLayer = null;
+    showToast('info', 'Bản đồ', 'Đã tắt lớp giao thông');
+  } else {
+    trafficLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    showToast('success', 'Bản đồ', 'Đã bật lớp giao thông');
+  }
+}
+
+function refreshMap() {
+  showToast('info', 'Làm mới', 'Đang cập nhật vị trí xe...');
+  setTimeout(() => {
+    showToast('success', 'Hoàn tất', 'Bản đồ đã được làm mới');
+  }, 1000);
+}
+
+function openFullMap() {
+  window.open('https://www.openstreetmap.org/#map=12/21.0285/105.8542', '_blank');
+}
+
+// ==================== CHAT WIDGET ====================
+function toggleChat(show, driverName) {
+  const chatWidget = document.getElementById('chatWidget');
+  const chatBtn = document.getElementById('chatToggleBtn');
+  if(show) {
+    chatWidget.style.display = 'flex';
+    chatBtn.style.display = 'none';
+    if(driverName) {
+      document.querySelector('.chat-header-sub').innerText = "Hỗ trợ: " + driverName;
+    } else {
+      document.querySelector('.chat-header-sub').innerText = "Xin chào quý khách";
+    }
+  } else {
+    chatWidget.style.display = 'none';
+    chatBtn.style.display = 'flex';
+  }
+}
+
+function handleEnter(e) {
+  if(e.key === 'Enter') sendUserMsg();
+}
+
+function sendUserMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+
+  const chatBody = document.getElementById('chatBody');
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg-user';
+  userDiv.innerText = text;
+  chatBody.appendChild(userDiv);
+
+  input.value = '';
+  chatBody.scrollTop = chatBody.scrollHeight;
+
+  fetch('http://localhost:5002/api/send_chat_message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: text, vehicle_id: null, user_id: 'admin' })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      setTimeout(() => { addSystemMsg(data.bot_response); }, 500);
+    }
+  })
+  .catch(error => {
+    console.error('Lỗi khi gửi tin:', error);
+    setTimeout(() => {
+      addSystemMsg("Cảm ơn bạn. Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.");
+    }, 500);
+  });
+}
+
+function addSystemMsg(text) {
+  const chatBody = document.getElementById('chatBody');
+  const sysDiv = document.createElement('div');
+  sysDiv.className = 'msg-system';
+  sysDiv.innerHTML = `
+    <div style="display:flex; gap:10px;">
+      <div style="background:#007bff; color:white; width:25px; height:25px; min-width:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:12px;">V</div>
+      <div>${text}</div>
+    </div>`;
+  chatBody.appendChild(sysDiv);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+// ==================== VOICE RECOGNITION ====================
+let isVoiceListening = false;
+let recognition = null;
+let currentAlerts = [];
+
+var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'vi-VN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = function() {
+    isVoiceListening = true;
+    document.getElementById('voiceToggleBtn').classList.add('listening');
+    document.getElementById('voiceSuggestions').style.display = 'block';
+  };
+
+  recognition.onend = function() {
+    isVoiceListening = false;
+    document.getElementById('voiceToggleBtn').classList.remove('listening');
+    setTimeout(() => {
+      document.getElementById('voiceSuggestions').style.display = 'none';
+    }, 2000);
+  };
+
+  recognition.onresult = function(event) {
+    var transcript = event.results[0][0].transcript.toLowerCase();
+    console.log('Giọng nói nhận diện:', transcript);
+    processVoiceCommand(transcript);
+  };
+
+  recognition.onerror = function(event) {
+    console.error('Lỗi nhận diện giọng nói:', event.error);
+    isVoiceListening = false;
+    document.getElementById('voiceToggleBtn').classList.remove('listening');
+  };
+} else {
+  console.warn('Trình duyệt không hỗ trợ nhận diện giọng nói');
+}
+
+function toggleVoiceRecognition() {
+  if (!recognition) {
+    alert('Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Google Chrome.');
+    return;
+  }
+  if (isVoiceListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+function voiceCommand(command) {
+  if (!recognition) {
+    alert('Trình duyệt không hỗ trợ nhận diện giọng nói');
+    return;
+  }
+  document.getElementById('voiceSuggestions').style.display = 'none';
+  recognition.start();
+  setTimeout(() => {
+    processVoiceCommand(command);
+    if (isVoiceListening) recognition.stop();
+  }, 500);
+}
+
+function processVoiceCommand(cmd) {
+  console.log('Xử lý lệnh:', cmd);
+  addSystemMsg(`🎤 Đang xử lý: "${cmd}"`);
+
+  if (cmd.includes('hiển thị xe') || cmd.includes('tìm xe') || cmd.includes('hiện xe')) {
+    // Try to extract license plate with better regex
+    var plateMatch = cmd.match(/(\d{1,2}[A-Z]-\d{2,3}\.\d{2})/i);
+    if (plateMatch) {
+      var plate = plateMatch[0].toUpperCase();
+      var vehicle = vehicles.find(v => v.plate === plate);
+      if (vehicle) {
+        focusVehicle(vehicle.id);
+        addSystemMsg(`✅ Đã tìm thấy xe ${plate} - Tài xế: ${vehicle.driver}`);
+      } else {
+        addSystemMsg(`❌ Không tìm thấy xe biển số ${plate}`);
+      }
+    } else {
+      if (cmd.includes('gần nhất')) {
+        findNearestVehicle();
+      } else {
+        addSystemMsg('Vui lòng nói biển số xe, ví dụ: "hiển thị xe 29B-222.22"');
+      }
+    }
+  }
+  else if (cmd.includes('camera') || cmd.includes('video')) {
+    addSystemMsg('📹 Tính năng camera đang được phát triển. Vui lòng chọn xe trên bản đồ để xem thông tin chi tiết.');
+  }
+  else if (cmd.includes('hỗ trợ') || cmd.includes('chat') || cmd.includes('nhắn tin')) {
+    toggleChat(true);
+    addSystemMsg('💬 Đã mở chat hỗ trợ. Quý khách cần giúp gì?');
+  }
+  else if (cmd.includes('cảnh báo') || cmd.includes('xem tất cả')) {
+    toggleAlertsPanel(true);
+    fetchAICurrentWarnings();
+    addSystemMsg('🔔 Đang hiển thị cảnh báo AI thời gian thực.');
+  }
+  else if (cmd.includes('xe khách') || cmd.includes('xe bus')) {
+    var busVehicles = vehicles.filter(v => v.type === 'bus');
+    if (busVehicles.length > 0) {
+      focusVehicle(busVehicles[0].id);
+      addSystemMsg(`✅ Đã hiển thị xe khách gần nhất. Tổng cộng: ${busVehicles.length} xe.`);
+    }
+  }
+  else if (cmd.includes('xe con') || cmd.includes('xe taxi')) {
+    var carVehicles = vehicles.filter(v => v.type === 'car');
+    if (carVehicles.length > 0) {
+      focusVehicle(carVehicles[0].id);
+      addSystemMsg(`✅ Đã hiển thị xe con gần nhất. Tổng cộng: ${carVehicles.length} xe.`);
+    }
+  }
+  else {
+    addSystemMsg('❌ Xin lỗi, tôi không hiểu lệnh này. Thử: "hiển thị xe 29B-222.22", "gọi hỗ trợ", "xem cảnh báo"');
+  }
+}
+
+function findNearestVehicle() {
+  var nearestVehicle = vehicles[0];
+  focusVehicle(nearestVehicle.id);
+  addSystemMsg(`📍 Xe gần nhất: ${nearestVehicle.plate} - ${nearestVehicle.currentAddress}`);
+}
+
+function focusVehicle(id) {
+  const vehicle = vehicles.find(v => v.id === id);
+  if (vehicle) {
+    map.flyTo([vehicle.lat, vehicle.lng], 16);
+    markers[id].openPopup();
+    showToast('success', 'Đã tìm thấy', `Xe ${vehicle.plate} - Tài xế: ${vehicle.driver}`);
+  }
+}
+
+// ==================== AI ALERTS ====================
+function toggleAlertsPanel(show) {
+  document.getElementById('aiAlertsPanel').style.display = show ? 'block' : 'none';
+  if (show) {
+    fetchAICurrentWarnings();
+  }
+}
+
+function fetchAICurrentWarnings() {
+  fetch('http://localhost:5002/api/get_ai_warnings')
+    .then(response => response.json())
+    .then(data => {
+      updateAlertsPanel(data);
+    })
+    .catch(error => {
+      console.error('Lỗi khi lấy cảnh báo AI:', error);
+      updateAlertsPanel({
+        eye: '', yawn: '', head: '', phone: '',
+        seatbelt: '', hand: '', collision: '', lane: ''
+      });
+    });
+}
+
+function updateAlertsPanel(warnings) {
+  const alertsBody = document.getElementById('alertsBody');
+  currentAlerts = [];
+
+  if (warnings.eye && warnings.eye.trim() !== '') {
+    currentAlerts.push({
+      type: 'critical',
+      message: '⚠️ Tài xế đang NHẮM MẮT QUÁ LÂU!',
+      time: new Date().toLocaleTimeString(),
+      key: 'eye'
+    });
+  }
+  if (warnings.yawn && warnings.yawn.trim() !== '') {
+    currentAlerts.push({
+      type: 'warning',
+      message: '😴 Tài xế đang NGÁP NGỦ!',
+      time: new Date().toLocaleTimeString(),
+      key: 'yawn'
+    });
+  }
+  if (warnings.head && warnings.head.trim() !== '') {
+    currentAlerts.push({
+      type: 'warning',
+      message: '😕 Tài xế đang MẤT TẬP TRUNG!',
+      time: new Date().toLocaleTimeString(),
+      key: 'head'
+    });
+  }
+  if (warnings.phone && warnings.phone.trim() !== '') {
+    currentAlerts.push({
+      type: 'critical',
+      message: '📱 Tài xế đang DÙNG ĐIỆN THOẠI!',
+      time: new Date().toLocaleTimeString(),
+      key: 'phone'
+    });
+  }
+  if (warnings.seatbelt && warnings.seatbelt.trim() !== '') {
+    currentAlerts.push({
+      type: 'warning',
+      message: '⚠️ Tài xế KHÔNG THẮT DÂY AN TOÀN!',
+      time: new Date().toLocaleTimeString(),
+      key: 'seatbelt'
+    });
+  }
+  if (warnings.hand && warnings.hand.trim() !== '') {
+    currentAlerts.push({
+      type: 'info',
+      message: '✋ Tài xế KHÔNG ĐỂ TAY LÊN VÔ LĂNG!',
+      time: new Date().toLocaleTimeString(),
+      key: 'hand'
+    });
+  }
+  if (warnings.collision && warnings.collision.trim() !== '') {
+    currentAlerts.push({
+      type: 'critical',
+      message: '💥 CẢNH BÁO VA CHẠM!',
+      time: new Date().toLocaleTimeString(),
+      key: 'collision'
+    });
+  }
+  if (warnings.lane && warnings.lane.trim() !== '') {
+    currentAlerts.push({
+      type: 'warning',
+      message: '🔄 CẢNH BÁO LỆCH LÀN!',
+      time: new Date().toLocaleTimeString(),
+      key: 'lane'
+    });
+  }
+
+  if (currentAlerts.length === 0) {
+    alertsBody.innerHTML = `
+      <div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">
+        <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px;"></i>
+        <br>Không có cảnh báo nào
+      </div>
+    `;
+  } else {
+    alertsBody.innerHTML = currentAlerts.map(alert => `
+      <div class="alert-item ${alert.type}">
+        <div>${alert.message}</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${alert.time}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// Initialize map on load
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  animateValue('vehicleCount', 0, 48, 1000);
+  setTimeout(() => animateValue('tripCount', 0, 124, 1000), 200);
+  setTimeout(() => animateValue('alertCount', 0, 5, 1000), 400);
+});
+</script>
+
+</body>
+</html>
