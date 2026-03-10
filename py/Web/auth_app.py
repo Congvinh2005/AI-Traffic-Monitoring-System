@@ -117,6 +117,34 @@ def trang_chu():
     """Trang chủ dành cho User"""
     return render_template('trang_chu.html', user=session.get('user'))
 
+@app.route('/lai_xe')
+@login_required
+@role_required(['user', 'admin'])
+def lai_xe():
+    """Trang Lái Xe"""
+    return render_template('lai_xe.html', user=session.get('user'))
+
+@app.route('/tu_van')
+@login_required
+@role_required(['user', 'admin'])
+def tu_van():
+    """Trang Tư Vấn"""
+    return render_template('tu_van.html', user=session.get('user'))
+
+@app.route('/tu_van.html')
+@login_required
+@role_required(['user', 'admin'])
+def tu_van_html():
+    """Trang Tư Vấn (HTML)"""
+    return render_template('tu_van.html', user=session.get('user'))
+
+@app.route('/lai_xe_v2')
+@login_required
+@role_required(['user', 'admin'])
+def lai_xe_v2():
+    """Trang Lái Xe V2"""
+    return render_template('lai_xe.html', user=session.get('user'))
+
 # ========================================
 # API AUTHENTICATION
 # ========================================

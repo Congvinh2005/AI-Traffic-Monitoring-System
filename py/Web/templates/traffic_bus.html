@@ -629,7 +629,7 @@
             chatBody.scrollTop = chatBody.scrollHeight;
 
             // 2. Gọi API để AI xử lý
-            fetch('http://localhost:5002/api/send_chat_message', {
+            fetch('http://localhost:5001/api/send_chat_message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -790,7 +790,7 @@
         function fetchAICurrentWarnings() {
             // Poll API để lấy cảnh báo từ backend Flask
             // Backend chạy tại port 5002
-            fetch('http://localhost:5002/api/get_ai_warnings')
+            fetch('http://localhost:5001/api/get_ai_warnings')
                 .then(response => response.json())
                 .then(data => {
                     updateAlertsPanel(data);

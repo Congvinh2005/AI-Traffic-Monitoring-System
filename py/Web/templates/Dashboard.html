@@ -5059,7 +5059,7 @@ function toggleChat(show, driverName) {
 }
 
 function fetchAIAlertsHistory() {
-  fetch('http://localhost:5002/api/get_ai_alerts_history')
+  fetch('http://localhost:5001/api/get_ai_alerts_history')
     .then(response => response.json())
     .then(data => {
       if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
@@ -5102,7 +5102,7 @@ function sendUserMsg() {
   input.value = '';
   chatBody.scrollTop = chatBody.scrollHeight;
 
-  fetch('http://localhost:5002/api/send_chat_message', {
+  fetch('http://localhost:5001/api/send_chat_message', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: text, vehicle_id: null, user_id: 'admin' })
@@ -5279,7 +5279,7 @@ function toggleAlertsPanel(show) {
 }
 
 function fetchAICurrentWarnings() {
-  fetch('http://localhost:5002/api/get_ai_warnings')
+  fetch('http://localhost:5001/api/get_ai_warnings')
     .then(response => response.json())
     .then(data => {
       updateAlertsPanel(data);
@@ -5667,7 +5667,7 @@ document.addEventListener('keydown', (e) => {
 let lastAlertTimestamp = '';
 
 function pollAINewAlerts() {
-  fetch('http://localhost:5002/api/get_ai_alerts_history')
+  fetch('http://localhost:5001/api/get_ai_alerts_history')
     .then(response => response.json())
     .then(data => {
       if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
