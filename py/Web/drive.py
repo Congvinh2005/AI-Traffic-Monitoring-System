@@ -1448,9 +1448,8 @@ def toggle_warning():
 
 @app.route('/traffic_bus')
 def traffic_bus():
-    """Serve traffic_bus.html từ Flask"""
-    # Serve file từ thư mục templates
-    return send_file(os.path.join(os.path.dirname(__file__), 'templates', 'traffic_bus.html'))
+    """Serve Dashboard.html với đầy đủ dữ liệu từ drive.py"""
+    return render_template('Dashboard.html')
 
 @app.route('/tu_van.html')
 def tu_van():

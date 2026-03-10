@@ -5050,10 +5050,37 @@ function toggleChat(show, driverName) {
     } else {
       document.querySelector('.chat-header-sub').innerText = "Xin chào quý khách";
     }
+    // Fetch lịch sử cảnh báo AI khi mở chatbot
+    fetchAIAlertsHistory();
   } else {
     chatWidget.style.display = 'none';
     chatBtn.style.display = 'flex';
   }
+}
+
+function fetchAIAlertsHistory() {
+  fetch('http://localhost:5002/api/get_ai_alerts_history')
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
+        // Hiển thị lịch sử cảnh báo vào chatbot
+        const chatBody = document.getElementById('chatBody');
+        
+        // Chỉ hiển thị nếu chatbot chưa có message nào
+        if (chatBody.children.length === 0) {
+          addSystemMsg(`📊 <strong>Lịch sử cảnh báo gần đây (${data.alerts.length} cảnh báo):</strong>`);
+          
+          data.alerts.forEach(alert => {
+            const icon = alert.level === 'critical' ? '🚨' : alert.level === 'warning' ? '⚠️' : 'ℹ️';
+            const alertMsg = `${icon} [${alert.timestamp}] ${alert.message}`;
+            addSystemMsg(alertMsg);
+          });
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi lấy lịch sử cảnh báo:', error);
+    });
 }
 
 function handleEnter(e) {
@@ -5635,6 +5662,39 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('keyboardShortcuts')?.classList.remove('show');
   }
 });
+
+// ==================== AUTO-FETCH AI ALERTS FOR CHATBOT ====================
+let lastAlertTimestamp = '';
+
+function pollAINewAlerts() {
+  fetch('http://localhost:5002/api/get_ai_alerts_history')
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
+        // Kiểm tra cảnh báo mới nhất
+        const latestAlert = data.alerts[data.alerts.length - 1];
+        
+        // Nếu có cảnh báo mới, hiển thị vào chatbot
+        if (latestAlert.timestamp !== lastAlertTimestamp) {
+          const icon = latestAlert.level === 'critical' ? '🚨' : latestAlert.level === 'warning' ? '⚠️' : 'ℹ️';
+          const alertMsg = `${icon} [${latestAlert.timestamp}] ${latestAlert.message}`;
+          
+          // Chỉ hiển thị nếu chatbot đang mở
+          const chatWidget = document.getElementById('chatWidget');
+          if (chatWidget.style.display === 'flex') {
+            addSystemMsg(alertMsg);
+            lastAlertTimestamp = latestAlert.timestamp;
+          }
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi poll cảnh báo AI:', error);
+    });
+}
+
+// Poll cảnh báo mới mỗi 2 giây
+setInterval(pollAINewAlerts, 2000);
 </script>
 
 </body>
