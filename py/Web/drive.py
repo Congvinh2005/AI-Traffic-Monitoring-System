@@ -1460,7 +1460,7 @@ def tu_van():
 def index():
     return render_template('trang_chu.html')
 
-@app.route('/lai_xe_v2')
+@app.route('/lai_xe')
 def settings():
     response = make_response(render_template('lai_xe.html'))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'

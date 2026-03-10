@@ -5345,22 +5345,22 @@ function updateAlertsPanel(warnings) {
       key: 'hand'
     });
   }
-  if (warnings.collision && warnings.collision.trim() !== '') {
-    currentAlerts.push({
-      type: 'critical',
-      message: '💥 CẢNH BÁO VA CHẠM!',
-      time: new Date().toLocaleTimeString(),
-      key: 'collision'
-    });
-  }
-  if (warnings.lane && warnings.lane.trim() !== '') {
-    currentAlerts.push({
-      type: 'warning',
-      message: '🔄 CẢNH BÁO LỆCH LÀN!',
-      time: new Date().toLocaleTimeString(),
-      key: 'lane'
-    });
-  }
+  // if (warnings.collision && warnings.collision.trim() !== '') {
+  //   currentAlerts.push({
+  //     type: 'critical',
+  //     message: '💥 CẢNH BÁO VA CHẠM!',
+  //     time: new Date().toLocaleTimeString(),
+  //     key: 'collision'
+  //   });
+  // }
+  // if (warnings.lane && warnings.lane.trim() !== '') {
+  //   currentAlerts.push({
+  //     type: 'warning',
+  //     message: '🔄 CẢNH BÁO LỆCH LÀN!',
+  //     time: new Date().toLocaleTimeString(),
+  //     key: 'lane'
+  //   });
+  // }
 
   if (currentAlerts.length === 0) {
     alertsBody.innerHTML = `

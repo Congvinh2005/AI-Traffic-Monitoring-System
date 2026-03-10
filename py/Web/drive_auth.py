@@ -904,7 +904,7 @@ def process_collision_warning(frame, distance, current_time, object_type='vehicl
     object_type: 'person' hoặc 'vehicle'
     """
     global last_collision_warning, warnings, collision_alert_sent
-    
+
     # Xác định ngưỡng dựa trên loại đối tượng
     if object_type == 'person':
         critical_distance = 12
@@ -914,16 +914,12 @@ def process_collision_warning(frame, distance, current_time, object_type='vehicl
         critical_distance = 8
         warning_distance = 15
         alert_message = "🚨 CẢNH BÁO VA CHẠM SẮP XẢY RA!"
-    
+
     if distance < critical_distance:
         warnings["collision"] = "CẢNH BÁO VA CHẠM!"
         if current_time - last_collision_warning >= warning_interval:
             va_cham_sound.play()
             last_collision_warning = current_time
-            # Gửi cảnh báo vào chatbot
-            if not collision_alert_sent:
-                add_ai_alert("collision", alert_message, current_monitoring_vehicle_id)
-                collision_alert_sent = True
     elif distance < warning_distance:
         warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
     else:
@@ -942,10 +938,6 @@ def process_lane_warning(frame, left_found, right_found):
         warnings["lane"] = "CẢNH BÁO LỆCH LÀN!"
         if not pygame.mixer.get_busy():
             lech_lan_sounds.play()
-        # Gửi cảnh báo vào chatbot
-        if not lane_alert_sent:
-            add_ai_alert("lane", "⚠️ Xe đang LỆCH LÀN!", current_monitoring_vehicle_id)
-            lane_alert_sent = True
     else:
         warnings["lane"] = ""
         lane_alert_sent = False  # Reset khi trở lại làn
@@ -1077,8 +1069,6 @@ def collision_monitor():
                     if current_time - last_obstacle_warning >= obstacle_warning_interval:
                         di_cham_lai_sound.play()
                         last_obstacle_warning = current_time
-                        # Gửi cảnh báo vào chatbot
-                        add_ai_alert("obstacle", f"⚠️ PHÁT HIỆN {obstacle_count} VẬT CẢN/Ổ GÀ PHÍA TRƯỚC!", current_monitoring_vehicle_id)
                 else:
                     warnings["obstacle"] = ""
             else:
@@ -1115,10 +1105,6 @@ def collision_monitor():
                         if current_time - last_collision_warning >= warning_interval:
                             va_cham_sound.play()
                             last_collision_warning = current_time
-                            # Gửi cảnh báo vào chatbot
-                            if not collision_alert_sent:
-                                add_ai_alert("collision", alert_message, current_monitoring_vehicle_id)
-                                collision_alert_sent = True
                         color = (0, 0, 255)  # Đỏ
                     elif distance < warning_distance:
                         warnings["collision"] = "GIỮ KHOẢNG CÁCH!"
