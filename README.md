@@ -14,20 +14,21 @@
 2. [Mục tiêu hệ thống](#-2-mục-tiêu-hệ-thống)
 3. [Kiến trúc hệ thống](#-3-kiến-trúc-hệ-thống)
 4. [Luồng hoạt động](#-4-luồng-hoạt-động)
-5. [8 Loại cảnh báo AI](#-5-8-loại-cảnh-báo-ai)
-6. [Cài đặt môi trường](#-6-cài-đặt-môi-trường)
-7. [Chạy ứng dụng](#-7-chạy-ứng-dụng)
-8. [API Documentation](#-8-api-documentation)
-9. [AI Chatbot](#-9-ai-chatbot)
-10. [Docker Deployment](#-10-docker-deployment)
-11. [Troubleshooting](#-11-troubleshooting)
-12. [Cấu trúc dự án](#-12-cấu-trúc-dự-án)
+5. [Phân quyền người dùng](#-5-phân-quyền-người-dùng)
+6. [8 Loại cảnh báo AI](#-6-8-loại-cảnh-báo-ai)
+7. [Cài đặt môi trường](#-7-cài-đặt-môi-trường)
+8. [Chạy ứng dụng](#-8-chạy-ứng-dụng)
+9. [API Documentation](#-9-api-documentation)
+10. [AI Chatbot](#-10-ai-chatbot)
+11. [Docker Deployment](#-11-docker-deployment)
+12. [Troubleshooting](#-12-troubleshooting)
+13. [Cấu trúc dự án](#-13-cấu-trúc-dự-án)
 
 ---
 
 ## 🎯 1. GIỚI THIỆU
 
-**AI Traffic Monitoring System** là hệ thống giám sát hành vi tài xế lái xe sử dụng trí tuệ nhân tạo (AI) để phát hiện các vi phạm và hành vi nguy hiểm, sau đó gửi cảnh báo thời gian thực đến chatbot cho admin/quản lý.
+**AI Traffic Monitoring System** là hệ thống giám sát hành vi tài xế lái xe sử dụng trí tuệ nhân tạo (AI) để phát hiện các vi phạm và hành vi nguy hiểm, sau đó gửi cảnh báo thời gian thực đến admin và tài xế qua chatbot.
 
 ### 🌟 Tính năng chính
 
@@ -40,6 +41,8 @@
 | **Sound Alerts** | Phát âm thanh cảnh báo cho từng loại vi phạm |
 | **Multi-camera** | Hỗ trợ webcam và video file |
 | **Anti-spam** | Chống spam cảnh báo (10s/lần) |
+| **Phân quyền** | Admin (Dashboard) và User (trang_chu) |
+| **Two-way Communication** | Admin ↔ Chatbot ↔ Tài xế |
 
 ---
 
@@ -75,6 +78,216 @@
 | **Tài xế** | Được cảnh báo kịp thời, lái xe an toàn hơn |
 | **Admin/Quản lý** | Theo dõi tập trung, xử lý vi phạm |
 | **Cơ quan chức năng** | Giám sát giao thông, xử phạt |
+
+---
+
+## 👥 5. PHÂN QUYỀN NGƯỜI DÙNG
+
+### 5.1 Tổng quan phân quyền
+
+Hệ thống có **2 loại người dùng** với quyền hạn và giao diện khác nhau:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🔐 HỆ THỐNG ĐĂNG NHẬP                                        │
+│                                                              │
+│  ┌─────────────────┐        ┌─────────────────┐             │
+│  │   👤 ADMIN      │        │   👤 USER       │             │
+│  │   (Quản lý)     │        │   (Tài xế)      │             │
+│  └────────┬────────┘        └────────┬────────┘             │
+│           │                          │                       │
+│           ▼                          ▼                       │
+│  📊 Dashboard.html          📱 trang_chu.html               │
+│  - Giám sát tất cả xe       - Tư vấn cá nhân                │
+│  - Xem camera               - Nhận cảnh báo từ lái_xe       │
+│  - Gửi cảnh cáo             - Chat với bot                  │
+│  - Thống kê, báo cáo        - Xem lịch sử vi phạm           │
+│  - CRUD dữ liệu             - Nhận xử phạt từ admin         │
+│  - Xử lý vi phạm            - Cải thiện hành vi             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Admin (Dashboard.html)
+
+#### **Chức năng chính:**
+
+| Chức năng | Mô tả |
+|-----------|-------|
+| **📊 Giám sát thời gian thực** | Xem vị trí, trạng thái tất cả xe trên bản đồ |
+| **📹 Xem camera** | Xem video từ 4 camera (tài xế, trước, khách, lùi) |
+| **⚠️ Nhận cảnh báo AI** | Cảnh báo từ lái_xe gửi sang thời gian thực |
+| **📢 Gửi cảnh cáo** | Gửi cảnh cáo, xử phạt đến tài xế |
+| **🔍 Tìm kiếm** | Tìm xe theo biển số, tài xế, tuyến đường |
+| **📈 Thống kê** | Báo cáo vi phạm, doanh thu, hiệu suất |
+| **➕ Thêm/Sửa/Xóa** | Quản lý dữ liệu xe, tài xế, tuyến đường |
+| **📤 Xuất file** | Xuất Excel, PDF báo cáo |
+
+#### **Giao diện Dashboard:**
+
+- **KPI Cards**: Xe hoạt động, chuyến hôm nay, cảnh báo AI, vi phạm, điểm an toàn
+- **Bản đồ Leaflet**: Hiển thị vị trí 7 xe thời gian thực
+- **Camera Grid**: 4 camera giám sát mỗi xe
+- **Table**: Danh sách chuyến đang chạy với 13 cột thông tin
+- **AI Alerts Panel**: Panel cảnh báo AI thời gian thực
+- **Chatbot Widget**: Chat với AI và nhận cảnh báo
+
+#### **Quyền hạn:**
+
+```javascript
+✅ Xem tất cả xe và tài xế
+✅ Xem camera từ xa
+✅ Nhận cảnh báo AI từ lái_xe
+✅ Gửi cảnh cáo đến tài xế
+✅ Thêm/Sửa/Xóa xe, tài xế, tuyến đường
+✅ Xem thống kê, báo cáo
+✅ Xuất dữ liệu Excel/PDF
+✅ Tìm kiếm, lọc dữ liệu
+✅ Xử lý vi phạm
+```
+
+### 5.3 User (trang_chu.html)
+
+#### **Chức năng chính:**
+
+| Chức năng | Mô tả |
+|-----------|-------|
+| **💬 Tư vấn cá nhân** | Chat với AI về thông tin cá nhân, xe |
+| **⚠️ Nhận cảnh báo** | Nhận cảnh báo từ lái_xe (AI detection) |
+| **📨 Nhận xử phạt** | Nhận cảnh cáo, xử phạt từ admin gửi sang |
+| **📊 Xem lịch sử** | Xem lịch sử vi phạm, hành vi lái xe |
+| **🎤 Chat voice** | Chat bằng giọng nói với bot |
+| **📱 Mobile friendly** | Giao diện tối ưu cho mobile |
+
+#### **Giao diện trang_chu:**
+
+- **Chat Widget**: Chat với AI, nhận cảnh báo
+- **Alert Timeline**: Timeline cảnh báo và xử phạt
+- **Personal Stats**: Thống kê cá nhân (điểm an toàn, vi phạm)
+- **Voice Button**: Nút chat voice
+- **Profile**: Thông tin tài xế, xe
+
+#### **Quyền hạn:**
+
+```javascript
+✅ Xem thông tin cá nhân
+✅ Nhận cảnh báo từ lái_xe
+✅ Nhận xử phạt từ admin
+✅ Chat với AI tư vấn
+✅ Xem lịch sử vi phạm cá nhân
+✅ Xem điểm an toàn cá nhân
+❌ KHÔNG xem được xe khác
+❌ KHÔNG xem camera xe khác
+❌ KHÔNG gửi cảnh cáo cho người khác
+```
+
+### 5.4 Luồng giao tiếp Admin ↔ User
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  LUỒNG GIAO TIẾP 2 CHIỀU                                      │
+│                                                              │
+│  👤 TÀI XẾ (lái_xe.py)        🔐 ADMIN (Dashboard)          │
+│         │                              │                     │
+│         │  1. AI phát hiện vi phạm     │                     │
+│         │─────────────────────────────>│                     │
+│         │    (gửi cảnh báo sang)       │                     │
+│         │                              │                     │
+│         │  2. Admin xem cảnh báo       │                     │
+│         │<─────────────────────────────│                     │
+│         │    (hiển thị trong Dashboard)│                     │
+│         │                              │                     │
+│         │  3. Admin gửi cảnh cáo       │                     │
+│         │<─────────────────────────────│                     │
+│         │    (xử phạt, nhắc nhở)       │                     │
+│         │                              │                     │
+│         │  4. Tài xế nhận xử phạt      │                     │
+│         │─────────────────────────────>│                     │
+│         │    (hiển thị trong trang_chu)│                     │
+│         │                              │                     │
+│         │  5. Tài xế cải thiện         │                     │
+│         │─────────────────────────────>│                     │
+│         │    (giảm vi phạm, tăng điểm) │                     │
+│         │                              │                     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 5.5 Phân quyền chi tiết
+
+| Chức năng | Admin | User (Tài xế) |
+|-----------|-------|---------------|
+| **Xem Dashboard** | ✅ | ❌ |
+| **Xem trang_chu** | ❌ | ✅ |
+| **Xem tất cả xe** | ✅ | ❌ (Chỉ xem xe mình) |
+| **Xem camera** | ✅ | ❌ |
+| **Nhận cảnh báo AI** | ✅ | ✅ |
+| **Gửi cảnh cáo** | ✅ | ❌ |
+| **Nhận xử phạt** | ❌ | ✅ |
+| **Thêm/Sửa/Xóa xe** | ✅ | ❌ |
+| **Thống kê** | ✅ (Tất cả) | ❌ (Chỉ cá nhân) |
+| **Xuất file** | ✅ | ❌ |
+| **Tìm kiếm** | ✅ | ❌ |
+| **Chat với AI** | ✅ | ✅ |
+
+### 5.6 Đăng nhập và phân luồng
+
+```python
+# Backend Flask (auth_app.py)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    role = authenticate(username, password)  # 'admin' hoặc 'user'
+    
+    if role == 'admin':
+        return redirect('/dashboard')  # Dashboard.html
+    elif role == 'user':
+        return redirect('/trang_chu')  # trang_chu.html
+    else:
+        return 'Invalid credentials'
+
+@app.route('/dashboard')
+def dashboard():
+    if current_user.role != 'admin':
+        return redirect('/login')
+    return render_template('Dashboard.html')
+
+@app.route('/trang_chu')
+def trang_chu():
+    if current_user.role != 'user':
+        return redirect('/login')
+    return render_template('trang_chu.html')
+```
+
+### 5.7 Ví dụ luồng hoạt động
+
+#### **Kịch bản: Tài xế sử dụng điện thoại**
+
+```
+1. [lái_xe.py] AI phát hiện tài xế 29B-222.22 dùng điện thoại
+   → add_ai_alert('phone', 'Tài xế đang DÙNG ĐIỆN THOẠI!')
+
+2. [API] Cảnh báo gửi đến server qua API
+   → POST /api/send_alert {type: 'phone', vehicle: '29B-222.22'}
+
+3. [Dashboard.html] Admin thấy cảnh báo trong AI Alerts Panel
+   → 🔔 📱 Tài xế đang DÙNG ĐIỆN THOẠI!
+   → ⏰ 14:30:25 - 03/12/2024
+
+4. [Admin] Click "Gửi cảnh cáo"
+   → POST /api/send_warning {vehicle: '29B-222.22', message: 'Cảnh cáo lần 1'}
+
+5. [trang_chu.html] Tài xế nhận được cảnh cáo
+   → 📨 CẢNH CÁO TỪ ADMIN
+   → Nội dung: Cảnh cáo lần 1 - Sử dụng điện thoại
+   → ⏰ 14:31:00 - 03/12/2024
+
+6. [Tài xế] Đọc cảnh cáo, cải thiện hành vi
+   → Không dùng điện thoại nữa
+
+7. [Hệ thống] Ghi nhận cải thiện
+   → Điểm an toàn tăng từ 7.5 → 8.0
+```
 
 ---
 
@@ -885,6 +1098,455 @@ AI-Traffic-Monitoring-System/
 | **Tổng độ trễ** | **~50-70ms** |
 
 → **Real-time**: Cảnh báo xuất hiện trong chat < 1 giây
+
+---
+
+## 🔐 CHỨC NĂNG ADMIN (DASHBOARD.HTML)
+
+### 1. 👁️ Giám sát thời gian thực
+
+#### **Bản đồ Leaflet:**
+- Hiển thị vị trí **7 xe** đang chạy
+- Marker phân loại theo loại xe (car/bus/truck)
+- Popup thông tin khi click vào marker
+- Auto-refresh vị trí mỗi 2 giây
+
+#### **Camera Grid:**
+- 4 camera góc nhìn (tài xế, trước, khách, lùi)
+- Video stream thời gian thực
+- Click để mở full-screen
+- Status indicator (Online/Offline)
+
+#### **KPI Cards:**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  📊 KPI CARDS                                               │
+│                                                              │
+│  🚗 Xe hoạt động      📦 Chuyến hôm nay    ⚠️ Cảnh báo AI   │
+│     48                    124                  5            │
+│                                                              │
+│  🚫 Vi phạm           🛡️ Điểm an toàn                       │
+│     4                    86/100                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 2. ⚠️ Nhận cảnh báo AI từ lái_xe
+
+#### **AI Alerts Panel:**
+- Panel bên phải màn hình
+- Hiển thị cảnh báo thời gian thực
+- Phân loại theo mức độ (Critical/Warning/Info)
+- Timestamp chính xác
+
+```javascript
+// Polling API mỗi 3 giây
+function fetchAICurrentWarnings() {
+    fetch('http://localhost:5002/api/get_ai_warnings')
+        .then(res => res.json())
+        .then(data => {
+            updateAlertsPanel(data);
+        });
+}
+
+setInterval(fetchAICurrentWarnings, 3000);
+```
+
+#### **Các loại cảnh báo:**
+| Loại | Mức độ | Icon |
+|------|--------|------|
+| Nhắm mắt quá lâu | 🔴 Critical | 👁️ |
+| Ngáp ngủ | 🟡 Warning | 😴 |
+| Mất tập trung | 🟡 Warning | 🔄 |
+| Dùng điện thoại | 🔴 Critical | 📱 |
+| Không dây an toàn | 🔴 Critical | ⚠️ |
+| Không cầm vô lăng | 🟡 Warning | 🙌 |
+| Va chạm | 🔴 Critical | 🚨 |
+| Lệch làn | 🟡 Warning | ⚠️ |
+
+### 3. 📢 Gửi cảnh cáo đến tài xế
+
+#### **Chức năng gửi cảnh cáo:**
+```javascript
+// Dashboard.html
+function sendWarning(vehiclePlate) {
+    const message = prompt('Nhập nội dung cảnh cáo:');
+    
+    if (message) {
+        fetch('/api/send_warning', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                vehicle_plate: vehiclePlate,
+                message: message,
+                admin_id: 'admin001',
+                timestamp: new Date().toISOString()
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast('success', 'Đã gửi cảnh cáo!');
+        });
+    }
+}
+```
+
+#### **Action Buttons trong table:**
+```html
+<div class="action-buttons">
+    <button class="btn-action btn-call" onclick="callDriver('0909888999')">
+        <i class="fa-solid fa-phone"></i> Gọi
+    </button>
+    <button class="btn-action btn-alert" onclick="sendWarning('29B-222.22')">
+        <i class="fa-solid fa-bell"></i> Cảnh báo
+    </button>
+    <button class="btn-action btn-camera" onclick="viewCamera('29B-222.22')">
+        <i class="fa-solid fa-video"></i> Camera
+    </button>
+    <button class="btn-action btn-report" onclick="viewReport('29B-222.22')">
+        <i class="fa-solid fa-file-lines"></i> Báo cáo
+    </button>
+</div>
+```
+
+### 4. 🔍 Tìm kiếm và Lọc dữ liệu
+
+#### **Tìm kiếm xe:**
+```javascript
+// Tìm theo biển số
+function searchVehicle() {
+    const plateInput = document.getElementById('searchPlate').value.trim().toUpperCase();
+    const driverInput = document.getElementById('searchDriver').value.trim().toLowerCase();
+    
+    // Tìm trong danh sách
+    for (const vehicle of vehicles) {
+        if (vehicle.plate.includes(plateInput) || 
+            vehicle.driver.toLowerCase().includes(driverInput)) {
+            focusVehicle(vehicle.id);
+            showToast('success', `Đã tìm thấy xe ${vehicle.plate}`);
+            return;
+        }
+    }
+    
+    showToast('warning', 'Không tìm thấy xe');
+}
+
+// Focus xe trên bản đồ
+function focusVehicle(id) {
+    const vehicle = vehicles.find(v => v.id === id);
+    map.flyTo([vehicle.lat, vehicle.lng], 16);
+    markers[id].openPopup();
+}
+```
+
+#### **Bộ lọc:**
+```html
+<!-- Lọc theo trạng thái -->
+<select id="statusFilter">
+    <option value="all">Tất cả trạng thái</option>
+    <option value="running">Đang chạy</option>
+    <option value="stopped">Đã dừng</option>
+    <option value="offline">Offline</option>
+</select>
+
+<!-- Lọc theo vi phạm -->
+<select id="violationFilter">
+    <option value="all">Tất cả vi phạm</option>
+    <option value="phone">Dùng điện thoại</option>
+    <option value="seatbelt">Không thắt dây</option>
+    <option value="drowsy">Buồn ngủ</option>
+    <option value="lane">Lệch làn</option>
+</select>
+```
+
+### 5. 📈 Thống kê và Báo cáo
+
+#### **Thống kê tổng quan:**
+```javascript
+// Statistics page
+const stats = {
+    totalTrips: 1247,
+    totalPassengers: 8562,
+    totalViolations: 89,
+    revenue: '2.4B VNĐ',
+    activeVehicles: 42,
+    activeDrivers: 38
+};
+```
+
+#### **Biểu đồ:**
+- **Trips Chart**: Lượt chuyến theo ngày/tuần/tháng
+- **Violation Pie Chart**: Tỷ lệ vi phạm theo loại
+- **Violation Bar Chart**: Số vụ vi phạm theo loại
+- **Violation Trend Chart**: Xu hướng vi phạm theo thời gian
+- **Hourly Trips Chart**: Lượt chuyến theo giờ
+
+#### **Báo cáo:**
+```javascript
+// Xuất báo cáo Excel
+function exportExcel() {
+    const table = document.getElementById('tripTableBody');
+    exportTableToExcel(table.id, 'bao_cao_vi_pham');
+    showToast('success', 'Đã xuất báo cáo Excel!');
+}
+
+// Xuất báo cáo PDF
+function exportReport() {
+    showToast('info', 'Xuất PDF', 'Đang chuẩn bị báo cáo PDF...');
+}
+```
+
+### 6. ➕ CRUD Dữ liệu
+
+#### **Thêm xe mới:**
+```javascript
+function openAddVehicleModal() {
+    const modal = createModal('addVehicleModal', '🚗 Thêm xe mới', `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label>Biển số</label>
+                <input type="text" id="newVehiclePlate">
+            </div>
+            <div>
+                <label>Loại xe</label>
+                <select id="newVehicleType">
+                    <option value="car">Xe con</option>
+                    <option value="bus">Xe khách</option>
+                    <option value="truck">Xe tải</option>
+                </select>
+            </div>
+            <div>
+                <label>Tài xế</label>
+                <input type="text" id="newVehicleDriver">
+            </div>
+            <div>
+                <label>Số ghế</label>
+                <input type="number" id="newVehicleSeats">
+            </div>
+        </div>
+    `, `
+        <button onclick="saveNewVehicle()">Thêm xe</button>
+    `);
+}
+
+function saveNewVehicle() {
+    const plate = document.getElementById('newVehiclePlate').value;
+    // Lưu vào database
+    showToast('success', `Đã thêm xe ${plate}`);
+}
+```
+
+#### **Sửa thông tin xe:**
+```javascript
+function editVehicle(plate) {
+    showToast('info', 'Chỉnh sửa', `Đang chỉnh sửa xe ${plate}`);
+    // Mở modal với thông tin hiện tại
+}
+```
+
+#### **Xóa xe:**
+```javascript
+function deleteVehicle(plate) {
+    if (confirm(`Bạn có chắc muốn xóa xe ${plate}?`)) {
+        // Xóa từ database
+        showToast('success', `Đã xóa xe ${plate}`);
+        loadVehiclesData();  // Reload danh sách
+    }
+}
+```
+
+#### **Quản lý tài xế:**
+- **loadDriversData()**: Tải danh sách tài xế
+- **showAddDriverModal()**: Thêm tài xế mới
+- **editDriver(name)**: Sửa thông tin
+- **deleteDriver(name)**: Xóa tài xế
+- **callDriver(phone)**: Gọi điện
+
+#### **Quản lý tuyến đường:**
+- **loadRoutesData()**: Tải danh sách tuyến
+- **openAddModal()**: Thêm tuyến mới
+- **viewRoute(code)**: Xem chi tiết tuyến trên bản đồ
+- **editRoute(code)**: Sửa tuyến
+- **exportRoutes()**: Xuất danh sách tuyến
+
+### 7. 📤 Xuất file
+
+```javascript
+// Xuất Excel
+function exportTableToExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach(col => {
+            rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    downloadCSV(csv.join('\n'), filename + '.csv');
+    showToast('success', `Đã xuất ${filename}.csv`);
+}
+
+// Download file
+function downloadCSV(csv, filename) {
+    const csvFile = new Blob([csv], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = filename;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.click();
+}
+```
+
+### 8. 🎤 Voice Commands
+
+#### **Lệnh giọng nói:**
+```javascript
+// Speech Recognition
+var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+recognition = new SpeechRecognition();
+recognition.lang = 'vi-VN';
+
+recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.toLowerCase();
+    processVoiceCommand(transcript);
+};
+
+function processVoiceCommand(cmd) {
+    if (cmd.includes('hiển thị xe')) {
+        // Tìm và focus xe
+        const plate = extractPlate(cmd);
+        focusVehicleByPlate(plate);
+    }
+    else if (cmd.includes('mở camera')) {
+        viewCamera();
+    }
+    else if (cmd.includes('gọi hỗ trợ')) {
+        toggleChat(true);
+    }
+    else if (cmd.includes('xem cảnh báo')) {
+        toggleAlertsPanel(true);
+    }
+}
+```
+
+---
+
+## 📱 CHỨC NĂNG USER (TRANG_CHU.HTML)
+
+### 1. 💬 Tư vấn cá nhân
+
+```javascript
+// Chat với AI về thông tin cá nhân
+function sendUserMsg() {
+    const text = document.getElementById('chatInput').value;
+    
+    fetch('/api/send_chat_message', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            message: text,
+            user_id: currentUserId
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        displayUserMessage(text);
+        displayBotMessage(data.bot_response);
+    });
+}
+```
+
+### 2. ⚠️ Nhận cảnh báo từ lái_xe
+
+```javascript
+// Polling cảnh báo AI
+function checkMyAlerts() {
+    fetch('/api/get_my_alerts')
+        .then(res => res.json())
+        .then(data => {
+            displayAlerts(data.alerts);
+        });
+}
+
+setInterval(checkMyAlerts, 3000);
+```
+
+### 3. 📨 Nhận xử phạt từ Admin
+
+```javascript
+// Nhận cảnh cáo từ Admin
+function checkWarnings() {
+    fetch('/api/get_my_warnings')
+        .then(res => res.json())
+        .then(data => {
+            data.warnings.forEach(warning => {
+                addWarningToTimeline(warning);
+            });
+        });
+}
+
+setInterval(checkWarnings, 5000);
+```
+
+### 4. 📊 Xem lịch sử vi phạm
+
+```javascript
+// Lịch sử vi phạm cá nhân
+function loadMyHistory() {
+    fetch('/api/get_my_history')
+        .then(res => res.json())
+        .then(data => {
+            displayHistory(data.violations);
+        });
+}
+```
+
+### 5. 🎤 Chat voice
+
+```javascript
+// Chat bằng giọng nói
+function toggleVoiceRecognition() {
+    if (isVoiceListening) {
+        recognition.stop();
+    } else {
+        recognition.start();
+    }
+}
+```
+
+---
+
+## 🔄 TÓM TẮT LUỒNG HOẠT ĐỘNG
+
+### Luồng 1: AI Detection → Admin Dashboard
+
+```
+lái_xe.py (AI) → Server API → Dashboard.html (Admin)
+     ↓              ↓              ↓
+  Phát hiện    Lưu trữ và    Hiển thị cảnh
+  vi phạm      forward       báo trong panel
+```
+
+### Luồng 2: Admin → User (Cảnh cáo/Xử phạt)
+
+```
+Dashboard.html → Server API → trang_chu.html (User)
+     ↓              ↓              ↓
+  Admin gửi    Lưu và        Tài xế nhận
+  cảnh cáo     forward       cảnh cáo
+```
+
+### Luồng 3: User cải thiện → Admin xem thống kê
+
+```
+trang_chu.html → Server API → Dashboard.html
+     ↓              ↓              ↓
+  Tài xế cải   Cập nhật      Admin xem
+  thiện        điểm số       thống kê
+```
 
 ---
 
