@@ -248,6 +248,26 @@
                 document.body.appendChild(errorMsg);
             });
         }
+
+        // Hàm đăng xuất
+        function logout() {
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect || '/login';
+                } else {
+                    alert('Đăng xuất thất bại: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi đăng xuất:', error);
+                alert('Có lỗi xảy ra khi đăng xuất');
+            });
+        }
     </script>
 
     <style>
@@ -256,6 +276,28 @@
             padding: 0;
             font-family: Arial, sans-serif;
             color: white;
+        }
+
+        .logout-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10000;
+            padding: 10px 20px;
+            background-color: #e53935;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #c62828;
         }
 
         .app {
@@ -361,6 +403,9 @@
 </head>
 
 <body>
+    <button class="logout-btn" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+    </button>
     <div class="app">
         <div class="container">
             <div class="app-grid">
