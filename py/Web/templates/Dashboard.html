@@ -5464,7 +5464,54 @@ function submitWarning() {
 }
 
 function viewCamera(plate) {
-  showToast('info', 'Camera', `Đang kết nối camera xe ${plate}...`);
+  // Tìm xe theo biển số
+  const vehicle = vehicles.find(v => v.plate === plate);
+  
+  if (!vehicle) {
+    showToast('error', 'Lỗi', `Không tìm thấy xe ${plate}`);
+    return;
+  }
+  
+  showToast('success', 'Camera', `Đang kết nối camera xe ${plate}...`);
+  
+  // Cập nhật nguồn video cho các camera
+  const cameraItems = document.querySelectorAll('.camera-item video source');
+  if (cameraItems.length >= 4) {
+    // Camera tài xế - lấy từ videoDriver của xe
+    cameraItems[0].src = vehicle.videoDriver || '/py/video_input/ca_bin.mp4';
+    // Camera trước - lấy từ videoFront của xe
+    cameraItems[1].src = vehicle.videoFront || '/py/video_input/lech_lan.mp4';
+    // Camera khách - lấy từ videoPassenger của xe
+    cameraItems[2].src = vehicle.videoPassenger || '/py/video_input/passenger.mp4';
+    // Camera lùi - lấy từ videoRear của xe
+    cameraItems[3].src = vehicle.videoRear || '/py/video_input/car1.mp4';
+    
+    // Reload các video
+    cameraItems.forEach(source => {
+      source.parentElement.load();
+    });
+  }
+  
+  // Di chuyển map đến vị trí của xe
+  if (map && vehicle.lat && vehicle.lng) {
+    map.flyTo([vehicle.lat, vehicle.lng], 15, {
+      duration: 1.5
+    });
+    
+    // Mở popup thông tin xe
+    const marker = markers[vehicle.id];
+    if (marker) {
+      marker.openPopup();
+    }
+    
+    showToast('info', 'Vị trí', `Xe ${plate} đang ở: ${vehicle.currentAddress}`);
+  }
+  
+  // Cuộn đến section camera
+  const cameraSection = document.querySelector('.camera-section-full');
+  if (cameraSection) {
+    cameraSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function viewReport(plate) {
@@ -5678,12 +5725,132 @@ function calculateETA(km, speed) {
 }
 
 const vehicles = [
-  { id: 1, plate: "29A-111.11", type: "car", driver: "Nguyễn Văn Đức", phone: "0988 777 666", speed: 45, remainingKm: 12.5, currentAddress: "Võ Chí Công", route: "Nội Bài -> Võ Chí Công", lat: 21.0450, lng: 105.8100, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+1", videoDashcam: "/py/video_input/car1.mp4", imgDriver: "https://randomuser.me/api/portraits/men/67.jpg" },
-  { id: 2, plate: "29B-222.22", type: "bus", driver: "Trần Văn Hoan", phone: "0909 888 999", speed: 0, remainingKm: 5, currentAddress: "Bến xe Mỹ Đình", route: "Mỹ Đình -> Hải Phòng", lat: 21.0300, lng: 105.7800, status: 0, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+2", videoDashcam: "/py/video_input/car2.mp4", imgDriver: "https://randomuser.me/api/portraits/men/32.jpg" },
-  { id: 3, plate: "30G-666.66", type: "car", driver: "Vũ Thị Hồng", phone: "0912 345 678", speed: 40, remainingKm: 3.2, currentAddress: "Hồ Tây", route: "Hồ Tây -> Lăng Bác", lat: 21.0400, lng: 105.8350, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+3", videoDashcam: "/py/video_input/car3.mp4", imgDriver: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: 4, plate: "29LD-777.77", type: "bus", driver: "Lê Văn Minh", phone: "0933 222 111", speed: 60, remainingKm: 15, currentAddress: "Cầu Chương Dương", route: "Nhà Hát Lớn -> Bát Tràng", lat: 21.0250, lng: 105.8600, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+4", videoDashcam: "/py/video_input/car4.mp4", imgDriver: "https://randomuser.me/api/portraits/men/85.jpg" },
-  { id: 5, plate: "30F-888.88", type: "car", driver: "Phạm Văn Hùng", phone: "0977 666 555", speed: 50, remainingKm: 25, currentAddress: "Cầu Giấy", route: "Cầu Giấy -> Long Biên", lat: 21.0350, lng: 105.8200, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+5", videoDashcam: "/py/video_input/car5.mp4", imgDriver: "https://randomuser.me/api/portraits/men/22.jpg" },
-  { id: 6, plate: "30E-999.99", type: "car", driver: "Hoàng Thị Lan", phone: "0966 555 444", speed: 35, remainingKm: 8, currentAddress: "Đống Đa", route: "Đống Đa -> Hai Bà Trưng", lat: 21.0150, lng: 105.8300, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+6", videoDashcam: "/py/video_input/car6.mp4", imgDriver: "https://randomuser.me/api/portraits/women/68.jpg" }
+  { 
+    id: 1, 
+    plate: "29A-111.11", 
+    type: "car", 
+    driver: "Nguyễn Văn Đức", 
+    phone: "0988 777 666", 
+    speed: 45, 
+    remainingKm: 12.5, 
+    currentAddress: "Võ Chí Công", 
+    route: "Nội Bài -> Võ Chí Công", 
+    lat: 21.0450, 
+    lng: 105.8100, 
+    status: 1, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Car+1", 
+    videoDashcam: "/py/video_input/car1.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car1.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/men/67.jpg" 
+  },
+  { 
+    id: 2, 
+    plate: "29B-222.22", 
+    type: "bus", 
+    driver: "Trần Văn Hoan", 
+    phone: "0909 888 999", 
+    speed: 0, 
+    remainingKm: 5, 
+    currentAddress: "Bến xe Mỹ Đình", 
+    route: "Mỹ Đình -> Hải Phòng", 
+    lat: 21.0300, 
+    lng: 105.7800, 
+    status: 0, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Bus+2", 
+    videoDashcam: "/py/video_input/car2.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car2.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/men/32.jpg" 
+  },
+  { 
+    id: 3, 
+    plate: "30G-666.66", 
+    type: "car", 
+    driver: "Vũ Thị Hồng", 
+    phone: "0912 345 678", 
+    speed: 40, 
+    remainingKm: 3.2, 
+    currentAddress: "Hồ Tây", 
+    route: "Hồ Tây -> Lăng Bác", 
+    lat: 21.0400, 
+    lng: 105.8350, 
+    status: 1, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Car+3", 
+    videoDashcam: "/py/video_input/car3.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car3.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/women/44.jpg" 
+  },
+  { 
+    id: 4, 
+    plate: "29LD-777.77", 
+    type: "bus", 
+    driver: "Lê Văn Minh", 
+    phone: "0933 222 111", 
+    speed: 60, 
+    remainingKm: 15, 
+    currentAddress: "Cầu Chương Dương", 
+    route: "Nhà Hát Lớn -> Bát Tràng", 
+    lat: 21.0250, 
+    lng: 105.8600, 
+    status: 1, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Bus+4", 
+    videoDashcam: "/py/video_input/car4.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car4.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/men/85.jpg" 
+  },
+  { 
+    id: 5, 
+    plate: "30F-888.88", 
+    type: "car", 
+    driver: "Phạm Văn Hùng", 
+    phone: "0977 666 555", 
+    speed: 50, 
+    remainingKm: 25, 
+    currentAddress: "Cầu Giấy", 
+    route: "Cầu Giấy -> Long Biên", 
+    lat: 21.0350, 
+    lng: 105.8200, 
+    status: 1, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Car+5", 
+    videoDashcam: "/py/video_input/car5.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car5.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/men/22.jpg" 
+  },
+  { 
+    id: 6, 
+    plate: "30E-999.99", 
+    type: "car", 
+    driver: "Hoàng Thị Lan", 
+    phone: "0966 555 444", 
+    speed: 35, 
+    remainingKm: 8, 
+    currentAddress: "Đống Đa", 
+    route: "Đống Đa -> Hai Bà Trưng", 
+    lat: 21.0150, 
+    lng: 105.8300, 
+    status: 1, 
+    imgVehicle: "https://via.placeholder.com/300x150?text=Car+6", 
+    videoDashcam: "/py/video_input/car6.mp4",
+    videoDriver: "/py/video_input/ca_bin.mp4",
+    videoFront: "/py/video_input/lech_lan.mp4",
+    videoPassenger: "/py/video_input/passenger.mp4",
+    videoRear: "/py/video_input/car6.mp4",
+    imgDriver: "https://randomuser.me/api/portraits/women/68.jpg" 
+  }
 ];
 
 function initMap() {
