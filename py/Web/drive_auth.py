@@ -34,7 +34,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_PORT'] = 3306
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'ai_traffic_monitoring'
+app.config['MYSQL_DB'] = 'AI_traffic'
 
 # Extensions
 bcrypt = Bcrypt(app)
@@ -58,7 +58,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('login_page'))
-        if session.get('role') != 'admin':
+        if session.get('vai_tro') != 'admin':
             flash('Bạn không có quyền truy cập', 'error')
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
@@ -81,6 +81,68 @@ def get_db_connection():
     except Exception as e:
         print(f"DB Error: {e}")
         return None
+
+# ========================================
+# ÁNH XẠ TÊN TIẾNG VIỆT VÀ TIẾNG ANH
+# ========================================
+# Bảng: alerts -> canh_bao
+#   - vehicle_id -> xe_id
+#   - driver_id -> tai_xe_id
+#   - type -> loai
+#   - message -> noi_dung
+#   - level -> muc_do
+#   - image_path -> duong_dan_anh
+#   - video_path -> duong_dan_video
+#   - timestamp -> thoi_gian
+#   - is_read -> da_doc
+#   - is_processed -> da_xu_ly
+#
+# Bảng: vehicles -> phuong_tien
+#   - plate_number -> bien_so
+#   - type -> loai_xe
+#   - driver_id -> tai_xe_id
+#   - owner_name -> ten_chu_xe
+#   - owner_phone -> so_dien_thoai_chu_xe
+#   - status -> trang_thai
+#   - year -> nam_san_xuat
+#   - km_traveled -> so_km_da_chay
+#   - created_at -> ngay_tao
+#   - updated_at -> ngay_cap_nhat
+#
+# Bảng: drivers -> tai_xe
+#   - user_id -> nguoi_dung_id
+#   - full_name -> ho_va_ten
+#   - phone -> so_dien_thoai
+#   - license_number -> so_giay_phep
+#   - experience_years -> nam_kinh_nghiem
+#   - rating -> danh_gia
+#   - total_trips -> tong_chuyen
+#   - safety_score -> diem_an_toan
+#   - status -> trang_thai
+#   - created_at -> ngay_tao
+#
+# Bảng: warnings -> lo_lo
+#   - vehicle_plate -> bien_so_xe
+#   - driver_id -> tai_xe_id
+#   - message -> noi_dung
+#   - admin_id -> admin_id
+#   - priority -> do_uu_tien
+#   - is_read -> da_doc
+#   - read_at -> doc_luc
+#   - created_at -> ngay_tao
+#
+# Bảng: users -> nguoi_dung
+#   - username -> ten_dang_nhap
+#   - password -> mat_khau
+#   - email -> email
+#   - full_name -> ho_va_ten
+#   - role -> vai_tro
+#   - avatar -> anh_dai_dien
+#   - phone -> so_dien_thoai
+#   - is_active -> hoat_dong
+#   - last_login -> lan_cuoi_dang_nhap
+#   - created_at -> ngay_tao
+#   - updated_at -> ngay_cap_nhat
 
 # ========================================
 # AUTH ROUTES
@@ -106,7 +168,7 @@ def api_login():
             return jsonify({'success': False, 'message': 'Database error'}), 500
             
         cur = conn.cursor()
-        cur.execute('SELECT id, username, password, role, full_name, is_active FROM users WHERE username = %s', (username,))
+        cur.execute('SELECT id, ten_dang_nhap, mat_khau, vai_tro, ho_va_ten, hoat_dong FROM nguoi_dung WHERE ten_dang_nhap = %s', (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -114,20 +176,20 @@ def api_login():
         if not user:
             return jsonify({'success': False, 'message': 'Tên đăng nhập không tồn tại'}), 401
         
-        if not user['is_active']:
+        if not user['hoat_dong']:
             return jsonify({'success': False, 'message': 'Tài khoản đã bị khóa'}), 403
-        
-        if not bcrypt.check_password_hash(user['password'], password):
+
+        if not bcrypt.check_password_hash(user['mat_khau'], password):
             return jsonify({'success': False, 'message': 'Mật khẩu không đúng'}), 401
-        
+
         # Create session
         session.permanent = True
         session['user_id'] = user['id']
-        session['username'] = user['username']
-        session['role'] = user['role']
-        session['full_name'] = user['full_name']
-        
-        redirect_url = '/dashboard' if user['role'] == 'admin' else '/trang_chu'
+        session['ten_dang_nhap'] = user['ten_dang_nhap']
+        session['vai_tro'] = user['vai_tro']
+        session['ho_va_ten'] = user['ho_va_ten']
+
+        redirect_url = '/dashboard' if user['vai_tro'] == 'admin' else '/trang_chu'
         
         return jsonify({
             'success': True,
@@ -135,9 +197,9 @@ def api_login():
             'redirect': redirect_url,
             'user': {
                 'id': user['id'],
-                'username': user['username'],
-                'full_name': user['full_name'],
-                'role': user['role']
+                'ten_dang_nhap': user['ten_dang_nhap'],
+                'ho_va_ten': user['ho_va_ten'],
+                'vai_tro': user['vai_tro']
             }
         }), 200
         
@@ -157,10 +219,10 @@ def check_auth():
             'authenticated': True,
             'user': {
                 'id': session.get('user_id'),
-                'username': session.get('username'),
-                'role': session.get('role')
+                'ten_dang_nhap': session.get('ten_dang_nhap'),
+                'vai_tro': session.get('vai_tro')
             },
-            'redirect': '/dashboard' if session.get('role') == 'admin' else '/trang_chu'
+            'redirect': '/dashboard' if session.get('vai_tro') == 'admin' else '/trang_chu'
         }), 200
     return jsonify({'authenticated': False, 'user': None, 'redirect': None}), 200
 
@@ -169,7 +231,7 @@ def index_page():
     """Trang chủ - luôn redirect về login nếu chưa đăng nhập"""
     if 'user_id' in session:
         # Đã đăng nhập thì redirect theo role
-        if session.get('role') == 'admin':
+        if session.get('vai_tro') == 'admin':
             return redirect(url_for('dashboard_page'))
         else:
             return redirect(url_for('trang_chu_page'))
@@ -214,35 +276,35 @@ def get_alerts():
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
-        
+
         cur = conn.cursor()
         cur.execute('''
-            SELECT a.*, v.plate_number as vehicle_plate, d.full_name as driver_name
-            FROM alerts a
-            LEFT JOIN vehicles v ON a.vehicle_id = v.id
-            LEFT JOIN drivers d ON a.driver_id = d.id
-            ORDER BY a.timestamp DESC
+            SELECT a.*, v.bien_so as vehicle_plate, t.ho_va_ten as driver_name
+            FROM canh_bao a
+            LEFT JOIN phuong_tien v ON a.xe_id = v.id
+            LEFT JOIN tai_xe t ON a.tai_xe_id = t.id
+            ORDER BY a.thoi_gian DESC
             LIMIT 100
         ''')
         alerts = cur.fetchall()
         cur.close()
         conn.close()
-        
+
         # Format alerts
         formatted_alerts = []
         for alert in alerts:
             formatted_alerts.append({
                 'id': alert['id'],
-                'type': alert['type'],
-                'message': alert['message'],
-                'level': alert['level'],
-                'timestamp': alert['timestamp'].isoformat() if alert['timestamp'] else None,
+                'type': alert['loai'],
+                'message': alert['noi_dung'],
+                'level': alert['muc_do'],
+                'timestamp': alert['thoi_gian'].isoformat() if alert['thoi_gian'] else None,
                 'vehicle_plate': alert['vehicle_plate'],
                 'driver_name': alert['driver_name'],
-                'is_read': bool(alert['is_read']),
-                'video_path': alert['video_path']
+                'is_read': bool(alert['da_doc']),
+                'video_path': alert['duong_dan_video']
             })
-        
+
         return jsonify({'success': True, 'alerts': formatted_alerts})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
@@ -255,13 +317,13 @@ def mark_alert_as_read(alert_id):
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
-        
+
         cur = conn.cursor()
-        cur.execute('UPDATE alerts SET is_read = 1 WHERE id = %s', (alert_id,))
+        cur.execute('UPDATE canh_bao SET da_doc = 1 WHERE id = %s', (alert_id,))
         conn.commit()
         cur.close()
         conn.close()
-        
+
         return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
@@ -307,32 +369,32 @@ def get_admin_warnings():
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
-        
+
         cur = conn.cursor()
         cur.execute('''
-            SELECT w.*, u.full_name as admin_name
-            FROM warnings w
-            LEFT JOIN users u ON w.admin_id = u.id
-            ORDER BY w.created_at DESC
+            SELECT w.*, u.ho_va_ten as admin_name
+            FROM lo_lo w
+            LEFT JOIN nguoi_dung u ON w.admin_id = u.id
+            ORDER BY w.ngay_tao DESC
             LIMIT 100
         ''')
         warnings = cur.fetchall()
         cur.close()
         conn.close()
-        
+
         # Format warnings
         formatted_warnings = []
         for warning in warnings:
             formatted_warnings.append({
                 'id': warning['id'],
-                'vehicle_plate': warning['vehicle_plate'],
-                'message': warning['message'],
-                'priority': warning['priority'],
-                'is_read': bool(warning['is_read']),
-                'created_at': warning['created_at'].isoformat() if warning['created_at'] else None,
+                'vehicle_plate': warning['bien_so_xe'],
+                'message': warning['noi_dung'],
+                'priority': warning['do_uu_tien'],
+                'is_read': bool(warning['da_doc']),
+                'created_at': warning['ngay_tao'].isoformat() if warning['ngay_tao'] else None,
                 'admin_name': warning['admin_name']
             })
-        
+
         return jsonify({'success': True, 'warnings': formatted_warnings})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
@@ -345,13 +407,13 @@ def mark_warning_as_read(warning_id):
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
-        
+
         cur = conn.cursor()
-        cur.execute('UPDATE warnings SET is_read = 1, read_at = NOW() WHERE id = %s', (warning_id,))
+        cur.execute('UPDATE lo_lo SET da_doc = 1, doc_luc = NOW() WHERE id = %s', (warning_id,))
         conn.commit()
         cur.close()
         conn.close()
-        
+
         return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500

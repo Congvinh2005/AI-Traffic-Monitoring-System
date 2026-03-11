@@ -48,6 +48,29 @@ def get_db_connection():
     )
 
 # ========================================
+# ÁNH XẠ TÊN TIẾNG VIỆT VÀ TIẾNG ANH
+# ========================================
+# Bảng: users -> nguoi_dung
+#   - username -> ten_dang_nhap
+#   - password -> mat_khau
+#   - email -> email
+#   - full_name -> ho_va_ten
+#   - role -> vai_tro
+#   - avatar -> anh_dai_dien
+#   - phone -> so_dien_thoai
+#   - is_active -> hoat_dong
+#   - last_login -> lan_cuoi_dang_nhap
+#   - created_at -> ngay_tao
+#   - updated_at -> ngay_cap_nhat
+#
+# Bảng: login_history -> lich_su_dang_nhap
+#   - user_id -> nguoi_dung_id
+#   - ip_address -> dia_chi_ip
+#   - user_agent -> trinh_duyet
+#   - status -> trang_thai
+#   - created_at -> ngay_tao
+
+# ========================================
 # DECORATORS
 # ========================================
 def login_required(f):
@@ -65,7 +88,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': 'Vui lòng đăng nhập'}), 401
-        if session.get('role') != 'admin':
+        if session.get('vai_tro') != 'admin':
             return jsonify({'success': False, 'message': 'Bạn không có quyền truy cập'}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -77,7 +100,7 @@ def role_required(allowed_roles):
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
                 return jsonify({'success': False, 'message': 'Vui lòng đăng nhập'}), 401
-            if session.get('role') not in allowed_roles:
+            if session.get('vai_tro') not in allowed_roles:
                 return jsonify({'success': False, 'message': 'Bạn không có quyền truy cập'}), 403
             return f(*args, **kwargs)
         return decorated_function
@@ -90,7 +113,7 @@ def role_required(allowed_roles):
 def index():
     """Trang chủ - Chuyển hướng dựa trên quyền"""
     if 'user_id' in session:
-        if session.get('role') == 'admin':
+        if session.get('vai_tro') == 'admin':
             return redirect(url_for('dashboard'))
         else:
             return redirect(url_for('trang_chu'))
@@ -170,14 +193,14 @@ def api_login():
         # Get connection
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         # Tìm user trong database
         cur.execute('''
-            SELECT id, username, password, email, full_name, role, avatar, phone, is_active 
-            FROM users 
-            WHERE username = %s
+            SELECT id, ten_dang_nhap, mat_khau, email, ho_va_ten, vai_tro, anh_dai_dien, so_dien_thoai, hoat_dong
+            FROM nguoi_dung
+            WHERE ten_dang_nhap = %s
         ''', (username,))
-        
+
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -190,14 +213,14 @@ def api_login():
             }), 401
         
         # Kiểm tra tài khoản có active không
-        if not user['is_active']:
+        if not user['hoat_dong']:
             return jsonify({
                 'success': False,
                 'message': 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên'
             }), 403
-        
+
         # Kiểm tra mật khẩu
-        if not bcrypt.check_password_hash(user['password'], password):
+        if not bcrypt.check_password_hash(user['mat_khau'], password):
             # Ghi nhận đăng nhập thất bại
             log_login_attempt(user['id'], 'failed')
 
@@ -205,43 +228,43 @@ def api_login():
                 'success': False,
                 'message': 'Mật khẩu không đúng'
             }), 401
-        
+
         # Đăng nhập thành công
         # Cập nhật last_login
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('UPDATE users SET last_login = NOW() WHERE id = %s', (user['id'],))
+        cur.execute('UPDATE nguoi_dung SET lan_cuoi_dang_nhap = NOW() WHERE id = %s', (user['id'],))
         conn.commit()
         cur.close()
         conn.close()
-        
+
         # Ghi nhận đăng nhập thành công
         log_login_attempt(user['id'], 'success')
-        
+
         # Tạo session
         session.permanent = True
         session['user_id'] = user['id']
-        session['username'] = user['username']
-        session['role'] = user['role']
-        session['full_name'] = user['full_name']
-        session['avatar'] = user['avatar']
-        
+        session['ten_dang_nhap'] = user['ten_dang_nhap']
+        session['vai_tro'] = user['vai_tro']
+        session['ho_va_ten'] = user['ho_va_ten']
+        session['anh_dai_dien'] = user['anh_dai_dien']
+
         # Xác định redirect dựa trên role
-        if user['role'] == 'admin':
+        if user['vai_tro'] == 'admin':
             redirect_url = '/dashboard'
         else:
             redirect_url = '/trang_chu'
-        
+
         return jsonify({
             'success': True,
             'message': 'Đăng nhập thành công',
             'redirect': redirect_url,
             'user': {
                 'id': user['id'],
-                'username': user['username'],
-                'full_name': user['full_name'],
-                'role': user['role'],
-                'avatar': user['avatar']
+                'ten_dang_nhap': user['ten_dang_nhap'],
+                'ho_va_ten': user['ho_va_ten'],
+                'vai_tro': user['vai_tro'],
+                'anh_dai_dien': user['anh_dai_dien']
             }
         }), 200
         
@@ -285,14 +308,14 @@ def check_auth():
             'authenticated': True,
             'user': {
                 'id': session.get('user_id'),
-                'username': session.get('username'),
-                'role': session.get('role'),
-                'full_name': session.get('full_name'),
-                'avatar': session.get('avatar')
+                'ten_dang_nhap': session.get('ten_dang_nhap'),
+                'vai_tro': session.get('vai_tro'),
+                'ho_va_ten': session.get('ho_va_ten'),
+                'anh_dai_dien': session.get('anh_dai_dien')
             },
-            'redirect': '/dashboard' if session.get('role') == 'admin' else '/trang_chu'
+            'redirect': '/dashboard' if session.get('vai_tro') == 'admin' else '/trang_chu'
         }), 200
-    
+
     return jsonify({
         'authenticated': False,
         'user': None,
@@ -310,12 +333,12 @@ def get_profile():
         'success': True,
         'user': {
             'id': session.get('user_id'),
-            'username': session.get('username'),
-            'full_name': session.get('full_name'),
+            'ten_dang_nhap': session.get('ten_dang_nhap'),
+            'ho_va_ten': session.get('ho_va_ten'),
             'email': session.get('email'),
-            'role': session.get('role'),
-            'avatar': session.get('avatar'),
-            'phone': session.get('phone')
+            'vai_tro': session.get('vai_tro'),
+            'anh_dai_dien': session.get('anh_dai_dien'),
+            'so_dien_thoai': session.get('so_dien_thoai')
         }
     }), 200
 
@@ -328,7 +351,7 @@ def log_login_attempt(user_id, status):
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute('''
-            INSERT INTO login_history (user_id, ip_address, user_agent, status)
+            INSERT INTO lich_su_dang_nhap (nguoi_dung_id, dia_chi_ip, trinh_duyet, trang_thai)
             VALUES (%s, %s, %s, %s)
         ''', (user_id, request.remote_addr, request.user_agent.string, status))
         conn.commit()

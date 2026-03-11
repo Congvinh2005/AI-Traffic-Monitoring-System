@@ -24,28 +24,28 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `alerts`
+-- Cấu trúc bảng cho bảng `canh_bao` (alerts)
 --
 
-CREATE TABLE `alerts` (
+CREATE TABLE `canh_bao` (
   `id` int(11) NOT NULL,
-  `vehicle_id` int(11) DEFAULT NULL,
-  `driver_id` int(11) DEFAULT NULL,
-  `type` enum('eye','yawn','head','phone','seatbelt','hand','collision','lane','obstacle') DEFAULT NULL,
-  `message` text DEFAULT NULL,
-  `level` enum('critical','warning','info') DEFAULT 'warning',
-  `image_path` varchar(255) DEFAULT NULL,
-  `video_path` varchar(255) DEFAULT NULL,
-  `timestamp` datetime DEFAULT current_timestamp(),
-  `is_read` tinyint(4) DEFAULT 0,
-  `is_processed` tinyint(4) DEFAULT 0
+  `xe_id` int(11) DEFAULT NULL,
+  `tai_xe_id` int(11) DEFAULT NULL,
+  `loai` enum('eye','yawn','head','phone','seatbelt','hand','collision','lane','obstacle') DEFAULT NULL,
+  `noi_dung` text DEFAULT NULL,
+  `muc_do` enum('critical','warning','info') DEFAULT 'warning',
+  `duong_dan_anh` varchar(255) DEFAULT NULL,
+  `duong_dan_video` varchar(255) DEFAULT NULL,
+  `thoi_gian` datetime DEFAULT current_timestamp(),
+  `da_doc` tinyint(4) DEFAULT 0,
+  `da_xu_ly` tinyint(4) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `alerts`
+-- Đang đổ dữ liệu cho bảng `canh_bao`
 --
 
-INSERT INTO `alerts` (`id`, `vehicle_id`, `driver_id`, `type`, `message`, `level`, `image_path`, `video_path`, `timestamp`, `is_read`, `is_processed`) VALUES
+INSERT INTO `canh_bao` (`id`, `xe_id`, `tai_xe_id`, `loai`, `noi_dung`, `muc_do`, `duong_dan_anh`, `duong_dan_video`, `thoi_gian`, `da_doc`, `da_xu_ly`) VALUES
 (1, 1, 1, 'eye', 'Tài xế đang nhắm mắt quá lâu', 'critical', NULL, NULL, '2026-03-11 09:32:49', 1, 0),
 (2, 1, 1, 'phone', 'Tài xế đang dùng điện thoại', 'critical', NULL, NULL, '2026-03-11 08:32:49', 1, 1),
 (3, 1, 1, 'seatbelt', 'Tài xế không đeo dây an toàn', 'critical', NULL, NULL, '2026-03-11 07:32:49', 0, 0),
@@ -61,43 +61,28 @@ INSERT INTO `alerts` (`id`, `vehicle_id`, `driver_id`, `type`, `message`, `level
 -- --------------------------------------------------------
 
 --
--- Cấu trúc đóng vai cho view `dashboard_stats`
--- (See below for the actual view)
---
-CREATE TABLE `dashboard_stats` (
-`active_vehicles` bigint(21)
-,`active_drivers` bigint(21)
-,`today_alerts` bigint(21)
-,`today_warnings` bigint(21)
-,`today_trips` bigint(21)
-,`avg_safety_score` decimal(14,4)
-);
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `drivers`
+-- Cấu trúc bảng cho bảng `tai_xe` (drivers)
 --
 
-CREATE TABLE `drivers` (
+CREATE TABLE `tai_xe` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `full_name` varchar(100) DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `license_number` varchar(50) DEFAULT NULL,
-  `experience_years` int(11) DEFAULT NULL,
-  `rating` decimal(3,2) DEFAULT 5.00,
-  `total_trips` int(11) DEFAULT 0,
-  `safety_score` int(11) DEFAULT 100,
-  `status` enum('active','inactive','suspended') DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `nguoi_dung_id` int(11) DEFAULT NULL,
+  `ho_va_ten` varchar(100) DEFAULT NULL,
+  `so_dien_thoai` varchar(20) DEFAULT NULL,
+  `so_giay_phep` varchar(50) DEFAULT NULL,
+  `nam_kinh_nghiem` int(11) DEFAULT NULL,
+  `danh_gia` decimal(3,2) DEFAULT 5.00,
+  `tong_chuyen` int(11) DEFAULT 0,
+  `diem_an_toan` int(11) DEFAULT 100,
+  `trang_thai` enum('active','inactive','suspended') DEFAULT 'active',
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `drivers`
+-- Đang đổ dữ liệu cho bảng `tai_xe`
 --
 
-INSERT INTO `drivers` (`id`, `user_id`, `full_name`, `phone`, `license_number`, `experience_years`, `rating`, `total_trips`, `safety_score`, `status`, `created_at`) VALUES
+INSERT INTO `tai_xe` (`id`, `nguoi_dung_id`, `ho_va_ten`, `so_dien_thoai`, `so_giay_phep`, `nam_kinh_nghiem`, `danh_gia`, `tong_chuyen`, `diem_an_toan`, `trang_thai`, `ngay_tao`) VALUES
 (1, 2, 'Nguyễn Văn A', '0909123456', 'B2-123456', 5, '5.00', 150, 85, 'active', '2026-03-11 03:32:49'),
 (2, 3, 'Nguyen Van A', '0900000001', 'LIC001', 5, '4.50', 120, 90, 'active', '2026-03-11 14:31:58'),
 (3, 4, 'Tran Van B', '0900000002', 'LIC002', 4, '4.20', 80, 88, 'active', '2026-03-11 14:31:58'),
@@ -112,23 +97,23 @@ INSERT INTO `drivers` (`id`, `user_id`, `full_name`, `phone`, `license_number`, 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `login_history`
+-- Cấu trúc bảng cho bảng `lich_su_dang_nhap` (login_history)
 --
 
-CREATE TABLE `login_history` (
+CREATE TABLE `lich_su_dang_nhap` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `status` enum('success','failed') DEFAULT 'success',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `nguoi_dung_id` int(11) DEFAULT NULL,
+  `dia_chi_ip` varchar(45) DEFAULT NULL,
+  `trinh_duyet` text DEFAULT NULL,
+  `trang_thai` enum('success','failed') DEFAULT 'success',
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `login_history`
+-- Đang đổ dữ liệu cho bảng `lich_su_dang_nhap`
 --
 
-INSERT INTO `login_history` (`id`, `user_id`, `ip_address`, `user_agent`, `status`, `created_at`) VALUES
+INSERT INTO `lich_su_dang_nhap` (`id`, `nguoi_dung_id`, `dia_chi_ip`, `trinh_duyet`, `trang_thai`, `ngay_tao`) VALUES
 (1, 2, '192.168.1.100', 'Mozilla/5.0 Windows Chrome', 'success', '2026-03-11 02:32:49'),
 (2, 2, '192.168.1.100', 'Mozilla/5.0 Windows Chrome', 'success', '2026-03-10 03:32:49'),
 (3, 1, '192.168.1.50', 'Mozilla/5.0 MacOS Chrome', 'success', '2026-03-11 01:32:49'),
@@ -143,25 +128,25 @@ INSERT INTO `login_history` (`id`, `user_id`, `ip_address`, `user_agent`, `statu
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `notifications`
+-- Cấu trúc bảng cho bảng `thong_bao` (notifications)
 --
 
-CREATE TABLE `notifications` (
+CREATE TABLE `thong_bao` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `type` enum('alert','warning','system','success') DEFAULT 'system',
-  `title` varchar(255) DEFAULT NULL,
-  `message` text DEFAULT NULL,
-  `is_read` tinyint(4) DEFAULT 0,
-  `read_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `nguoi_dung_id` int(11) DEFAULT NULL,
+  `loai` enum('alert','warning','system','success') DEFAULT 'system',
+  `tieu_de` varchar(255) DEFAULT NULL,
+  `noi_dung` text DEFAULT NULL,
+  `da_doc` tinyint(4) DEFAULT 0,
+  `doc_luc` timestamp NULL DEFAULT NULL,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `notifications`
+-- Đang đổ dữ liệu cho bảng `thong_bao`
 --
 
-INSERT INTO `notifications` (`id`, `user_id`, `type`, `title`, `message`, `is_read`, `read_at`, `created_at`) VALUES
+INSERT INTO `thong_bao` (`id`, `nguoi_dung_id`, `loai`, `tieu_de`, `noi_dung`, `da_doc`, `doc_luc`, `ngay_tao`) VALUES
 (1, 2, 'alert', 'Cảnh báo an toàn', 'Bạn có 3 vi phạm mới trong hôm nay', 0, NULL, '2026-03-11 02:32:49'),
 (2, 2, 'warning', 'Nhắc nhở từ Admin', 'Admin vừa gửi cảnh báo', 0, NULL, '2026-03-11 01:32:49'),
 (3, 2, 'success', 'Hoàn thành chuyến xe', 'Chuyến xe T001 hoàn thành. Doanh thu: 2,500,000đ', 1, NULL, '2026-03-10 03:32:49'),
@@ -170,29 +155,29 @@ INSERT INTO `notifications` (`id`, `user_id`, `type`, `title`, `message`, `is_re
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `routes`
+-- Cấu trúc bảng cho bảng `tuyen_duong` (routes)
 --
 
-CREATE TABLE `routes` (
+CREATE TABLE `tuyen_duong` (
   `id` int(11) NOT NULL,
-  `code` varchar(20) DEFAULT NULL,
-  `name` varchar(255) DEFAULT NULL,
-  `start_point` varchar(255) DEFAULT NULL,
-  `end_point` varchar(255) DEFAULT NULL,
-  `distance_km` decimal(10,2) DEFAULT NULL,
-  `duration_minutes` int(11) DEFAULT NULL,
-  `vehicles_per_day` int(11) DEFAULT NULL,
-  `status` enum('active','inactive') DEFAULT 'active',
-  `path_coordinates` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`path_coordinates`)),
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `ma_tuyen` varchar(20) DEFAULT NULL,
+  `ten_tuyen` varchar(255) DEFAULT NULL,
+  `diem_dau` varchar(255) DEFAULT NULL,
+  `diem_cuoi` varchar(255) DEFAULT NULL,
+  `quang_duong_km` decimal(10,2) DEFAULT NULL,
+  `thoi_gian_phut` int(11) DEFAULT NULL,
+  `xe_moi_ngay` int(11) DEFAULT NULL,
+  `trang_thai` enum('active','inactive') DEFAULT 'active',
+  `toa_do_duong_dan` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`toa_do_duong_dan`)),
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ngay_cap_nhat` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `routes`
+-- Đang đổ dữ liệu cho bảng `tuyen_duong`
 --
 
-INSERT INTO `routes` (`id`, `code`, `name`, `start_point`, `end_point`, `distance_km`, `duration_minutes`, `vehicles_per_day`, `status`, `path_coordinates`, `created_at`, `updated_at`) VALUES
+INSERT INTO `tuyen_duong` (`id`, `ma_tuyen`, `ten_tuyen`, `diem_dau`, `diem_cuoi`, `quang_duong_km`, `thoi_gian_phut`, `xe_moi_ngay`, `trang_thai`, `toa_do_duong_dan`, `ngay_tao`, `ngay_cap_nhat`) VALUES
 (1, 'T001', 'Mỹ Đình - Hải Phòng', 'Bến xe Mỹ Đình', 'Bến xe Hải Phòng', '102.00', 120, 12, 'active', NULL, '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (2, 'T002', 'Nội Bài - Trung tâm', 'Sân bay Nội Bài', 'Hồ Hoàn Kiếm', '28.00', 45, 45, 'active', NULL, '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (3, 'T003', 'Hồ Tây - Lăng Bác', 'Hồ Tây', 'Lăng Chủ tịch', '8.00', 25, 28, 'active', NULL, '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
@@ -207,29 +192,29 @@ INSERT INTO `routes` (`id`, `code`, `name`, `start_point`, `end_point`, `distanc
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `statistics`
+-- Cấu trúc bảng cho bảng `thong_ke` (statistics)
 --
 
-CREATE TABLE `statistics` (
+CREATE TABLE `thong_ke` (
   `id` int(11) NOT NULL,
-  `date` date DEFAULT NULL,
-  `total_vehicles` int(11) DEFAULT 0,
-  `total_drivers` int(11) DEFAULT 0,
-  `total_trips` int(11) DEFAULT 0,
-  `total_alerts` int(11) DEFAULT 0,
-  `total_warnings` int(11) DEFAULT 0,
-  `total_violations` int(11) DEFAULT 0,
-  `total_revenue` decimal(15,2) DEFAULT 0.00,
-  `avg_safety_score` decimal(5,2) DEFAULT 100.00,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `ngay` date DEFAULT NULL,
+  `tong_xe` int(11) DEFAULT 0,
+  `tong_tai_xe` int(11) DEFAULT 0,
+  `tong_chuyen` int(11) DEFAULT 0,
+  `tong_canh_bao` int(11) DEFAULT 0,
+  `tong_lo_lo` int(11) DEFAULT 0,
+  `tong_vi_pham` int(11) DEFAULT 0,
+  `tong_doanh_thu` decimal(15,2) DEFAULT 0.00,
+  `diem_an_toan_tb` decimal(5,2) DEFAULT 100.00,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ngay_cap_nhat` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `statistics`
+-- Đang đổ dữ liệu cho bảng `thong_ke`
 --
 
-INSERT INTO `statistics` (`id`, `date`, `total_vehicles`, `total_drivers`, `total_trips`, `total_alerts`, `total_warnings`, `total_violations`, `total_revenue`, `avg_safety_score`, `created_at`, `updated_at`) VALUES
+INSERT INTO `thong_ke` (`id`, `ngay`, `tong_xe`, `tong_tai_xe`, `tong_chuyen`, `tong_canh_bao`, `tong_lo_lo`, `tong_vi_pham`, `tong_doanh_thu`, `diem_an_toan_tb`, `ngay_tao`, `ngay_cap_nhat`) VALUES
 (1, '2026-03-11', 3, 1, 1, 3, 2, 3, '0.00', '85.00', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (2, '2026-03-10', 3, 1, 3, 5, 1, 4, '0.00', '84.50', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (3, '2026-03-09', 3, 1, 2, 4, 2, 3, '0.00', '86.00', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
@@ -242,31 +227,31 @@ INSERT INTO `statistics` (`id`, `date`, `total_vehicles`, `total_drivers`, `tota
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `trips`
+-- Cấu trúc bảng cho bảng `chuyen_xe` (trips)
 --
 
-CREATE TABLE `trips` (
+CREATE TABLE `chuyen_xe` (
   `id` int(11) NOT NULL,
-  `vehicle_id` int(11) DEFAULT NULL,
-  `driver_id` int(11) DEFAULT NULL,
-  `route_name` varchar(255) DEFAULT NULL,
-  `start_location` varchar(255) DEFAULT NULL,
-  `end_location` varchar(255) DEFAULT NULL,
-  `start_time` datetime DEFAULT NULL,
-  `end_time` datetime DEFAULT NULL,
-  `distance_km` decimal(10,2) DEFAULT NULL,
-  `status` enum('planned','ongoing','completed','cancelled') DEFAULT 'planned',
-  `passengers` int(11) DEFAULT 0,
-  `revenue` decimal(12,2) DEFAULT 0.00,
-  `rating` int(11) DEFAULT 5,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `xe_id` int(11) DEFAULT NULL,
+  `tai_xe_id` int(11) DEFAULT NULL,
+  `ten_tuyen` varchar(255) DEFAULT NULL,
+  `vi_tri_dau` varchar(255) DEFAULT NULL,
+  `vi_tri_cuoi` varchar(255) DEFAULT NULL,
+  `gio_dau` datetime DEFAULT NULL,
+  `gio_cuoi` datetime DEFAULT NULL,
+  `quang_duong_km` decimal(10,2) DEFAULT NULL,
+  `trang_thai` enum('planned','ongoing','completed','cancelled') DEFAULT 'planned',
+  `hanh_khach` int(11) DEFAULT 0,
+  `doanh_thu` decimal(12,2) DEFAULT 0.00,
+  `danh_gia` int(11) DEFAULT 5,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `trips`
+-- Đang đổ dữ liệu cho bảng `chuyen_xe`
 --
 
-INSERT INTO `trips` (`id`, `vehicle_id`, `driver_id`, `route_name`, `start_location`, `end_location`, `start_time`, `end_time`, `distance_km`, `status`, `passengers`, `revenue`, `rating`, `created_at`) VALUES
+INSERT INTO `chuyen_xe` (`id`, `xe_id`, `tai_xe_id`, `ten_tuyen`, `vi_tri_dau`, `vi_tri_cuoi`, `gio_dau`, `gio_cuoi`, `quang_duong_km`, `trang_thai`, `hanh_khach`, `doanh_thu`, `danh_gia`, `ngay_tao`) VALUES
 (1, 1, 1, 'T001 - Mỹ Đình - Hải Phòng', 'Bến xe Mỹ Đình', 'Bến xe Hải Phòng', '2026-03-11 09:32:49', '2026-03-11 10:32:49', '102.00', 'ongoing', 45, '0.00', 5, '2026-03-11 03:32:49'),
 (2, 1, 1, 'T001 - Mỹ Đình - Hải Phòng', 'Bến xe Mỹ Đình', 'Bến xe Hải Phòng', '2026-03-10 10:32:49', '2026-03-10 10:32:49', '102.00', 'completed', 42, '2500000.00', 5, '2026-03-11 03:32:49'),
 (3, 2, 1, 'T002 - Nội Bài - Trung tâm', 'Sân bay Nội Bài', 'Hồ Hoàn Kiếm', '2026-03-11 08:32:49', '2026-03-11 09:32:49', '28.00', 'completed', 4, '350000.00', 4, '2026-03-11 03:32:49'),
@@ -281,29 +266,29 @@ INSERT INTO `trips` (`id`, `vehicle_id`, `driver_id`, `route_name`, `start_locat
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `users`
+-- Cấu trúc bảng cho bảng `nguoi_dung` (users)
 --
 
-CREATE TABLE `users` (
+CREATE TABLE `nguoi_dung` (
   `id` int(11) NOT NULL,
-  `username` varchar(50) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL,
+  `ten_dang_nhap` varchar(50) DEFAULT NULL,
+  `mat_khau` varchar(255) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  `full_name` varchar(100) DEFAULT NULL,
-  `role` enum('admin','user') DEFAULT 'user',
-  `avatar` varchar(255) DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `is_active` tinyint(4) DEFAULT 1,
-  `last_login` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `ho_va_ten` varchar(100) DEFAULT NULL,
+  `vai_tro` enum('admin','user') DEFAULT 'user',
+  `anh_dai_dien` varchar(255) DEFAULT NULL,
+  `so_dien_thoai` varchar(20) DEFAULT NULL,
+  `hoat_dong` tinyint(4) DEFAULT 1,
+  `lan_cuoi_dang_nhap` timestamp NULL DEFAULT NULL,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ngay_cap_nhat` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `users`
+-- Đang đổ dữ liệu cho bảng `nguoi_dung`
 --
 
-INSERT INTO `users` (`id`, `username`, `password`, `email`, `full_name`, `role`, `avatar`, `phone`, `is_active`, `last_login`, `created_at`, `updated_at`) VALUES
+INSERT INTO `nguoi_dung` (`id`, `ten_dang_nhap`, `mat_khau`, `email`, `ho_va_ten`, `vai_tro`, `anh_dai_dien`, `so_dien_thoai`, `hoat_dong`, `lan_cuoi_dang_nhap`, `ngay_tao`, `ngay_cap_nhat`) VALUES
 (1, 'admin', '$2b$12$JxzHeL2A6QMUj2p1/Vp2iesAX2aq7pim865BU72PgKtVG/zYl9ZCe', 'admin@traffic.com', 'Quản trị viên hệ thống', 'admin', NULL, NULL, 1, NULL, '2026-03-11 03:32:49', '2026-03-11 03:36:35'),
 (2, 'user', '$2b$12$ky/.i5fAGkuXM3gE3lFfSu5CLVNmy2kicBamm1oy7KJh4HHDbxRiW', 'user@traffic.com', 'Nguyễn Văn A', 'user', NULL, NULL, 1, NULL, '2026-03-11 03:32:49', '2026-03-11 03:36:35'),
 (3, 'user1', '$2b$12$ky/.i5fAGkuXM3gE3lFfSu5CLVNmy2kicBamm1oy7KJh4HHDbxRiW', 'user1@mail.com', 'Nguyen Van A', 'user', NULL, '0900000001', 1, '2026-03-11 14:31:58', '2026-03-11 14:31:58', '2026-03-11 14:37:47'),
@@ -318,28 +303,28 @@ INSERT INTO `users` (`id`, `username`, `password`, `email`, `full_name`, `role`,
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `vehicles`
+-- Cấu trúc bảng cho bảng `phuong_tien` (vehicles)
 --
 
-CREATE TABLE `vehicles` (
+CREATE TABLE `phuong_tien` (
   `id` int(11) NOT NULL,
-  `plate_number` varchar(20) DEFAULT NULL,
-  `type` enum('car','bus','truck','taxi','motorbike') DEFAULT NULL,
-  `driver_id` int(11) DEFAULT NULL,
-  `owner_name` varchar(100) DEFAULT NULL,
-  `owner_phone` varchar(20) DEFAULT NULL,
-  `status` enum('active','maintenance','inactive') DEFAULT 'active',
-  `year` int(11) DEFAULT NULL,
-  `km_traveled` decimal(10,2) DEFAULT 0.00,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `bien_so` varchar(20) DEFAULT NULL,
+  `loai_xe` enum('car','bus','truck','taxi','motorbike') DEFAULT NULL,
+  `tai_xe_id` int(11) DEFAULT NULL,
+  `ten_chu_xe` varchar(100) DEFAULT NULL,
+  `so_dien_thoai_chu_xe` varchar(20) DEFAULT NULL,
+  `trang_thai` enum('active','maintenance','inactive') DEFAULT 'active',
+  `nam_san_xuat` int(11) DEFAULT NULL,
+  `so_km_da_chay` decimal(10,2) DEFAULT 0.00,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ngay_cap_nhat` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `vehicles`
+-- Đang đổ dữ liệu cho bảng `phuong_tien`
 --
 
-INSERT INTO `vehicles` (`id`, `plate_number`, `type`, `driver_id`, `owner_name`, `owner_phone`, `status`, `year`, `km_traveled`, `created_at`, `updated_at`) VALUES
+INSERT INTO `phuong_tien` (`id`, `bien_so`, `loai_xe`, `tai_xe_id`, `ten_chu_xe`, `so_dien_thoai_chu_xe`, `trang_thai`, `nam_san_xuat`, `so_km_da_chay`, `ngay_tao`, `ngay_cap_nhat`) VALUES
 (1, '29B-222.22', 'bus', 1, 'Công ty Vận tải ABC', '0909123456', 'active', 2022, '45000.00', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (2, '30G-666.66', 'taxi', 1, 'Taxi Hà Nội', '0912345678', 'active', 2021, '78000.00', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
 (3, '29A-111.11', 'car', 1, 'Nguyễn Văn A', '0909123456', 'active', 2023, '12000.00', '2026-03-11 03:32:49', '2026-03-11 03:32:49'),
@@ -354,26 +339,26 @@ INSERT INTO `vehicles` (`id`, `plate_number`, `type`, `driver_id`, `owner_name`,
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `warnings`
+-- Cấu trúc bảng cho bảng `lo_lo` (warnings)
 --
 
-CREATE TABLE `warnings` (
+CREATE TABLE `lo_lo` (
   `id` int(11) NOT NULL,
-  `vehicle_plate` varchar(20) DEFAULT NULL,
-  `driver_id` int(11) DEFAULT NULL,
-  `message` text DEFAULT NULL,
+  `bien_so_xe` varchar(20) DEFAULT NULL,
+  `tai_xe_id` int(11) DEFAULT NULL,
+  `noi_dung` text DEFAULT NULL,
   `admin_id` int(11) DEFAULT NULL,
-  `priority` enum('low','medium','high') DEFAULT 'medium',
-  `is_read` tinyint(4) DEFAULT 0,
-  `read_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `do_uu_tien` enum('low','medium','high') DEFAULT 'medium',
+  `da_doc` tinyint(4) DEFAULT 0,
+  `doc_luc` timestamp NULL DEFAULT NULL,
+  `ngay_tao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `warnings`
+-- Đang đổ dữ liệu cho bảng `lo_lo`
 --
 
-INSERT INTO `warnings` (`id`, `vehicle_plate`, `driver_id`, `message`, `admin_id`, `priority`, `is_read`, `read_at`, `created_at`) VALUES
+INSERT INTO `lo_lo` (`id`, `bien_so_xe`, `tai_xe_id`, `noi_dung`, `admin_id`, `do_uu_tien`, `da_doc`, `doc_luc`, `ngay_tao`) VALUES
 (1, '29B-222.22', 1, 'Tài xế cần cải thiện thái độ lái xe', 1, 'high', 0, NULL, '2026-03-11 02:32:49'),
 (2, '29B-222.22', 1, 'Không tuân thủ quy định tốc độ', 1, 'high', 0, NULL, '2026-03-11 01:32:49'),
 (3, '30G-666.66', 1, 'Kiểm tra và bảo dưỡng phương tiện', 1, 'medium', 1, NULL, '2026-03-10 03:32:49'),
@@ -384,174 +369,180 @@ INSERT INTO `warnings` (`id`, `vehicle_plate`, `driver_id`, `message`, `admin_id
 -- --------------------------------------------------------
 
 --
--- Cấu trúc cho view `dashboard_stats`
+-- Cấu trúc cho view `thong_ke_tong_hop` (dashboard_stats)
 --
-DROP TABLE IF EXISTS `dashboard_stats`;
+DROP TABLE IF EXISTS `thong_ke_tong_hop`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `dashboard_stats`  AS SELECT (select count(0) from `vehicles` where `vehicles`.`status` = 'active') AS `active_vehicles`, (select count(0) from `drivers` where `drivers`.`status` = 'active') AS `active_drivers`, (select count(0) from `alerts` where cast(`alerts`.`timestamp` as date) = curdate()) AS `today_alerts`, (select count(0) from `warnings` where cast(`warnings`.`created_at` as date) = curdate()) AS `today_warnings`, (select count(0) from `trips` where cast(`trips`.`start_time` as date) = curdate()) AS `today_trips`, (select avg(`drivers`.`safety_score`) from `drivers`) AS `avg_safety_score``avg_safety_score`  ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `thong_ke_tong_hop`  AS SELECT 
+  (select count(0) from `phuong_tien` where `phuong_tien`.`trang_thai` = 'active') AS `xe_dang_hoat_dong`, 
+  (select count(0) from `tai_xe` where `tai_xe`.`trang_thai` = 'active') AS `tai_xe_dang_hoat_dong`, 
+  (select count(0) from `canh_bao` where cast(`canh_bao`.`thoi_gian` as date) = curdate()) AS `canh_bao_hom_nay`, 
+  (select count(0) from `lo_lo` where cast(`lo_lo`.`ngay_tao` as date) = curdate()) AS `lo_lo_hom_nay`, 
+  (select count(0) from `chuyen_xe` where cast(`chuyen_xe`.`gio_dau` as date) = curdate()) AS `chuyen_xe_hom_nay`, 
+  (select avg(`tai_xe`.`diem_an_toan`) from `tai_xe`) AS `diem_an_toan_trung_binh`;
 
 --
 -- Chỉ mục cho các bảng đã đổ
 --
 
 --
--- Chỉ mục cho bảng `alerts`
+-- Chỉ mục cho bảng `canh_bao`
 --
-ALTER TABLE `alerts`
+ALTER TABLE `canh_bao`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `driver_id` (`driver_id`),
-  ADD KEY `idx_vehicle` (`vehicle_id`),
-  ADD KEY `idx_type` (`type`),
-  ADD KEY `idx_timestamp` (`timestamp`),
-  ADD KEY `idx_level` (`level`);
+  ADD KEY `tai_xe_id` (`tai_xe_id`),
+  ADD KEY `idx_xe` (`xe_id`),
+  ADD KEY `idx_loai` (`loai`),
+  ADD KEY `idx_thoi_gian` (`thoi_gian`),
+  ADD KEY `idx_muc_do` (`muc_do`);
 
 --
--- Chỉ mục cho bảng `drivers`
+-- Chỉ mục cho bảng `tai_xe`
 --
-ALTER TABLE `drivers`
+ALTER TABLE `tai_xe`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `idx_phone` (`phone`),
-  ADD KEY `idx_status` (`status`);
+  ADD KEY `nguoi_dung_id` (`nguoi_dung_id`),
+  ADD KEY `idx_so_dien_thoai` (`so_dien_thoai`),
+  ADD KEY `idx_trang_thai` (`trang_thai`);
 
 --
--- Chỉ mục cho bảng `login_history`
+-- Chỉ mục cho bảng `lich_su_dang_nhap`
 --
-ALTER TABLE `login_history`
+ALTER TABLE `lich_su_dang_nhap`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_user` (`user_id`),
-  ADD KEY `idx_created` (`created_at`);
+  ADD KEY `idx_nguoi_dung` (`nguoi_dung_id`),
+  ADD KEY `idx_ngay_tao` (`ngay_tao`);
 
 --
--- Chỉ mục cho bảng `notifications`
+-- Chỉ mục cho bảng `thong_bao`
 --
-ALTER TABLE `notifications`
+ALTER TABLE `thong_bao`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_user` (`user_id`),
-  ADD KEY `idx_type` (`type`),
-  ADD KEY `idx_created` (`created_at`);
+  ADD KEY `idx_nguoi_dung` (`nguoi_dung_id`),
+  ADD KEY `idx_loai` (`loai`),
+  ADD KEY `idx_ngay_tao` (`ngay_tao`);
 
 --
--- Chỉ mục cho bảng `routes`
+-- Chỉ mục cho bảng `tuyen_duong`
 --
-ALTER TABLE `routes`
+ALTER TABLE `tuyen_duong`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `code` (`code`),
-  ADD KEY `idx_code` (`code`),
-  ADD KEY `idx_status` (`status`);
+  ADD UNIQUE KEY `ma_tuyen` (`ma_tuyen`),
+  ADD KEY `idx_ma_tuyen` (`ma_tuyen`),
+  ADD KEY `idx_trang_thai` (`trang_thai`);
 
 --
--- Chỉ mục cho bảng `statistics`
+-- Chỉ mục cho bảng `thong_ke`
 --
-ALTER TABLE `statistics`
+ALTER TABLE `thong_ke`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `date` (`date`),
-  ADD KEY `idx_date` (`date`);
+  ADD UNIQUE KEY `ngay` (`ngay`),
+  ADD KEY `idx_ngay` (`ngay`);
 
 --
--- Chỉ mục cho bảng `trips`
+-- Chỉ mục cho bảng `chuyen_xe`
 --
-ALTER TABLE `trips`
+ALTER TABLE `chuyen_xe`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_vehicle` (`vehicle_id`),
-  ADD KEY `idx_driver` (`driver_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_start_time` (`start_time`);
+  ADD KEY `idx_xe` (`xe_id`),
+  ADD KEY `idx_tai_xe` (`tai_xe_id`),
+  ADD KEY `idx_trang_thai` (`trang_thai`),
+  ADD KEY `idx_gio_dau` (`gio_dau`);
 
 --
--- Chỉ mục cho bảng `users`
+-- Chỉ mục cho bảng `nguoi_dung`
 --
-ALTER TABLE `users`
+ALTER TABLE `nguoi_dung`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `ten_dang_nhap` (`ten_dang_nhap`),
   ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_username` (`username`),
+  ADD KEY `idx_ten_dang_nhap` (`ten_dang_nhap`),
   ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_role` (`role`);
+  ADD KEY `idx_vai_tro` (`vai_tro`);
 
 --
--- Chỉ mục cho bảng `vehicles`
+-- Chỉ mục cho bảng `phuong_tien`
 --
-ALTER TABLE `vehicles`
+ALTER TABLE `phuong_tien`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `plate_number` (`plate_number`),
-  ADD KEY `driver_id` (`driver_id`),
-  ADD KEY `idx_plate` (`plate_number`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_type` (`type`);
+  ADD UNIQUE KEY `bien_so` (`bien_so`),
+  ADD KEY `tai_xe_id` (`tai_xe_id`),
+  ADD KEY `idx_bien_so` (`bien_so`),
+  ADD KEY `idx_trang_thai` (`trang_thai`),
+  ADD KEY `idx_loai_xe` (`loai_xe`);
 
 --
--- Chỉ mục cho bảng `warnings`
+-- Chỉ mục cho bảng `lo_lo`
 --
-ALTER TABLE `warnings`
+ALTER TABLE `lo_lo`
   ADD PRIMARY KEY (`id`),
   ADD KEY `admin_id` (`admin_id`),
-  ADD KEY `idx_vehicle` (`vehicle_plate`),
-  ADD KEY `idx_driver` (`driver_id`),
-  ADD KEY `idx_created` (`created_at`);
+  ADD KEY `idx_xe` (`bien_so_xe`),
+  ADD KEY `idx_tai_xe` (`tai_xe_id`),
+  ADD KEY `idx_ngay_tao` (`ngay_tao`);
 
 --
 -- AUTO_INCREMENT cho các bảng đã đổ
 --
 
 --
--- AUTO_INCREMENT cho bảng `alerts`
+-- AUTO_INCREMENT cho bảng `canh_bao`
 --
-ALTER TABLE `alerts`
+ALTER TABLE `canh_bao`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
--- AUTO_INCREMENT cho bảng `drivers`
+-- AUTO_INCREMENT cho bảng `tai_xe`
 --
-ALTER TABLE `drivers`
+ALTER TABLE `tai_xe`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `login_history`
+-- AUTO_INCREMENT cho bảng `lich_su_dang_nhap`
 --
-ALTER TABLE `login_history`
+ALTER TABLE `lich_su_dang_nhap`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `notifications`
+-- AUTO_INCREMENT cho bảng `thong_bao`
 --
-ALTER TABLE `notifications`
+ALTER TABLE `thong_bao`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT cho bảng `routes`
+-- AUTO_INCREMENT cho bảng `tuyen_duong`
 --
-ALTER TABLE `routes`
+ALTER TABLE `tuyen_duong`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `statistics`
+-- AUTO_INCREMENT cho bảng `thong_ke`
 --
-ALTER TABLE `statistics`
+ALTER TABLE `thong_ke`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT cho bảng `trips`
+-- AUTO_INCREMENT cho bảng `chuyen_xe`
 --
-ALTER TABLE `trips`
+ALTER TABLE `chuyen_xe`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `users`
+-- AUTO_INCREMENT cho bảng `nguoi_dung`
 --
-ALTER TABLE `users`
+ALTER TABLE `nguoi_dung`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `vehicles`
+-- AUTO_INCREMENT cho bảng `phuong_tien`
 --
-ALTER TABLE `vehicles`
+ALTER TABLE `phuong_tien`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT cho bảng `warnings`
+-- AUTO_INCREMENT cho bảng `lo_lo`
 --
-ALTER TABLE `warnings`
+ALTER TABLE `lo_lo`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
@@ -559,49 +550,49 @@ ALTER TABLE `warnings`
 --
 
 --
--- Các ràng buộc cho bảng `alerts`
+-- Các ràng buộc cho bảng `canh_bao`
 --
-ALTER TABLE `alerts`
-  ADD CONSTRAINT `alerts_ibfk_1` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `alerts_ibfk_2` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE SET NULL;
+ALTER TABLE `canh_bao`
+  ADD CONSTRAINT `canh_bao_ibfk_1` FOREIGN KEY (`xe_id`) REFERENCES `phuong_tien` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `canh_bao_ibfk_2` FOREIGN KEY (`tai_xe_id`) REFERENCES `tai_xe` (`id`) ON DELETE SET NULL;
 
 --
--- Các ràng buộc cho bảng `drivers`
+-- Các ràng buộc cho bảng `tai_xe`
 --
-ALTER TABLE `drivers`
-  ADD CONSTRAINT `drivers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `tai_xe`
+  ADD CONSTRAINT `tai_xe_ibfk_1` FOREIGN KEY (`nguoi_dung_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE SET NULL;
 
 --
--- Các ràng buộc cho bảng `login_history`
+-- Các ràng buộc cho bảng `lich_su_dang_nhap`
 --
-ALTER TABLE `login_history`
-  ADD CONSTRAINT `login_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+ALTER TABLE `lich_su_dang_nhap`
+  ADD CONSTRAINT `lich_su_dang_nhap_ibfk_1` FOREIGN KEY (`nguoi_dung_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE;
 
 --
--- Các ràng buộc cho bảng `notifications`
+-- Các ràng buộc cho bảng `thong_bao`
 --
-ALTER TABLE `notifications`
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+ALTER TABLE `thong_bao`
+  ADD CONSTRAINT `thong_bao_ibfk_1` FOREIGN KEY (`nguoi_dung_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE;
 
 --
--- Các ràng buộc cho bảng `trips`
+-- Các ràng buộc cho bảng `chuyen_xe`
 --
-ALTER TABLE `trips`
-  ADD CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE CASCADE;
+ALTER TABLE `chuyen_xe`
+  ADD CONSTRAINT `chuyen_xe_ibfk_1` FOREIGN KEY (`xe_id`) REFERENCES `phuong_tien` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chuyen_xe_ibfk_2` FOREIGN KEY (`tai_xe_id`) REFERENCES `tai_xe` (`id`) ON DELETE CASCADE;
 
 --
--- Các ràng buộc cho bảng `vehicles`
+-- Các ràng buộc cho bảng `phuong_tien`
 --
-ALTER TABLE `vehicles`
-  ADD CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE SET NULL;
+ALTER TABLE `phuong_tien`
+  ADD CONSTRAINT `phuong_tien_ibfk_1` FOREIGN KEY (`tai_xe_id`) REFERENCES `tai_xe` (`id`) ON DELETE SET NULL;
 
 --
--- Các ràng buộc cho bảng `warnings`
+-- Các ràng buộc cho bảng `lo_lo`
 --
-ALTER TABLE `warnings`
-  ADD CONSTRAINT `warnings_ibfk_1` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `warnings_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+ALTER TABLE `lo_lo`
+  ADD CONSTRAINT `lo_lo_ibfk_1` FOREIGN KEY (`tai_xe_id`) REFERENCES `tai_xe` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `lo_lo_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
