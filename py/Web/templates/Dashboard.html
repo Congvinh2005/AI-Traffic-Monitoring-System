@@ -1979,6 +1979,365 @@ tr:hover {
   font-size: 16px;
 }
 
+/* ===== WARNING MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: slideDown 0.3s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h3 i {
+  color: var(--warning);
+  font-size: 22px;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.warning-info {
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.warning-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.warning-info-item:last-child {
+  border-bottom: none;
+}
+
+.warning-info-item label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.warning-info-item span {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.warning-info-item .plate-highlight {
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+.form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--warning) 0%, #ff9800 100%);
+  color: #1a1a1a;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* ===== VIOLATION VIDEO BUTTON & MODAL ===== */
+.btn-video {
+  background: rgba(156, 39, 176, 0.15);
+  color: #9c27b0;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+  min-width: 60px;
+}
+
+.btn-video:hover {
+  background: #9c27b0;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
+}
+
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  animation: fadeIn 0.3s ease;
+}
+
+.video-modal-content {
+  background: var(--bg-card);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 60px rgba(0, 0, 0, 0.7);
+  animation: slideDown 0.3s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+.video-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.video-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.video-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.video-modal-body {
+  padding: 20px;
+}
+
+.video-player-container {
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  position: relative;
+  aspect-ratio: 16/9;
+}
+
+.video-player-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.video-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.video-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.video-info-item label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.video-info-item span {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.violation-type-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+}
+
+.video-modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-download {
+  background: linear-gradient(135deg, var(--success) 0%, #00a854 100%);
+  color: white;
+}
+
+.btn-download:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.4);
+}
+
 </style>
 </head>
 
@@ -2367,16 +2726,20 @@ tr:hover {
               </button>
               <button class="btn-action btn-alert" onclick="sendWarning('29B-222.22')" title="Cảnh báo">
                 <i class="fa-solid fa-bell"></i>
-                <span>Cảnh báo</span>
+                <span>Báo cáo</span>
+              </button>
+              <button class="btn-action btn-video" onclick="viewViolationVideo('29B-222.22', 'Dùng điện thoại', '/py/video_input/lech_lan.mp4')" title="Xem video vi phạm">
+                <i class="fa-solid fa-circle-play"></i>
+                <span>Video</span>
               </button>
               <button class="btn-action btn-camera" onclick="viewCamera('29B-222.22')" title="Xem camera">
                 <i class="fa-solid fa-video"></i>
                 <span>Camera</span>
               </button>
-              <button class="btn-action btn-report" onclick="viewReport('29B-222.22')" title="Báo cáo">
+              <!-- <button class="btn-action btn-report" onclick="viewReport('29B-222.22')" title="Báo cáo">
                 <i class="fa-solid fa-file-lines"></i>
                 <span>Báo cáo</span>
-              </button>
+              </button> -->
             </div>
           </td>
         </tr>
@@ -2402,6 +2765,10 @@ tr:hover {
               <button class="btn-action btn-alert" onclick="sendWarning('30G-666.66')" title="Cảnh báo">
                 <i class="fa-solid fa-bell"></i>
                 <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-video" onclick="viewViolationVideo('30G-666.66', 'Không thắt dây', '/py/video_input/car1.mp4')" title="Xem video vi phạm">
+                <i class="fa-solid fa-circle-play"></i>
+                <span>Video</span>
               </button>
               <button class="btn-action btn-camera" onclick="viewCamera('30G-666.66')" title="Xem camera">
                 <i class="fa-solid fa-video"></i>
@@ -2437,6 +2804,10 @@ tr:hover {
                 <i class="fa-solid fa-bell"></i>
                 <span>Cảnh báo</span>
               </button>
+              <button class="btn-action btn-video" onclick="viewViolationVideo('29A-111.11', 'Buồn ngủ', '/py/video_input/car2.mp4')" title="Xem video vi phạm">
+                <i class="fa-solid fa-circle-play"></i>
+                <span>Video</span>
+              </button>
               <button class="btn-action btn-camera" onclick="viewCamera('29A-111.11')" title="Xem camera">
                 <i class="fa-solid fa-video"></i>
                 <span>Camera</span>
@@ -2471,6 +2842,10 @@ tr:hover {
                 <i class="fa-solid fa-bell"></i>
                 <span>Cảnh báo</span>
               </button>
+              <button class="btn-action btn-video" onclick="viewViolationVideo('29LD-777.77', 'Lệch làn', '/py/video_input/car3.mp4')" title="Xem video vi phạm">
+                <i class="fa-solid fa-circle-play"></i>
+                <span>Video</span>
+              </button>
               <button class="btn-action btn-camera" onclick="viewCamera('29LD-777.77')" title="Xem camera">
                 <i class="fa-solid fa-video"></i>
                 <span>Camera</span>
@@ -2504,6 +2879,10 @@ tr:hover {
               <button class="btn-action btn-alert" onclick="sendWarning('30F-888.88')" title="Cảnh báo">
                 <i class="fa-solid fa-bell"></i>
                 <span>Cảnh báo</span>
+              </button>
+              <button class="btn-action btn-video" onclick="viewViolationVideo('30F-888.88', 'Bình thường', '/py/video_input/car4.mp4')" title="Xem video vi phạm">
+                <i class="fa-solid fa-circle-play"></i>
+                <span>Video</span>
               </button>
               <button class="btn-action btn-camera" onclick="viewCamera('30F-888.88')" title="Xem camera">
                 <i class="fa-solid fa-video"></i>
@@ -3552,11 +3931,11 @@ function loadPageData(pageId) {
 function loadWarningsData() {
   const tbody = document.getElementById('warningsTableBody');
   const sampleWarnings = [
-    { plate: '29B-222.22', driver: 'Trần Văn Hoan', type: 'phone', typeLabel: '📱 Dùng điện thoại', time: '10:30 02/11/2026', status: 'pending' },
-    { plate: '30G-666.66', driver: 'Vũ Thị Hồng', type: 'seatbelt', typeLabel: '⚠️ Không thắt dây', time: '09:15 02/11/2026', status: 'processed' },
-    { plate: '29A-111.11', driver: 'Nguyễn Văn Đức', type: 'drowsy', typeLabel: '😴 Buồn ngủ', time: '08:45 02/11/2026', status: 'pending' },
+    { plate: '29B-222.22', driver: 'Trần Văn Hoan', type: 'phone', typeLabel: '📱 Dùng điện thoại', time: '10:30 02/11/2026', status: 'pending', video: '/py/video_input/lech_lan.mp4' },
+    { plate: '30G-666.66', driver: 'Vũ Thị Hồng', type: 'seatbelt', typeLabel: '⚠️ Không thắt dây', time: '09:15 02/11/2026', status: 'processed', video: '/py/video_input/car1.mp4' },
+    { plate: '29A-111.11', driver: 'Nguyễn Văn Đức', type: 'drowsy', typeLabel: '😴 Buồn ngủ', time: '08:45 02/11/2026', status: 'pending', video: '/py/video_input/car2.mp4' },
   ];
-  
+
   tbody.innerHTML = sampleWarnings.map((w, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -3566,13 +3945,18 @@ function loadWarningsData() {
       <td>${w.time}</td>
       <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
       <td>
-        <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}')" style="padding: 4px 8px; font-size: 10px;">
-          <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
-        </button>
+        <div style="display: flex; gap: 5px;">
+          <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}')" style="padding: 4px 8px; font-size: 10px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
+          </button>
+          <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}', '${w.typeLabel}', '${w.video}')" style="padding: 4px 8px; font-size: 10px;">
+            <i class="fa-solid fa-circle-play"></i> Video
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
-  
+
   // Update badge
   const pendingCount = sampleWarnings.filter(w => w.status === 'pending').length;
   document.getElementById('warningBadge').textContent = pendingCount;
@@ -3581,10 +3965,36 @@ function loadWarningsData() {
 function loadAdminAlertsData() {
   const tbody = document.getElementById('alertsTableBody');
   const sampleAlerts = [
-    { plate: '29B-222.22', driver: 'Trần Văn Hoan', content: 'Cảnh báo: Sử dụng điện thoại khi lái xe', priority: 'high', priorityLabel: 'Cao', date: '02/11/2026' },
-    { plate: '30G-666.66', driver: 'Vũ Thị Hồng', content: 'Nhắc nhở: Thắt dây an toàn', priority: 'medium', priorityLabel: 'Trung bình', date: '01/11/2026' },
+    { 
+      plate: '29B-222.22', 
+      driver: 'Trần Văn Hoan', 
+      phone: '0909 888 999',
+      content: 'Cảnh báo: Sử dụng điện thoại khi lái xe', 
+      priority: 'high', 
+      priorityLabel: 'Cao', 
+      date: '02/11/2026',
+      time: '10:30',
+      admin: 'Admin System',
+      location: 'Ngã tư Mỹ Đình',
+      violationType: 'Dùng điện thoại',
+      status: 'pending'
+    },
+    { 
+      plate: '30G-666.66', 
+      driver: 'Vũ Thị Hồng', 
+      phone: '0912 345 678',
+      content: 'Nhắc nhở: Thắt dây an toàn', 
+      priority: 'medium', 
+      priorityLabel: 'Trung bình', 
+      date: '01/11/2026',
+      time: '09:15',
+      admin: 'Admin System',
+      location: 'Hồ Tây',
+      violationType: 'Không thắt dây',
+      status: 'processed'
+    },
   ];
-  
+
   tbody.innerHTML = sampleAlerts.map((a, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -3595,11 +4005,14 @@ function loadAdminAlertsData() {
       <td>${a.date}</td>
       <td>
         <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
-          <i class="fa-solid fa-eye"></i> Xem
+          <i class="fa-solid fa-eye"></i> Xem chi tiết
         </button>
       </td>
     </tr>
   `).join('');
+  
+  // Store alerts globally for viewAlert function
+  window.adminAlerts = sampleAlerts;
 }
 
 function loadNotificationsData() {
@@ -3727,7 +4140,117 @@ function exportViolationReport() {
 }
 
 function viewAlert(index) {
-  showToast('info', 'Xem chi tiết', 'Đang tải chi tiết cảnh báo...');
+  const alert = window.adminAlerts[index];
+  if (!alert) {
+    showToast('error', 'Lỗi', 'Không tìm thấy cảnh báo');
+    return;
+  }
+  
+  const priorityColors = {
+    high: { bg: 'rgba(255, 82, 82, 0.15)', color: 'var(--danger)', text: 'Cao' },
+    medium: { bg: 'rgba(255, 193, 7, 0.15)', color: 'var(--warning)', text: 'Trung bình' },
+    low: { bg: 'rgba(74, 158, 255, 0.15)', color: 'var(--accent)', text: 'Thấp' }
+  };
+  
+  const priorityStyle = priorityColors[alert.priority] || priorityColors.medium;
+  
+  const modal = document.createElement('div');
+  modal.id = 'alertDetailModal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-bullhorn" style="color: var(--accent);"></i> Chi tiết cảnh báo từ Admin</h3>
+        <button class="modal-close" onclick="closeAlertModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="warning-info">
+          <div class="warning-info-item">
+            <label>Biển số xe:</label>
+            <span class="plate-highlight">${alert.plate}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Tài xế:</label>
+            <span>${alert.driver}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Số điện thoại:</label>
+            <span>${alert.phone}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Loại vi phạm:</label>
+            <span class="violation-type-badge">${alert.violationType}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Vị trí vi phạm:</label>
+            <span><i class="fa-solid fa-location-dot" style="color: var(--accent);"></i> ${alert.location}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Thời gian:</label>
+            <span><i class="fa-regular fa-clock"></i> ${alert.time} - ${alert.date}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Mức độ ưu tiên:</label>
+            <span style="background: ${priorityStyle.bg}; color: ${priorityStyle.color}; padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid ${priorityStyle.color};">${priorityStyle.text}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Người gửi:</label>
+            <span><i class="fa-solid fa-user-shield"></i> ${alert.admin}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Trạng thái:</label>
+            <span style="color: ${alert.status === 'processed' ? 'var(--success)' : 'var(--warning)'}; font-weight: 600;">
+              ${alert.status === 'processed' ? '✓ Đã xử lý' : '⏳ Chưa xử lý'}
+            </span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="alertContent"><i class="fa-solid fa-message"></i> Nội dung cảnh cáo từ Admin:</label>
+          <textarea id="alertContent" readonly style="background: var(--bg-input); cursor: not-allowed;">${alert.content}</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAlertModal()">
+          <i class="fa-solid fa-xmark"></i> Đóng
+        </button>
+        ${alert.status === 'pending' ? `
+        <button class="btn btn-primary" onclick="markAlertAsProcessed(${index})">
+          <i class="fa-solid fa-check"></i> Đánh dấu đã xử lý
+        </button>
+        ` : `
+        <button class="btn btn-download" onclick="printAlert(${index})">
+          <i class="fa-solid fa-print"></i> In cảnh báo
+        </button>
+        `}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function closeAlertModal() {
+  const modal = document.getElementById('alertDetailModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function markAlertAsProcessed(index) {
+  if (window.adminAlerts && window.adminAlerts[index]) {
+    window.adminAlerts[index].status = 'processed';
+    showToast('success', 'Thành công', 'Đã đánh dấu cảnh báo là đã xử lý');
+    closeAlertModal();
+    loadAdminAlertsData(); // Reload table
+  }
+}
+
+function printAlert(index) {
+  const alert = window.adminAlerts[index];
+  showToast('info', 'In cảnh báo', `Đang chuẩn bị in cảnh báo cho xe ${alert.plate}...`);
+  // In real implementation, this would open a print dialog
+  window.print();
 }
 
 // Vehicles Management
@@ -3777,7 +4300,8 @@ function loadVehiclesData() {
           </div>
         </div>
         <div class="vehicle-actions" style="display: flex; gap: 5px;">
-          <button class="btn btn-primary" onclick="viewVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
+          <button class="btn btn-primary" onclick="viewVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem 
+            </button>
           <button class="btn btn-outline" onclick="editVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
           <button class="btn btn-success" onclick="trackVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-location-dot"></i> Theo dõi</button>
         </div>
@@ -4821,8 +5345,106 @@ function callDriver(phone) {
   showToast('info', 'Đang gọi...', `Số điện thoại: ${phone}`);
 }
 
+let currentWarningPlate = '';
+
 function sendWarning(plate) {
-  showToast('warning', 'Cảnh báo đã gửi', `Biển số: ${plate}`);
+  currentWarningPlate = plate;
+  
+  // Find vehicle info
+  const vehicle = vehicles.find(v => v.plate === plate);
+  const driverName = vehicle ? vehicle.driver : 'Không rõ';
+  const phone = vehicle ? vehicle.phone : 'Không rõ';
+  const location = vehicle ? vehicle.currentAddress : 'Không rõ';
+  
+  const modal = document.createElement('div');
+  modal.id = 'warningModal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo vi phạm</h3>
+        <button class="modal-close" onclick="closeWarningModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="warning-info">
+          <div class="warning-info-item">
+            <label>Biển số xe:</label>
+            <span class="plate-highlight">${plate}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Tài xế:</label>
+            <span>${driverName}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>SĐT:</label>
+            <span>${phone}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Vị trí:</label>
+            <span>${location}</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="warningContent"><i class="fa-solid fa-pen-to-square"></i> Nội dung cảnh cáo từ Admin:</label>
+          <textarea id="warningContent" placeholder="Nhập nội dung cảnh cáo..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeWarningModal()">
+          <i class="fa-solid fa-xmark"></i> Hủy
+        </button>
+        <button class="btn btn-primary" onclick="submitWarning()">
+          <i class="fa-solid fa-paper-plane"></i> Gửi cảnh báo
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Focus textarea
+  setTimeout(() => {
+    document.getElementById('warningContent')?.focus();
+  }, 100);
+}
+
+function closeWarningModal() {
+  const modal = document.getElementById('warningModal');
+  if (modal) {
+    modal.remove();
+  }
+  currentWarningPlate = '';
+}
+
+function submitWarning() {
+  const content = document.getElementById('warningContent').value.trim();
+  
+  if (!content) {
+    showToast('warning', 'Thiếu thông tin', 'Vui lòng nhập nội dung cảnh cáo');
+    return;
+  }
+  
+  // Here you can add API call to save the warning to database
+  // Example:
+  // fetch('/api/send_warning', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({
+  //     plate: currentWarningPlate,
+  //     content: content,
+  //     admin_id: 'admin'
+  //   })
+  // })
+  
+  showToast('success', 'Thành công', `Đã gửi cảnh báo đến xe ${currentWarningPlate}`);
+  closeWarningModal();
+  
+  // Log for debugging
+  console.log('Warning sent:', {
+    plate: currentWarningPlate,
+    content: content,
+    timestamp: new Date().toISOString()
+  });
 }
 
 function viewCamera(plate) {
@@ -4831,6 +5453,103 @@ function viewCamera(plate) {
 
 function viewReport(plate) {
   showToast('info', 'Báo cáo', `Đang tải báo cáo xe ${plate}...`);
+}
+
+let currentVideoModal = null;
+
+function viewViolationVideo(plate, violationType, videoUrl) {
+  const vehicle = vehicles.find(v => v.plate === plate);
+  const driverName = vehicle ? vehicle.driver : 'Không rõ';
+  const phone = vehicle ? vehicle.phone : 'Không rõ';
+  const location = vehicle ? vehicle.currentAddress : 'Không rõ';
+  const route = vehicle ? vehicle.route : 'Không rõ';
+  const time = new Date().toLocaleString('vi-VN');
+  
+  currentVideoModal = document.createElement('div');
+  currentVideoModal.id = 'videoViolationModal';
+  currentVideoModal.className = 'video-modal-overlay';
+  currentVideoModal.innerHTML = `
+    <div class="video-modal-content">
+      <div class="video-modal-header">
+        <h3><i class="fa-solid fa-circle-play"></i> Video Vi Phạm</h3>
+        <button class="video-modal-close" onclick="closeVideoModal()">&times;</button>
+      </div>
+      <div class="video-modal-body">
+        <div class="video-player-container">
+          <video id="violationVideoPlayer" controls autoplay>
+            <source src="${videoUrl}" type="video/mp4">
+            Trình duyệt của bạn không hỗ trợ video.
+          </video>
+        </div>
+        <div class="video-info-grid">
+          <div class="video-info-item">
+            <label>Biển số:</label>
+            <span style="color: var(--accent); font-size: 16px;">${plate}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Vi phạm:</label>
+            <span class="violation-type-badge">${violationType}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Tài xế:</label>
+            <span>${driverName}</span>
+          </div>
+          <div class="video-info-item">
+            <label>SĐT:</label>
+            <span>${phone}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Vị trí:</label>
+            <span>${location}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Lộ trình:</label>
+            <span>${route}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Thời gian:</label>
+            <span>${time}</span>
+          </div>
+          <div class="video-info-item">
+            <label>Trạng thái:</label>
+            <span style="color: var(--success);">● Đã ghi nhận</span>
+          </div>
+        </div>
+      </div>
+      <div class="video-modal-footer">
+        <button class="btn btn-secondary" onclick="closeVideoModal()">
+          <i class="fa-solid fa-xmark"></i> Đóng
+        </button>
+        <button class="btn btn-download" onclick="downloadVideo('${videoUrl}', '${plate}')">
+          <i class="fa-solid fa-download"></i> Tải video
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(currentVideoModal);
+}
+
+function closeVideoModal() {
+  const modal = document.getElementById('videoViolationModal');
+  if (modal) {
+    const video = document.getElementById('violationVideoPlayer');
+    if (video) {
+      video.pause();
+    }
+    modal.remove();
+  }
+  currentVideoModal = null;
+}
+
+function downloadVideo(videoUrl, plate) {
+  const link = document.createElement('a');
+  link.href = videoUrl;
+  link.download = `vi_pham_${plate.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('success', 'Thành công', 'Đang tải video vi phạm...');
 }
 
 function expandCameras() {
@@ -5660,6 +6379,9 @@ document.addEventListener('keydown', (e) => {
       }
     });
     document.getElementById('keyboardShortcuts')?.classList.remove('show');
+    closeWarningModal();
+    closeVideoModal();
+    closeAlertModal();
   }
 });
 
