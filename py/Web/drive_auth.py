@@ -198,6 +198,164 @@ def tu_van_page():
 def lai_xe_page():
     return render_template('lai_xe.html', user=session.get('user'))
 
+@app.route('/lich_su')
+@login_required
+def lich_su_page():
+    return render_template('lich_su.html', user=session.get('user'))
+
+# ========================================
+# API ENDPOINTS FOR HISTORY PAGE
+# ========================================
+@app.route('/api/alerts')
+@login_required
+def get_alerts():
+    """Lấy danh sách cảnh báo AI (vi phạm)"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT a.*, v.plate_number as vehicle_plate, d.full_name as driver_name
+            FROM alerts a
+            LEFT JOIN vehicles v ON a.vehicle_id = v.id
+            LEFT JOIN drivers d ON a.driver_id = d.id
+            ORDER BY a.timestamp DESC
+            LIMIT 100
+        ''')
+        alerts = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        # Format alerts
+        formatted_alerts = []
+        for alert in alerts:
+            formatted_alerts.append({
+                'id': alert['id'],
+                'type': alert['type'],
+                'message': alert['message'],
+                'level': alert['level'],
+                'timestamp': alert['timestamp'].isoformat() if alert['timestamp'] else None,
+                'vehicle_plate': alert['vehicle_plate'],
+                'driver_name': alert['driver_name'],
+                'is_read': bool(alert['is_read']),
+                'video_path': alert['video_path']
+            })
+        
+        return jsonify({'success': True, 'alerts': formatted_alerts})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/alerts/<int:alert_id>/read', methods=['POST'])
+@login_required
+def mark_alert_as_read(alert_id):
+    """Đánh dấu cảnh báo đã đọc"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        
+        cur = conn.cursor()
+        cur.execute('UPDATE alerts SET is_read = 1 WHERE id = %s', (alert_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/videos')
+@login_required
+def get_videos():
+    """Lấy danh sách video vi phạm"""
+    try:
+        # Lấy danh sách file video từ thư mục recordings
+        import os
+        video_dir = 'recordings'
+        videos = []
+        
+        if os.path.exists(video_dir):
+            for filename in os.listdir(video_dir):
+                if filename.endswith('.mp4'):
+                    filepath = os.path.join(video_dir, filename)
+                    # Lấy thông tin file
+                    stat = os.stat(filepath)
+                    videos.append({
+                        'id': filename,
+                        'title': filename.replace('.mp4', '').replace('_', ' ').title(),
+                        'path': f'/{filepath}',
+                        'thumbnail': f'/static/video-thumbnail.png',
+                        'timestamp': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        'duration': 'N/A',
+                        'size': stat.st_size
+                    })
+        
+        # Sort by timestamp descending
+        videos.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return jsonify({'success': True, 'videos': videos[:50]})  # Giới hạn 50 video
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/admin-warnings')
+@login_required
+def get_admin_warnings():
+    """Lấy danh sách cảnh báo từ admin"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT w.*, u.full_name as admin_name
+            FROM warnings w
+            LEFT JOIN users u ON w.admin_id = u.id
+            ORDER BY w.created_at DESC
+            LIMIT 100
+        ''')
+        warnings = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        # Format warnings
+        formatted_warnings = []
+        for warning in warnings:
+            formatted_warnings.append({
+                'id': warning['id'],
+                'vehicle_plate': warning['vehicle_plate'],
+                'message': warning['message'],
+                'priority': warning['priority'],
+                'is_read': bool(warning['is_read']),
+                'created_at': warning['created_at'].isoformat() if warning['created_at'] else None,
+                'admin_name': warning['admin_name']
+            })
+        
+        return jsonify({'success': True, 'warnings': formatted_warnings})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/admin-warnings/<int:warning_id>/read', methods=['POST'])
+@login_required
+def mark_warning_as_read(warning_id):
+    """Đánh dấu cảnh báo admin đã đọc"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        
+        cur = conn.cursor()
+        cur.execute('UPDATE warnings SET is_read = 1, read_at = NOW() WHERE id = %s', (warning_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
 # ========================================
 # END AUTHENTICATION CODE
 # BEGIN ORIGINAL DRIVE.PY CODE
