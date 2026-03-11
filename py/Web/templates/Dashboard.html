@@ -2707,7 +2707,7 @@ tr:hover {
       <tbody id="tripTableBody">
         <tr>
           <td>1</td>
-          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td><img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
           <td class="plate-number">29B-222.22</td>
           <td>Xe khách</td>
           <td>Trần Văn Hoan</td>
@@ -2745,7 +2745,7 @@ tr:hover {
         </tr>
         <tr>
           <td>2</td>
-          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td><img src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
           <td class="plate-number">30G-666.66</td>
           <td>Taxi</td>
           <td>Vũ Thị Hồng</td>
@@ -2783,7 +2783,7 @@ tr:hover {
         </tr>
         <tr>
           <td>3</td>
-          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td><img src="https://images.unsplash.com/photo-1550355291-bbee04a92027?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
           <td class="plate-number">29A-111.11</td>
           <td>Ô tô</td>
           <td>Nguyễn Văn Đức</td>
@@ -2821,7 +2821,7 @@ tr:hover {
         </tr>
         <tr>
           <td>4</td>
-          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td><img src="https://picsum.photos/200/150?random=4" alt="Vehicle" class="vehicle-img"></td>
           <td class="plate-number">29LD-777.77</td>
           <td>Xe du lịch</td>
           <td>Công ty Travel</td>
@@ -2859,7 +2859,7 @@ tr:hover {
         </tr>
         <tr>
           <td>5</td>
-          <td><img src="https://via.placeholder.com/50" alt="Vehicle" class="vehicle-img"></td>
+          <td><img src="https://picsum.photos/200/150?random=5" alt="Vehicle" class="vehicle-img"></td>
           <td class="plate-number">30F-888.88</td>
           <td>Xe tải</td>
           <td>Lê Văn Minh</td>
@@ -3770,9 +3770,25 @@ tr:hover {
     <span class="alerts-close" onclick="toggleAlertsPanel(false)">&times;</span>
   </div>
   <div class="alerts-body" id="alertsBody">
-    <div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">
-      <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px;"></i>
-      <br>Không có cảnh báo nào
+    <div class="alert-item critical">
+      <div>🚨 Tài xế đang NHẮM MẮT QUÁ LÂU!</div>
+      <div class="alert-time"><i class="fa-regular fa-clock"></i> 10:45:32</div>
+    </div>
+    <div class="alert-item warning">
+      <div>😴 Tài xế đang NGÁP NGỦ!</div>
+      <div class="alert-time"><i class="fa-regular fa-clock"></i> 10:43:15</div>
+    </div>
+    <div class="alert-item critical">
+      <div>📱 Tài xế đang DÙNG ĐIỆN THOẠI!</div>
+      <div class="alert-time"><i class="fa-regular fa-clock"></i> 10:40:08</div>
+    </div>
+    <div class="alert-item warning">
+      <div>⚠️ Tài xế KHÔNG THẮT DÂY AN TOÀN!</div>
+      <div class="alert-time"><i class="fa-regular fa-clock"></i> 10:35:22</div>
+    </div>
+    <div class="alert-item info">
+      <div>✋ Tài xế KHÔNG ĐỂ TAY LÊN VÔ LĂNG!</div>
+      <div class="alert-time"><i class="fa-regular fa-clock"></i> 10:30:45</div>
     </div>
   </div>
 </div>
@@ -6082,10 +6098,27 @@ function updateAlertsPanel(warnings) {
   // }
 
   if (currentAlerts.length === 0) {
+    // Hiển thị cảnh báo mẫu khi không có cảnh báo thực tế
     alertsBody.innerHTML = `
-      <div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">
-        <i class="fa-solid fa-circle-check" style="font-size:24px; margin-bottom:10px;"></i>
-        <br>Không có cảnh báo nào
+      <div class="alert-item critical">
+        <div>🚨 Tài xế đang NHẮM MẮT QUÁ LÂU!</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
+      </div>
+      <div class="alert-item warning">
+        <div>😴 Tài xế đang NGÁP NGỦ!</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
+      </div>
+      <div class="alert-item critical">
+        <div>📱 Tài xế đang DÙNG ĐIỆN THOẠI!</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
+      </div>
+      <div class="alert-item warning">
+        <div>⚠️ Tài xế KHÔNG THẮT DÂY AN TOÀN!</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
+      </div>
+      <div class="alert-item info">
+        <div>✋ Tài xế KHÔNG ĐỂ TAY LÊN VÔ LĂNG!</div>
+        <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
       </div>
     `;
   } else {
@@ -6387,6 +6420,8 @@ document.addEventListener('keydown', (e) => {
 
 // ==================== AUTO-FETCH AI ALERTS FOR CHATBOT ====================
 let lastAlertTimestamp = '';
+let alertCount = 5; // Số cảnh báo ban đầu
+let violationCount = 4; // Số vi phạm ban đầu
 
 function pollAINewAlerts() {
   fetch('http://localhost:5001/api/get_ai_alerts_history')
@@ -6395,18 +6430,70 @@ function pollAINewAlerts() {
       if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
         // Kiểm tra cảnh báo mới nhất
         const latestAlert = data.alerts[data.alerts.length - 1];
-        
-        // Nếu có cảnh báo mới, hiển thị vào chatbot
+
+        // Nếu có cảnh báo mới, hiển thị vào chatbot và cập nhật UI
         if (latestAlert.timestamp !== lastAlertTimestamp) {
           const icon = latestAlert.level === 'critical' ? '🚨' : latestAlert.level === 'warning' ? '⚠️' : 'ℹ️';
           const alertMsg = `${icon} [${latestAlert.timestamp}] ${latestAlert.message}`;
-          
-          // Chỉ hiển thị nếu chatbot đang mở
-          const chatWidget = document.getElementById('chatWidget');
-          if (chatWidget.style.display === 'flex') {
-            addSystemMsg(alertMsg);
-            lastAlertTimestamp = latestAlert.timestamp;
+
+          // Cập nhật KPI số cảnh báo
+          alertCount++;
+          const alertCountEl = document.getElementById('alertCount');
+          if (alertCountEl) {
+            alertCountEl.textContent = alertCount;
+            // Hiệu ứng flash khi có cảnh báo mới
+            alertCountEl.parentElement.parentElement.style.animation = 'pulse 0.5s ease';
+            setTimeout(() => {
+              alertCountEl.parentElement.parentElement.style.animation = '';
+            }, 500);
           }
+
+          // Cập nhật KPI số vi phạm nếu là vi phạm
+          if (latestAlert.level === 'critical' || latestAlert.level === 'warning') {
+            violationCount++;
+            const violationCountEl = document.getElementById('violationCount');
+            if (violationCountEl) {
+              violationCountEl.textContent = violationCount;
+              violationCountEl.parentElement.parentElement.style.animation = 'pulse 0.5s ease';
+              setTimeout(() => {
+                violationCountEl.parentElement.parentElement.style.animation = '';
+              }, 500);
+            }
+          }
+
+          // Thêm cảnh báo vào panel nếu đang mở
+          const alertsPanel = document.getElementById('aiAlertsPanel');
+          if (alertsPanel && alertsPanel.style.display === 'block') {
+            const alertsBody = document.getElementById('alertsBody');
+            const newAlert = document.createElement('div');
+            newAlert.className = `alert-item ${latestAlert.level}`;
+            newAlert.style.animation = 'slideIn 0.3s ease-out';
+            newAlert.innerHTML = `
+              <div>${icon} ${latestAlert.message}</div>
+              <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
+            `;
+            // Thêm vào đầu danh sách
+            if (alertsBody.firstChild) {
+              alertsBody.insertBefore(newAlert, alertsBody.firstChild);
+            } else {
+              alertsBody.appendChild(newAlert);
+            }
+            // Giới hạn hiển thị 10 cảnh báo gần nhất
+            while (alertsBody.children.length > 10) {
+              alertsBody.removeChild(alertsBody.lastChild);
+            }
+          }
+
+          // Hiển thị toast notification
+          showToast('warning', 'Cảnh báo AI mới', latestAlert.message);
+
+          // Chỉ hiển thị vào chatbot nếu đang mở
+          const chatWidget = document.getElementById('chatWidget');
+          if (chatWidget && chatWidget.style.display === 'flex') {
+            addSystemMsg(alertMsg);
+          }
+
+          lastAlertTimestamp = latestAlert.timestamp;
         }
       }
     })
@@ -6415,8 +6502,8 @@ function pollAINewAlerts() {
     });
 }
 
-// Poll cảnh báo mới mỗi 2 giây
-setInterval(pollAINewAlerts, 2000);
+// Poll cảnh báo mới mỗi 3 giây
+setInterval(pollAINewAlerts, 3000);
 </script>
 
 </body>
