@@ -40,6 +40,28 @@ def add_ai_alert(alert_type, message, vehicle_id=None):
         if len(ai_alerts_queue) > MAX_ALERTS_HISTORY:
             ai_alerts_queue = ai_alerts_queue[-MAX_ALERTS_HISTORY:]
         print(f"[AI ALERT] {alert_type}: {message}")
+        
+        # Ghi vào database (Cần import db context nếu được, tạm thời dùng pymysql độc lập)
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                port=3306,
+                user='root',
+                password='',
+                database='giam_sat',
+                cursorclass=pymysql.cursors.DictCursor,
+                charset='utf8mb4'
+            )
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO canh_bao_vi_pham (loai_vi_pham, noi_dung_vi_pham, muc_do, thoi_gian_vi_pham, id_phuong_tien) 
+                VALUES (%s, %s, %s, NOW(), %s)
+            """, (alert_type, message, alert['level'], vehicle_id))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Error saving AI alert to DB: {e}")
 
 # ========================================
 # SOUND & WARNING SYSTEM
@@ -1215,18 +1237,29 @@ def generate_bot_response(message, vehicle_id=None):
 
     if any(x in message_lower for x in ['xe ở đâu', 'vị trí xe', 'xe nào', 'tìm xe']):
         import re
-        plate_match = re.search(r'(\d{1,2}[A-Z]-\d{3}\.\d{2})', message, re.IGNORECASE)
+        plate_match = re.search(r'(\d{1,2}[a-zA-Z]-\d{3}\.\d{2})', message, re.IGNORECASE)
         if plate_match:
             plate = plate_match.group(0).upper()
-            vehicles = [
-                {'plate': '29A-111.11', 'driver': 'Nguyễn Văn Đức', 'location': 'Võ Chí Công'},
-                {'plate': '29B-222.22', 'driver': 'Trần Văn Hoan', 'location': 'Bến xe Mỹ Đình'},
-                {'plate': '30E-333.33', 'driver': 'Lê Thị Đào', 'location': 'Minh Khai'},
-            ]
-            for v in vehicles:
-                if v['plate'] == plate:
-                    return f"🚗 Xe {plate} do tài xế {v['driver']} lái, đang ở vị trí: {v['location']}"
-            return f"❌ Không tìm thấy xe biển số {plate}"
+            try:
+                conn = pymysql.connect(host='localhost', port=3306, user='root', password='', database='giam_sat', cursorclass=pymysql.cursors.DictCursor, charset='utf8mb4')
+                cur = conn.cursor()
+                cur.execute('''
+                    SELECT p.bien_so, t.ho_ten, td.ten_tuyen 
+                    FROM phuong_tien p
+                    LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+                    LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
+                    WHERE p.bien_so = %s
+                ''', (plate,))
+                v = cur.fetchone()
+                cur.close()
+                conn.close()
+                if v:
+                    return f"🚗 Xe {v['bien_so']} do tài xế {v['ho_ten']} lái, đang ở vị trí: {v['ten_tuyen']}"
+                else:
+                    return f"❌ Không tìm thấy xe biển số {plate}"
+            except Exception as e:
+                print(e)
+                return f"❌ Lỗi truy vấn cơ sở dữ liệu"
         return 'Bạn vui lòng cho biết biển số xe, ví dụ: "Xe 29B-222.22 ở đâu?"'
 
     if any(x in message_lower for x in ['vi phạm', 'cảnh báo', 'lỗi', 'bị phạt']):
@@ -1291,15 +1324,24 @@ def call_llm_api(message, vehicle_id=None):
 
         client = Groq(api_key=GROQ_API_KEY)
 
-        vehicles_data = [
-            {'plate': '29A-111.11', 'driver': 'Nguyễn Văn Đức', 'location': 'Võ Chí Công', 'status': 'Đang chạy', 'speed': 45},
-            {'plate': '29B-222.22', 'driver': 'Trần Văn Hoan', 'location': 'Bến xe Mỹ Đình', 'status': 'Đang dừng', 'speed': 0},
-            {'plate': '30E-333.33', 'driver': 'Lê Thị Đào', 'location': 'Minh Khai', 'status': 'Đang chạy', 'speed': 30},
-            {'plate': '29H-444.44', 'driver': 'Phạm Văn Dũng', 'location': 'Ngã tư Sở', 'status': 'Đang chạy', 'speed': 50},
-            {'plate': '15B-555.55', 'driver': 'Hoàng Văn Việt', 'location': 'Cao tốc 5B', 'status': 'Đang chạy', 'speed': 40},
-            {'plate': '30G-666.66', 'driver': 'Vũ Thị Hồng', 'location': 'Phủ Tây Hồ', 'status': 'Đang chạy', 'speed': 40},
-            {'plate': '29LD-777.77', 'driver': 'Công ty Travel', 'location': 'Cầu Chương Dương', 'status': 'Đang chạy', 'speed': 60},
-        ]
+        # Lấy dữ liệu xe thật từ DB cho AI Context
+        vehicles_data = []
+        try:
+            conn = pymysql.connect(host='localhost', port=3306, user='root', password='', database='giam_sat', cursorclass=pymysql.cursors.DictCursor, charset='utf8mb4')
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT p.bien_so as plate, t.ho_ten as driver, td.ten_tuyen as location, 
+                       p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed
+                FROM phuong_tien p
+                LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+                LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
+                LIMIT 10
+            ''')
+            vehicles_data = cur.fetchall()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Error loading vehicles for LLM: {e}")
 
         vehicles_info = "\n".join([
             f"- {v['plate']}: Tài xế {v['driver']}, vị trí {v['location']}, trạng thái {v['status']}, tốc độ {v['speed']} km/h"

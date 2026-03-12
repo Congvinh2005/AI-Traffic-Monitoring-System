@@ -108,7 +108,7 @@ def login_page():
 @role_required(['admin'])
 def dashboard():
     """Dashboard dành cho Admin"""
-    return render_template('Dashboard.html', user=session.get('user'))
+    return render_template('Dashboard.html', user=session.get('user'), vehicles=[], stats={'total_vehicles':0, 'running':0, 'stopped':0, 'offline':0, 'alerts':0, 'violations':0, 'quality':100.0}, page=1, total_pages=1)
 
 @app.route('/trang_chu')
 @login_required

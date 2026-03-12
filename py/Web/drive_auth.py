@@ -83,7 +83,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_PORT'] = 3306
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'ai_traffic_monitoring'
+app.config['MYSQL_DB'] = 'giam_sat'
 
 # Extensions
 bcrypt = Bcrypt(app)
@@ -155,7 +155,7 @@ def api_login():
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
         cur = conn.cursor()
-        cur.execute('SELECT id, username, password, role, full_name, is_active FROM users WHERE username = %s', (username,))
+        cur.execute('SELECT id, ten_dang_nhap as username, mat_khau as password, vai_tro as role, ho_ten as full_name, trang_thai_hoat_dong as is_active FROM nguoi_dung WHERE ten_dang_nhap = %s', (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -217,7 +217,7 @@ def index_page():
     """Trang chủ - luôn redirect về login nếu chưa đăng nhập"""
     if 'user_id' in session:
         if session.get('role') == 'admin':
-            return redirect(url_for('dashboard_page'))
+            return redirect(url_for('dashboard'))
         else:
             return redirect(url_for('trang_chu_page'))
     else:
@@ -225,9 +225,132 @@ def index_page():
 
 @app.route('/dashboard')
 @login_required
-@admin_required
-def dashboard_page():
-    return render_template('Dashboard.html', user=session.get('user'))
+def dashboard():
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return "Lỗi kết nối CSDL", 500
+        
+        cur = conn.cursor()
+        
+        # Tính toán thông số KPI tổng
+        cur.execute('''
+            SELECT trang_thai_hoat_dong as status
+            FROM phuong_tien 
+        ''')
+        all_vehicles = cur.fetchall()
+        
+        stats = {
+            'total_vehicles': len(all_vehicles),
+            'running': sum(1 for v in all_vehicles if v['status'] == 'Đang chạy'),
+            'stopped': sum(1 for v in all_vehicles if v['status'] == 'Đang dừng'),
+            'offline': sum(1 for v in all_vehicles if v['status'] == 'Mất tín hiệu'),
+            'alerts': 0,
+            'violations': 0,
+            'quality': 86.0
+        }
+
+        # Phân trang
+        page = request.args.get('page', 1, type=int)
+        per_page = 5
+        offset = (page - 1) * per_page
+        total_pages = (stats['total_vehicles'] + per_page - 1) // per_page
+        
+        # Lấy danh sách xe và tài xế (theo trang)
+        cur.execute(f'''
+            SELECT p.id, p.bien_so as plate_number, p.loai_xe as type, p.hinh_anh_xe as image,
+                   t.ho_ten as driver_name, t.so_dien_thoai as phone, t.diem_danh_gia as score,
+                   td.ten_tuyen as location,
+                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed
+            FROM phuong_tien p
+            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+            LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
+            ORDER BY p.id ASC
+            LIMIT {per_page} OFFSET {offset}
+        ''')
+        vehicles = cur.fetchall()
+        
+        # Lấy toàn bộ xe không phân trang cho Javascript
+        cur.execute('''
+            SELECT p.id, p.bien_so as plate_number, p.loai_xe as type, p.hinh_anh_xe as image,
+                   t.ho_ten as driver_name, t.so_dien_thoai as phone, t.diem_danh_gia as score,
+                   td.ten_tuyen as location,
+                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed
+            FROM phuong_tien p
+            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+            LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
+            ORDER BY p.id ASC
+        ''')
+        all_vehicles = cur.fetchall()
+        
+        # Lấy danh sách toàn bộ tài xế
+        cur.execute('''
+            SELECT t.id, t.ma_tai_xe as code, t.ho_ten as name, t.so_dien_thoai as phone, 
+                   t.so_giay_phep_lai_xe as license_type, 5 as experience, t.diem_danh_gia as rating,
+                   NULL as avatar, IF(t.trang_thai_hoat_dong = 1, 'Đang làm việc', 'Đang nghỉ') as status, 
+                   (SELECT COUNT(*) FROM canh_bao_vi_pham WHERE id_tai_xe = t.id) as violations,
+                   156 as total_trips
+            FROM tai_xe t
+        ''')
+        drivers = cur.fetchall()
+
+        # Lấy danh sách toàn bộ tuyến đường
+        cur.execute('''
+            SELECT id as code, ten_tuyen as name, 'Khu vực trung tâm' as start, 'Tuyến cố định' as end, 
+                   0 as distance, 0 as duration,
+                   IF(trang_thai = 'active', 'Hoạt động', 'Ngừng hoạt động') as status
+            FROM tuyen_duong
+        ''')
+        routes = cur.fetchall()
+        
+        cur.execute('''
+            SELECT 
+                p.bien_so as plate, 
+                t.ho_ten as driver, 
+                c.loai_vi_pham as type, 
+                c.noi_dung_vi_pham as typeLabel, 
+                DATE_FORMAT(c.thoi_gian_vi_pham, '%H:%i %d/%m/%Y') as time, 
+                IF(c.da_doc = 1, 'processed', 'pending') as status, 
+                v.duong_dan_file as video
+            FROM canh_bao_vi_pham c
+            LEFT JOIN phuong_tien p ON c.id_phuong_tien = p.id
+            LEFT JOIN tai_xe t ON c.id_tai_xe = t.id
+            LEFT JOIN video_ghi_hinh v ON c.id_video_ghi_hinh = v.id
+            ORDER BY c.thoi_gian_vi_pham DESC
+            LIMIT 50
+        ''')
+        warnings = cur.fetchall()
+        
+        cur.execute('''
+            SELECT 
+                tb.bien_so_xe as plate, 
+                t.ho_ten as driver, 
+                t.so_dien_thoai as phone,
+                tb.noi_dung_thong_bao as content, 
+                tb.muc_do_uu_tien as priority, 
+                IF(tb.muc_do_uu_tien = 'high', 'Cao', IF(tb.muc_do_uu_tien = 'medium', 'Trung bình', 'Thấp')) as priorityLabel,
+                DATE_FORMAT(tb.ngay_tao, '%d/%m/%Y') as date,
+                DATE_FORMAT(tb.ngay_tao, '%H:%i') as time,
+                nd.ho_ten as admin,
+                'Không xác định' as location,
+                'Vi phạm hệ thống' as violationType,
+                IF(tb.da_doc = 1, 'processed', 'pending') as status
+            FROM thong_bao_admin tb
+            LEFT JOIN phuong_tien p ON tb.bien_so_xe = p.bien_so
+            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+            LEFT JOIN nguoi_dung nd ON tb.id_admin = nd.id
+            ORDER BY tb.ngay_tao DESC
+            LIMIT 50
+        ''')
+        admin_alerts = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('Dashboard.html', vehicles=vehicles, all_vehicles=all_vehicles, stats=stats, drivers=drivers, routes=routes, warnings=warnings, admin_alerts=admin_alerts, user=session.get('user'), page=page, total_pages=total_pages)
+    except Exception as e:
+        import traceback
+        return Response(traceback.format_exc(), mimetype="text/plain")
 
 @app.route('/trang_chu')
 @login_required
@@ -263,11 +386,15 @@ def get_alerts():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT a.*, v.plate_number as vehicle_plate, d.full_name as driver_name
-            FROM alerts a
-            LEFT JOIN vehicles v ON a.vehicle_id = v.id
-            LEFT JOIN drivers d ON a.driver_id = d.id
-            ORDER BY a.timestamp DESC
+            SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level, 
+                   a.thoi_gian_vi_pham as timestamp, a.da_doc as is_read,
+                   v.bien_so as vehicle_plate, d.ho_ten as driver_name,
+                   vid.duong_dan_file as video_path
+            FROM canh_bao_vi_pham a
+            LEFT JOIN phuong_tien v ON a.id_phuong_tien = v.id
+            LEFT JOIN tai_xe d ON a.id_tai_xe = d.id
+            LEFT JOIN video_ghi_hinh vid ON a.id_video_ghi_hinh = vid.id
+            ORDER BY a.thoi_gian_vi_pham DESC
             LIMIT 100
         ''')
         alerts = cur.fetchall()
@@ -302,7 +429,7 @@ def mark_alert_as_read(alert_id):
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
         cur = conn.cursor()
-        cur.execute('UPDATE alerts SET is_read = 1 WHERE id = %s', (alert_id,))
+        cur.execute('UPDATE canh_bao_vi_pham SET da_doc = 1 WHERE id = %s', (alert_id,))
         conn.commit()
         cur.close()
         conn.close()
@@ -351,10 +478,12 @@ def get_admin_warnings():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT w.*, u.full_name as admin_name
-            FROM warnings w
-            LEFT JOIN users u ON w.admin_id = u.id
-            ORDER BY w.created_at DESC
+            SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message, 
+                   w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at, 
+                   u.ho_ten as admin_name
+            FROM thong_bao_admin w
+            LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+            ORDER BY w.ngay_tao DESC
             LIMIT 100
         ''')
         warnings = cur.fetchall()
@@ -387,7 +516,7 @@ def mark_warning_as_read(warning_id):
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
         cur = conn.cursor()
-        cur.execute('UPDATE warnings SET is_read = 1, read_at = NOW() WHERE id = %s', (warning_id,))
+        cur.execute('UPDATE thong_bao_admin SET da_doc = 1, ngay_doc = NOW() WHERE id = %s', (warning_id,))
         conn.commit()
         cur.close()
         conn.close()

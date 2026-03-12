@@ -2500,7 +2500,7 @@ tr:hover {
         <i class="fas fa-car kpi-icon-new text-green"></i>
         <div>
           <p class="kpi-label-new">Xe hoạt động</p>
-          <h3 class="kpi-value-new" id="vehicleCount">48</h3>
+          <h3 class="kpi-value-new" id="vehicleCount">{{ stats.total_vehicles|default("0", true) }}</h3>
         </div>
       </div>
     </div>
@@ -2510,7 +2510,7 @@ tr:hover {
         <i class="fas fa-paper-plane kpi-icon-new text-blue"></i>
         <div>
           <p class="kpi-label-new">Chuyến hôm nay</p>
-          <h3 class="kpi-value-new" id="tripCount">124</h3>
+          <h3 class="kpi-value-new" id="tripCount">{{ (stats.running|default(0, true)) + (stats.stopped|default(0, true)) }}</h3>
         </div>
       </div>
     </div>
@@ -2520,7 +2520,7 @@ tr:hover {
         <i class="fas fa-exclamation-triangle kpi-icon-new text-orange"></i>
         <div>
           <p class="kpi-label-new">Cảnh báo AI</p>
-          <h3 class="kpi-value-new text-orange" id="alertCount">5</h3>
+          <h3 class="kpi-value-new text-orange" id="alertCount">{{ stats.alerts|default("5", true) }}</h3>
         </div>
       </div>
     </div>
@@ -2530,7 +2530,7 @@ tr:hover {
         <i class="fas fa-ban kpi-icon-new text-red"></i>
         <div>
           <p class="kpi-label-new">Vi phạm</p>
-          <h3 class="kpi-value-new text-red" id="violationCount">4</h3>
+          <h3 class="kpi-value-new text-red" id="violationCount">{{ stats.violations|default("4", true) }}</h3>
         </div>
       </div>
     </div>
@@ -2540,7 +2540,7 @@ tr:hover {
         <i class="fas fa-shield-alt kpi-icon-new text-emerald"></i>
         <div>
           <p class="kpi-label-new">Điểm an toàn</p>
-          <h3 class="kpi-value-new">86 <span class="kpi-sub-new">/100</span></h3>
+          <h3 class="kpi-value-new">{{ "%.1f"|format(stats.quality|default(86, true)) }} <span class="kpi-sub-new">/100</span></h3>
         </div>
       </div>
     </div>
@@ -2705,212 +2705,97 @@ tr:hover {
         </tr>
       </thead>
       <tbody id="tripTableBody">
-        <tr>
-          <td>1</td>
-          <td><img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
-          <td class="plate-number">29B-222.22</td>
-          <td>Xe khách</td>
-          <td>Trần Văn Hoan</td>
-          <td>0909 888 999</td>
-          <td>Ngã tư Mỹ Đình</td>
-          <td>Mỹ Đình → Hải Phòng</td>
-          <td>08:00 02/11/2026</td>
-          <td><span class="status-badge status-running">Đang chạy</span></td>
-          <td><span class="violation-badge">📱 Dùng điện thoại</span></td>
-          <td><span class="score-badge score-medium">7.5</span></td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn-action btn-call" onclick="callDriver('0909888999')" title="Gọi tài xế">
-                <i class="fa-solid fa-phone"></i>
-                <span>Gọi</span>
-              </button>
-              <button class="btn-action btn-alert" onclick="sendWarning('29B-222.22')" title="Cảnh báo">
-                <i class="fa-solid fa-bell"></i>
-                <span>Báo cáo</span>
-              </button>
-              <button class="btn-action btn-video" onclick="viewViolationVideo('29B-222.22', 'Dùng điện thoại', '/py/video_input/lech_lan.mp4')" title="Xem video vi phạm">
-                <i class="fa-solid fa-circle-play"></i>
-                <span>Video</span>
-              </button>
-              <button class="btn-action btn-camera" onclick="viewCamera('29B-222.22')" title="Xem camera">
-                <i class="fa-solid fa-video"></i>
-                <span>Camera</span>
-              </button>
-              <!-- <button class="btn-action btn-report" onclick="viewReport('29B-222.22')" title="Báo cáo">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Báo cáo</span>
-              </button> -->
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td><img src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
-          <td class="plate-number">30G-666.66</td>
-          <td>Taxi</td>
-          <td>Vũ Thị Hồng</td>
-          <td>0912 345 678</td>
-          <td>Hồ Tây</td>
-          <td>Hồ Tây → Lăng Bác</td>
-          <td>08:15 02/11/2026</td>
-          <td><span class="status-badge status-running">Đang chạy</span></td>
-          <td><span class="violation-badge">⚠️ Không thắt dây</span></td>
-          <td><span class="score-badge score-high">8.5</span></td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn-action btn-call" onclick="callDriver('0912345678')" title="Gọi tài xế">
-                <i class="fa-solid fa-phone"></i>
-                <span>Gọi</span>
-              </button>
-              <button class="btn-action btn-alert" onclick="sendWarning('30G-666.66')" title="Cảnh báo">
-                <i class="fa-solid fa-bell"></i>
-                <span>Cảnh báo</span>
-              </button>
-              <button class="btn-action btn-video" onclick="viewViolationVideo('30G-666.66', 'Không thắt dây', '/py/video_input/car1.mp4')" title="Xem video vi phạm">
-                <i class="fa-solid fa-circle-play"></i>
-                <span>Video</span>
-              </button>
-              <button class="btn-action btn-camera" onclick="viewCamera('30G-666.66')" title="Xem camera">
-                <i class="fa-solid fa-video"></i>
-                <span>Camera</span>
-              </button>
-              <button class="btn-action btn-report" onclick="viewReport('30G-666.66')" title="Báo cáo">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Báo cáo</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td><img src="https://images.unsplash.com/photo-1550355291-bbee04a92027?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img"></td>
-          <td class="plate-number">29A-111.11</td>
-          <td>Ô tô</td>
-          <td>Nguyễn Văn Đức</td>
-          <td>0988 777 666</td>
-          <td>Nội Bài</td>
-          <td>Nội Bài → Hà Nội</td>
-          <td>08:30 02/11/2026</td>
-          <td><span class="status-badge status-running">Đang chạy</span></td>
-          <td><span class="violation-badge">😴 Buồn ngủ</span></td>
-          <td><span class="score-badge score-low">5.5</span></td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn-action btn-call" onclick="callDriver('0988777666')" title="Gọi tài xế">
-                <i class="fa-solid fa-phone"></i>
-                <span>Gọi</span>
-              </button>
-              <button class="btn-action btn-alert" onclick="sendWarning('29A-111.11')" title="Cảnh báo">
-                <i class="fa-solid fa-bell"></i>
-                <span>Cảnh báo</span>
-              </button>
-              <button class="btn-action btn-video" onclick="viewViolationVideo('29A-111.11', 'Buồn ngủ', '/py/video_input/car2.mp4')" title="Xem video vi phạm">
-                <i class="fa-solid fa-circle-play"></i>
-                <span>Video</span>
-              </button>
-              <button class="btn-action btn-camera" onclick="viewCamera('29A-111.11')" title="Xem camera">
-                <i class="fa-solid fa-video"></i>
-                <span>Camera</span>
-              </button>
-              <button class="btn-action btn-report" onclick="viewReport('29A-111.11')" title="Báo cáo">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Báo cáo</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>4</td>
-          <td><img src="https://picsum.photos/200/150?random=4" alt="Vehicle" class="vehicle-img"></td>
-          <td class="plate-number">29LD-777.77</td>
-          <td>Xe du lịch</td>
-          <td>Công ty Travel</td>
-          <td>0933 222 111</td>
-          <td>Nhà hát lớn</td>
-          <td>Nhà hát lớn → Bát Tràng</td>
-          <td>08:45 02/11/2026</td>
-          <td><span class="status-badge status-stopped">Đã dừng</span></td>
-          <td><span class="violation-badge">🔄 Lệch làn</span></td>
-          <td><span class="score-badge score-medium">7.0</span></td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn-action btn-call" onclick="callDriver('0933222111')" title="Gọi tài xế">
-                <i class="fa-solid fa-phone"></i>
-                <span>Gọi</span>
-              </button>
-              <button class="btn-action btn-alert" onclick="sendWarning('29LD-777.77')" title="Cảnh báo">
-                <i class="fa-solid fa-bell"></i>
-                <span>Cảnh báo</span>
-              </button>
-              <button class="btn-action btn-video" onclick="viewViolationVideo('29LD-777.77', 'Lệch làn', '/py/video_input/car3.mp4')" title="Xem video vi phạm">
-                <i class="fa-solid fa-circle-play"></i>
-                <span>Video</span>
-              </button>
-              <button class="btn-action btn-camera" onclick="viewCamera('29LD-777.77')" title="Xem camera">
-                <i class="fa-solid fa-video"></i>
-                <span>Camera</span>
-              </button>
-              <button class="btn-action btn-report" onclick="viewReport('29LD-777.77')" title="Báo cáo">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Báo cáo</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>5</td>
-          <td><img src="https://picsum.photos/200/150?random=5" alt="Vehicle" class="vehicle-img"></td>
-          <td class="plate-number">30F-888.88</td>
-          <td>Xe tải</td>
-          <td>Lê Văn Minh</td>
-          <td>0977 666 555</td>
-          <td>Cầu Giấy</td>
-          <td>Cầu Giấy → Long Biên</td>
-          <td>09:00 02/11/2026</td>
-          <td><span class="status-badge status-running">Đang chạy</span></td>
-          <td><span class="violation-badge">✅ Bình thường</span></td>
-          <td><span class="score-badge score-high">9.0</span></td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn-action btn-call" onclick="callDriver('0977666555')" title="Gọi tài xế">
-                <i class="fa-solid fa-phone"></i>
-                <span>Gọi</span>
-              </button>
-              <button class="btn-action btn-alert" onclick="sendWarning('30F-888.88')" title="Cảnh báo">
-                <i class="fa-solid fa-bell"></i>
-                <span>Cảnh báo</span>
-              </button>
-              <button class="btn-action btn-video" onclick="viewViolationVideo('30F-888.88', 'Bình thường', '/py/video_input/car4.mp4')" title="Xem video vi phạm">
-                <i class="fa-solid fa-circle-play"></i>
-                <span>Video</span>
-              </button>
-              <button class="btn-action btn-camera" onclick="viewCamera('30F-888.88')" title="Xem camera">
-                <i class="fa-solid fa-video"></i>
-                <span>Camera</span>
-              </button>
-              <button class="btn-action btn-report" onclick="viewReport('30F-888.88')" title="Báo cáo">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Báo cáo</span>
-              </button>
-            </div>
-          </td>
-        </tr>
+        {% set cur_page = page|default(1, true)|int %}
+        {% set t_pages = total_pages|default(1, true)|int %}
+        {% if vehicles %}
+          {% for v in vehicles %}
+          <tr>
+            <td>{{ (cur_page - 1) * 5 + loop.index }}</td>
+            <td>
+              {% if v.image %}
+                <img src="/static/images/{{ v.image }}" alt="Vehicle" class="vehicle-img" onerror="this.src='https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=200&h=150&fit=crop'">
+              {% else %}
+                <img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=200&h=150&fit=crop" alt="Vehicle" class="vehicle-img">
+              {% endif %}
+            </td>
+            <td class="plate-number">{{ v.plate_number }}</td>
+            <td>{{ 'Xe khách' if v.type == 'bus' else 'Xe tải' if v.type == 'truck' else 'Ô tô' }}</td>
+            <td>{{ v.driver_name }}</td>
+            <td>{{ v.phone }}</td>
+            <td>{{ v.location }}</td>
+            <td>{{ v.location }} → ...</td>
+            <td>08:00 {{ now }}</td>
+            <td>
+              {% if v.status == 'Đang chạy' %}
+                <span class="status-badge status-running">Đang chạy</span>
+              {% elif v.status == 'Đang dừng' %}
+                <span class="status-badge status-stopped">Đã dừng</span>
+              {% else %}
+                <span class="status-badge status-offline">Offline</span>
+              {% endif %}
+            </td>
+            <td><span class="violation-badge">✅ Bình thường</span></td>
+            <td>
+              {% set score = v.score|default(0, true)|float %}
+              {% if score >= 90 %}
+                <span class="score-badge score-high">{{ (score/10)|round(1) }}</span>
+              {% elif score >= 70 %}
+                <span class="score-badge score-medium">{{ (score/10)|round(1) }}</span>
+              {% else %}
+                <span class="score-badge score-low">{{ (score/10)|round(1) }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-action btn-call" onclick="callDriver('{{ v.phone }}')" title="Gọi tài xế">
+                  <i class="fa-solid fa-phone"></i>
+                  <span>Gọi</span>
+                </button>
+                <button class="btn-action btn-alert" onclick="sendWarning('{{ v.plate_number }}')" title="Cảnh báo">
+                  <i class="fa-solid fa-bell"></i>
+                  <span>Cảnh báo</span>
+                </button>
+                <button class="btn-action btn-video" onclick="viewViolationVideo('{{ v.plate_number }}', 'Bình thường', '/py/video_input/car4.mp4')" title="Xem video vi phạm">
+                  <i class="fa-solid fa-circle-play"></i>
+                  <span>Video</span>
+                </button>
+                <button class="btn-action btn-camera" onclick="viewCamera('{{ v.plate_number }}')" title="Xem camera">
+                  <i class="fa-solid fa-video"></i>
+                  <span>Camera</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="13" style="text-align: center; padding: 20px;">Không có dữ liệu chuyến xe</td>
+          </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
   
   <div class="pagination">
     <div class="pagination-info">
-      Hiển thị 1-5 trong tổng số 124 chuyến
+      Hiển thị {{ (cur_page - 1) * 5 + 1 }} - {{ (cur_page - 1) * 5 + vehicles|default([])|length }} trong tổng số {{ stats.total_vehicles|default(0, true) }} chuyến
     </div>
     <div class="pagination-buttons">
-      <button class="page-btn"><i class="fa-solid fa-chevron-left"></i></button>
-      <button class="page-btn active">1</button>
-      <button class="page-btn">2</button>
-      <button class="page-btn">3</button>
-      <button class="page-btn">...</button>
-      <button class="page-btn">25</button>
-      <button class="page-btn"><i class="fa-solid fa-chevron-right"></i></button>
+      <a href="{{ url_for('dashboard', page=cur_page-1) }}" class="page-btn" {% if cur_page <= 1 %}style="pointer-events: none; opacity: 0.5;"{% endif %}><i class="fa-solid fa-chevron-left"></i></a>
+      
+      {% for p in range(1, t_pages + 1) %}
+        {% if p == cur_page %}
+          <a href="{{ url_for('dashboard', page=p) }}" class="page-btn active">{{ p }}</a>
+        {% elif p <= 3 or p >= t_pages - 1 or (p >= cur_page - 1 and p <= cur_page + 1) %}
+          <a href="{{ url_for('dashboard', page=p) }}" class="page-btn">{{ p }}</a>
+        {% elif p == 4 and cur_page > 5 %}
+          <button class="page-btn" disabled>...</button>
+        {% elif p == t_pages - 2 and cur_page < t_pages - 3 %}
+          <button class="page-btn" disabled>...</button>
+        {% endif %}
+      {% endfor %}
+
+      <a href="{{ url_for('dashboard', page=cur_page+1) }}" class="page-btn" {% if cur_page >= t_pages %}style="pointer-events: none; opacity: 0.5;"{% endif %}><i class="fa-solid fa-chevron-right"></i></a>
     </div>
   </div>
 </div>
@@ -3944,21 +3829,24 @@ function loadPageData(pageId) {
 }
 
 // Sample data loaders (to be implemented with real API calls)
+var warningsData = {{ warnings|default([])|tojson|safe }};
+
 function loadWarningsData() {
   const tbody = document.getElementById('warningsTableBody');
-  const sampleWarnings = [
-    { plate: '29B-222.22', driver: 'Trần Văn Hoan', type: 'phone', typeLabel: '📱 Dùng điện thoại', time: '10:30 02/11/2026', status: 'pending', video: '/py/video_input/lech_lan.mp4' },
-    { plate: '30G-666.66', driver: 'Vũ Thị Hồng', type: 'seatbelt', typeLabel: '⚠️ Không thắt dây', time: '09:15 02/11/2026', status: 'processed', video: '/py/video_input/car1.mp4' },
-    { plate: '29A-111.11', driver: 'Nguyễn Văn Đức', type: 'drowsy', typeLabel: '😴 Buồn ngủ', time: '08:45 02/11/2026', status: 'pending', video: '/py/video_input/car2.mp4' },
-  ];
+  
+  if (!warningsData || warningsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có cảnh báo nào</td></tr>';
+    document.getElementById('warningBadge').textContent = '0';
+    return;
+  }
 
-  tbody.innerHTML = sampleWarnings.map((w, i) => `
+  tbody.innerHTML = warningsData.map((w, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${w.plate}</strong></td>
-      <td>${w.driver}</td>
-      <td>${w.typeLabel}</td>
-      <td>${w.time}</td>
+      <td><strong>${w.plate || 'Không rõ'}</strong></td>
+      <td>${w.driver || 'Không rõ'}</td>
+      <td>${w.typeLabel || 'Không rõ'}</td>
+      <td>${w.time || ''}</td>
       <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
       <td>
         <div style="display: flex; gap: 5px;">
@@ -3974,51 +3862,31 @@ function loadWarningsData() {
   `).join('');
 
   // Update badge
-  const pendingCount = sampleWarnings.filter(w => w.status === 'pending').length;
+  const pendingCount = warningsData.filter(w => w.status === 'pending').length;
   document.getElementById('warningBadge').textContent = pendingCount;
 }
 
+var adminAlertsData = {{ admin_alerts|default([])|tojson|safe }};
+
 function loadAdminAlertsData() {
   const tbody = document.getElementById('alertsTableBody');
-  const sampleAlerts = [
-    { 
-      plate: '29B-222.22', 
-      driver: 'Trần Văn Hoan', 
-      phone: '0909 888 999',
-      content: 'Cảnh báo: Sử dụng điện thoại khi lái xe', 
-      priority: 'high', 
-      priorityLabel: 'Cao', 
-      date: '02/11/2026',
-      time: '10:30',
-      admin: 'Admin System',
-      location: 'Ngã tư Mỹ Đình',
-      violationType: 'Dùng điện thoại',
-      status: 'pending'
-    },
-    { 
-      plate: '30G-666.66', 
-      driver: 'Vũ Thị Hồng', 
-      phone: '0912 345 678',
-      content: 'Nhắc nhở: Thắt dây an toàn', 
-      priority: 'medium', 
-      priorityLabel: 'Trung bình', 
-      date: '01/11/2026',
-      time: '09:15',
-      admin: 'Admin System',
-      location: 'Hồ Tây',
-      violationType: 'Không thắt dây',
-      status: 'processed'
-    },
-  ];
+  
+  if (!adminAlertsData || adminAlertsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có thông báo nào</td></tr>';
+    window.adminAlerts = [];
+    return;
+  }
 
-  tbody.innerHTML = sampleAlerts.map((a, i) => `
+  window.adminAlerts = adminAlertsData; // Save globally
+
+  tbody.innerHTML = adminAlertsData.map((a, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${a.plate}</strong></td>
-      <td>${a.driver}</td>
-      <td>${a.content}</td>
-      <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priorityLabel}</span></td>
-      <td>${a.date}</td>
+      <td><strong>${a.plate || 'Không rõ'}</strong></td>
+      <td>${a.driver || 'Không rõ'}</td>
+      <td>${a.content || ''}</td>
+      <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priorityLabel || 'Bình thường'}</span></td>
+      <td>${a.date || ''}</td>
       <td>
         <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
           <i class="fa-solid fa-eye"></i> Xem chi tiết
@@ -4026,9 +3894,6 @@ function loadAdminAlertsData() {
       </td>
     </tr>
   `).join('');
-  
-  // Store alerts globally for viewAlert function
-  window.adminAlerts = sampleAlerts;
 }
 
 function loadNotificationsData() {
@@ -4270,17 +4135,27 @@ function printAlert(index) {
 }
 
 // Vehicles Management
-var vehiclesData = [
-  { plate: '29B-222.22', type: 'bus', typeLabel: 'Xe khách 45 chỗ', owner: 'Công ty ABC', driver: 'Trần Văn Hoan', year: 2022, km: '45,230 km', status: 'active', image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400', company: 'company1' },
-  { plate: '30G-666.66', type: 'taxi', typeLabel: 'Taxi 4 chỗ', owner: 'Taxi Hà Nội', driver: 'Vũ Thị Hồng', year: 2021, km: '78,450 km', status: 'active', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400', company: 'company2' },
-  { plate: '29A-111.11', type: 'car', typeLabel: 'Ô tô 5 chỗ', owner: 'Transport Co.', driver: 'Nguyễn Văn Đức', year: 2023, km: '12,890 km', status: 'active', image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=400', company: 'company3' },
-  { plate: '29LD-777.77', type: 'bus', typeLabel: 'Xe du lịch 29 chỗ', owner: 'Công ty ABC', driver: 'Lê Văn Minh', year: 2020, km: '125,670 km', status: 'maintenance', image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400', company: 'company1' },
-  { plate: '30F-888.88', type: 'truck', typeLabel: 'Xe tải 5 tấn', owner: 'Transport Co.', driver: 'Phạm Văn Hùng', year: 2021, km: '89,340 km', status: 'active', image: 'https://images.unsplash.com/photo-1601584115197-0f44b69f5a3b?w=400', company: 'company3' },
-  { plate: '30E-999.99', type: 'car', typeLabel: 'Ô tô 7 chỗ', owner: 'Taxi Hà Nội', driver: 'Hoàng Thị Lan', year: 2022, km: '34,560 km', status: 'active', image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=400', company: 'company2' }
-];
+var rawVehiclesData = {{ all_vehicles|default([])|tojson|safe }};
+var vehiclesData = rawVehiclesData.map(v => ({
+    plate: v.plate_number,
+    type: v.type || 'car',
+    typeLabel: v.type === 'car' ? 'Ô tô 4 chỗ' : v.type === 'bus' ? 'Xe khách' : v.type === 'truck' ? 'Xe tải' : 'Xe máy',
+    status: v.status === 'Đang chạy' ? 'active' : v.status === 'Đang dừng' ? 'maintenance' : 'inactive',
+    company: 'Công ty ABC',
+    image: v.image ? '/static/images/' + v.image : 'https://images.unsplash.com/photo-1549317661-bd32c8ce0be2?w=500',
+    owner: 'Công ty ABC',
+    driver: v.driver_name || 'Chưa phân công',
+    year: '2023',
+    km: '15,000'
+}));
 
 function loadVehiclesData() {
   const grid = document.getElementById('vehicleGrid');
+  
+  if (!vehiclesData || vehiclesData.length === 0) {
+    grid.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted); width: 100%;">Không có dữ liệu xe</div>';
+    return;
+  }
   
   grid.innerHTML = vehiclesData.map(v => `
     <div class="vehicle-card" data-type="${v.type}" data-status="${v.status}" data-company="${v.company}" style="background: var(--bg-card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); transition: var(--transition);">
@@ -4414,46 +4289,51 @@ var routesData = [
     path: [[20.9800, 105.7800], [21.0000, 105.8000], [21.0150, 105.8200], [21.0285, 105.8542]], color: '#9c27b0' }
 ];
 
+// Routes Management
+var routesData = {{ routes|default([], true)|tojson|safe }};
+
 function loadRoutesData() {
   const list = document.getElementById('routeList');
   
-  list.innerHTML = routesData.map(r => `
-    <div class="route-item" data-code="${r.code}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='${r.color}'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
-      <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span class="route-code" style="font-weight: 600; color: ${r.color};">${r.code}</span>
-        <span class="route-status status-active" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: rgba(0, 200, 83, 0.15); color: var(--success);">Hoạt động</span>
+  if (routesData && routesData.length > 0) {
+    list.innerHTML = routesData.map(r => `
+      <div class="route-item" data-code="${r.code}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
+        <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span class="route-code" style="font-weight: 600; color: var(--accent);">${r.code}</span>
+          <span class="route-status status-${r.status === 'Hoạt động' ? 'active' : 'inactive'}" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.15)' : 'rgba(255, 82, 82, 0.15)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
+        </div>
+        <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
+        <div class="route-points" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary);">
+          <span class="point point-start" style="display: flex; align-items: center; gap: 5px; color: var(--success);">
+            <i class="fa-solid fa-circle-dot" style="font-size: 8px;"></i> ${r.start}
+          </span>
+          <span class="route-arrow" style="color: var(--text-muted);"><i class="fa-solid fa-arrow-right"></i></span>
+          <span class="point point-end" style="display: flex; align-items: center; gap: 5px; color: var(--danger);">
+            <i class="fa-solid fa-location-dot" style="font-size: 8px;"></i> ${r.end}
+          </span>
+        </div>
+        <div class="route-info" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
+          <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-ruler-horizontal" style="color: var(--accent);"></i> ${r.distance} km
+          </span>
+          <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-clock" style="color: var(--warning);"></i> ${r.duration} phút
+          </span>
+        </div>
+        <div class="route-actions" style="display: flex; gap: 5px;">
+          <button class="btn btn-primary" onclick="viewRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
+          <button class="btn btn-outline" onclick="editRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+        </div>
       </div>
-      <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
-      <div class="route-points" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary);">
-        <span class="point point-start" style="display: flex; align-items: center; gap: 5px; color: var(--success);">
-          <i class="fa-solid fa-circle-dot" style="font-size: 8px;"></i> ${r.start}
-        </span>
-        <span class="route-arrow" style="color: var(--text-muted);"><i class="fa-solid fa-arrow-right"></i></span>
-        <span class="point point-end" style="display: flex; align-items: center; gap: 5px; color: var(--danger);">
-          <i class="fa-solid fa-location-dot" style="font-size: 8px;"></i> ${r.end}
-        </span>
-      </div>
-      <div class="route-info" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-ruler-horizontal" style="color: var(--accent);"></i> ${r.distance}
-        </span>
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-clock" style="color: var(--warning);"></i> ${r.duration}
-        </span>
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-bus" style="color: var(--success);"></i> ${r.vehicles}
-        </span>
-      </div>
-      <div class="route-actions" style="display: flex; gap: 5px;">
-        <button class="btn btn-primary" onclick="viewRoute('${r.code}')" style="flex: 1; padding: 6px; background: ${r.color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
-        <button class="btn btn-outline" onclick="editRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
+  } else {
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Không có dữ liệu tuyến đường</div>';
+  }
   
   // Animate stats
-  animateValue('activeRoutes', 0, 28, 1000);
-  setTimeout(() => animateValue('totalRoutes', 0, 35, 1000), 200);
+  const activeCount = routesData ? routesData.filter(r => r.status === 'Hoạt động').length : 0;
+  animateValue('activeRoutes', 0, activeCount, 1000);
+  setTimeout(() => animateValue('totalRoutes', 0, routesData ? routesData.length : 0, 1000), 200);
   setTimeout(() => animateValue('avgDuration', 0, 45, 1000), 400);
   setTimeout(() => animateValue('todayPassengers', 0, 1247, 600));
 }
@@ -4849,42 +4729,40 @@ function applyFilter() {
 // Drivers Management
 function loadDriversData() {
   const grid = document.getElementById('driverGrid');
-  const drivers = [
-    { name: 'Trần Văn Hoan', code: 'MX001 - 29B-222.22', trips: 156, rating: 4.9, violations: 12, phone: '0909 888 999', company: 'ABC Transport', experience: '5 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-    { name: 'Vũ Thị Hồng', code: 'MX002 - 30G-666.66', trips: 203, rating: 4.8, violations: 8, phone: '0912 345 678', company: 'Taxi Hà Nội', experience: '3 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-    { name: 'Nguyễn Văn Đức', code: 'MX003 - 29A-111.11', trips: 89, rating: 4.5, violations: 15, phone: '0988 777 666', company: 'Transport Co.', experience: '2 năm', status: 'offline', avatar: 'https://randomuser.me/api/portraits/men/67.jpg' },
-    { name: 'Lê Văn Minh', code: 'MX004 - 29LD-777.77', trips: 178, rating: 3.8, violations: 24, phone: '0933 222 111', company: 'ABC Transport', experience: '4 năm', status: 'warning', avatar: 'https://randomuser.me/api/portraits/men/85.jpg' },
-    { name: 'Phạm Văn Hùng', code: 'MX005 - 30F-888.88', trips: 245, rating: 4.9, violations: 5, phone: '0977 666 555', company: 'Transport Co.', experience: '7 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/men/22.jpg' },
-    { name: 'Hoàng Thị Lan', code: 'MX006 - 30E-999.99', trips: 134, rating: 4.6, violations: 9, phone: '0966 555 444', company: 'Taxi Hà Nội', experience: '3 năm', status: 'offline', avatar: 'https://randomuser.me/api/portraits/women/68.jpg' },
-  ];
   
-  grid.innerHTML = drivers.map(d => `
-    <div class="driver-card" data-status="${d.status}" data-rating="${Math.floor(d.rating)}" data-company="${d.company.toLowerCase().replace(' ', '')}" style="background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); transition: var(--transition); position: relative;">
-      <span class="driver-status status-${d.status}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; ${d.status === 'online' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : d.status === 'offline' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(255, 82, 82, 0.15); color: var(--danger);'}">${d.status === 'online' ? 'Đang lái' : d.status === 'offline' ? 'Nghỉ' : 'Cảnh báo'}</span>
-      <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
-        <div class="driver-avatar"><img src="${d.avatar}" alt="${d.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
-      </div>
-      <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
-        <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${d.name}</div>
-        <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${d.code}</div>
-        <div class="driver-stats" style="display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.trips}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Chuyến</div></div>
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">${d.rating}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Đánh giá</div></div>
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--danger);">${d.violations}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Vi phạm</div></div>
+  grid.innerHTML = `
+    {% if drivers|length > 0 %}
+      {% for d in drivers %}
+        <div class="driver-card" data-status="{{ 'online' if d.status == 'Đang làm việc' else 'offline' if d.status == 'Đang nghỉ' else 'warning' }}" data-company="abc" style="background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); transition: var(--transition); position: relative;">
+          <span class="driver-status status-{{ 'online' if d.status == 'Đang làm việc' else 'offline' if d.status == 'Đang nghỉ' else 'warning' }}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; {% if d.status == 'Đang làm việc' %}background: rgba(0, 200, 83, 0.15); color: var(--success);{% elif d.status == 'Đang nghỉ' %}background: rgba(255, 193, 7, 0.15); color: var(--warning);{% else %}background: rgba(255, 82, 82, 0.15); color: var(--danger);{% endif %}">{{ "Đang làm việc" if d.status == "Đang làm việc" else "Nghỉ" if d.status == "Đang nghỉ" else "Cảnh báo" }}</span>
+          <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
+            <div class="driver-avatar"><img src="{{ d.avatar if d.avatar else 'https://randomuser.me/api/portraits/men/32.jpg' }}" alt="{{ d.name }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
+          </div>
+          <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
+            <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ d.name }}</div>
+            <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">{{ d.code }}</div>
+            <div class="driver-stats" style="display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">{{ d.total_trips }}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Chuyến</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">{{ d.rating }}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Đánh giá</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--danger);">{{ d.violations }}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Vi phạm</div></div>
+            </div>
+          </div>
+          <div class="driver-details" style="font-size: 12px; margin-bottom: 12px;">
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">SĐT</span><span class="detail-value" style="color: var(--text-primary);">{{ d.phone }}</span></div>
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">Hạng GPLX</span><span class="detail-value" style="color: var(--text-primary);">{{ d.license_type }}</span></div>
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Kinh nghiệm</span><span class="detail-value" style="color: var(--text-primary);">{{ d.experience }} năm</span></div>
+          </div>
+          <div class="driver-actions" style="display: flex; gap: 5px;">
+            <button class="btn btn-success" onclick="callDriver('{{ d.phone }}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
+            <button class="btn btn-outline" onclick="editDriver('{{ d.name }}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+            <button class="btn btn-danger" onclick="deleteDriver('{{ d.name }}')" style="flex: 1; padding: 6px; background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash"></i> Xóa</button>
+          </div>
         </div>
-      </div>
-      <div class="driver-details" style="font-size: 12px; margin-bottom: 12px;">
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">SĐT</span><span class="detail-value" style="color: var(--text-primary);">${d.phone}</span></div>
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">Công ty</span><span class="detail-value" style="color: var(--text-primary);">${d.company}</span></div>
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Kinh nghiệm</span><span class="detail-value" style="color: var(--text-primary);">${d.experience}</span></div>
-      </div>
-      <div class="driver-actions" style="display: flex; gap: 5px;">
-        <button class="btn btn-success" onclick="callDriver('${d.phone}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
-        <button class="btn btn-outline" onclick="editDriver('${d.name}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
-        <button class="btn btn-danger" onclick="deleteDriver('${d.name}')" style="flex: 1; padding: 6px; background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash"></i> Xóa</button>
-      </div>
-    </div>
-  `).join('');
+      {% endfor %}
+    {% else %}
+      <div style="padding: 20px; text-align: center; color: var(--text-muted);">Không có dữ liệu tài xế</div>
+    {% endif %}
+  `;
   
   // Animate stats
   animateValue('activeDrivers', 0, 38, 1000);
