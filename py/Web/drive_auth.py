@@ -34,7 +34,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_PORT'] = 3306
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'AI_traffic'
+app.config['MYSQL_DB'] = 'giam_sat'
 
 # Extensions
 bcrypt = Bcrypt(app)
@@ -168,15 +168,15 @@ def api_login():
             return jsonify({'success': False, 'message': 'Database error'}), 500
             
         cur = conn.cursor()
-        cur.execute('SELECT id, ten_dang_nhap, mat_khau, vai_tro, ho_va_ten, hoat_dong FROM nguoi_dung WHERE ten_dang_nhap = %s', (username,))
+        cur.execute('SELECT id, ten_dang_nhap, mat_khau, vai_tro, ho_ten, trang_thai_hoat_dong FROM nguoi_dung WHERE ten_dang_nhap = %s', (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
-        
+
         if not user:
             return jsonify({'success': False, 'message': 'Tên đăng nhập không tồn tại'}), 401
-        
-        if not user['hoat_dong']:
+
+        if not user['trang_thai_hoat_dong']:
             return jsonify({'success': False, 'message': 'Tài khoản đã bị khóa'}), 403
 
         if not bcrypt.check_password_hash(user['mat_khau'], password):
@@ -187,7 +187,7 @@ def api_login():
         session['user_id'] = user['id']
         session['ten_dang_nhap'] = user['ten_dang_nhap']
         session['vai_tro'] = user['vai_tro']
-        session['ho_va_ten'] = user['ho_va_ten']
+        session['ho_va_ten'] = user['ho_ten']
 
         redirect_url = '/dashboard' if user['vai_tro'] == 'admin' else '/trang_chu'
         
@@ -198,7 +198,7 @@ def api_login():
             'user': {
                 'id': user['id'],
                 'ten_dang_nhap': user['ten_dang_nhap'],
-                'ho_va_ten': user['ho_va_ten'],
+                'ho_va_ten': user['ho_ten'],
                 'vai_tro': user['vai_tro']
             }
         }), 200
@@ -220,6 +220,7 @@ def check_auth():
             'user': {
                 'id': session.get('user_id'),
                 'ten_dang_nhap': session.get('ten_dang_nhap'),
+                'ho_va_ten': session.get('ho_va_ten'),
                 'vai_tro': session.get('vai_tro')
             },
             'redirect': '/dashboard' if session.get('vai_tro') == 'admin' else '/trang_chu'
@@ -279,11 +280,11 @@ def get_alerts():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT a.*, v.bien_so as vehicle_plate, t.ho_va_ten as driver_name
-            FROM canh_bao a
-            LEFT JOIN phuong_tien v ON a.xe_id = v.id
-            LEFT JOIN tai_xe t ON a.tai_xe_id = t.id
-            ORDER BY a.thoi_gian DESC
+            SELECT a.*, v.bien_so as vehicle_plate, t.ho_ten as driver_name
+            FROM canh_bao_vi_pham a
+            LEFT JOIN phuong_tien v ON a.id_phuong_tien = v.id
+            LEFT JOIN tai_xe t ON a.id_tai_xe = t.id
+            ORDER BY a.thoi_gian_vi_pham DESC
             LIMIT 100
         ''')
         alerts = cur.fetchall()
@@ -295,14 +296,14 @@ def get_alerts():
         for alert in alerts:
             formatted_alerts.append({
                 'id': alert['id'],
-                'type': alert['loai'],
-                'message': alert['noi_dung'],
+                'type': alert['loai_vi_pham'],
+                'message': alert['noi_dung_vi_pham'],
                 'level': alert['muc_do'],
-                'timestamp': alert['thoi_gian'].isoformat() if alert['thoi_gian'] else None,
+                'timestamp': alert['thoi_gian_vi_pham'].isoformat() if alert['thoi_gian_vi_pham'] else None,
                 'vehicle_plate': alert['vehicle_plate'],
                 'driver_name': alert['driver_name'],
                 'is_read': bool(alert['da_doc']),
-                'video_path': alert['duong_dan_video']
+                'video_path': None  # Bảng mới không có trường này
             })
 
         return jsonify({'success': True, 'alerts': formatted_alerts})
@@ -319,7 +320,7 @@ def mark_alert_as_read(alert_id):
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
         cur = conn.cursor()
-        cur.execute('UPDATE canh_bao SET da_doc = 1 WHERE id = %s', (alert_id,))
+        cur.execute('UPDATE canh_bao_vi_pham SET da_doc = 1 WHERE id = %s', (alert_id,))
         conn.commit()
         cur.close()
         conn.close()
@@ -372,9 +373,9 @@ def get_admin_warnings():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT w.*, u.ho_va_ten as admin_name
-            FROM lo_lo w
-            LEFT JOIN nguoi_dung u ON w.admin_id = u.id
+            SELECT w.*, u.ho_ten as admin_name
+            FROM thong_bao_admin w
+            LEFT JOIN nguoi_dung u ON w.id_admin = u.id
             ORDER BY w.ngay_tao DESC
             LIMIT 100
         ''')
@@ -388,8 +389,8 @@ def get_admin_warnings():
             formatted_warnings.append({
                 'id': warning['id'],
                 'vehicle_plate': warning['bien_so_xe'],
-                'message': warning['noi_dung'],
-                'priority': warning['do_uu_tien'],
+                'message': warning['noi_dung_thong_bao'],
+                'priority': warning['muc_do_uu_tien'],
                 'is_read': bool(warning['da_doc']),
                 'created_at': warning['ngay_tao'].isoformat() if warning['ngay_tao'] else None,
                 'admin_name': warning['admin_name']
@@ -409,12 +410,269 @@ def mark_warning_as_read(warning_id):
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
         cur = conn.cursor()
-        cur.execute('UPDATE lo_lo SET da_doc = 1, doc_luc = NOW() WHERE id = %s', (warning_id,))
+        cur.execute('UPDATE thong_bao_admin SET da_doc = 1, ngay_doc = NOW() WHERE id = %s', (warning_id,))
         conn.commit()
         cur.close()
         conn.close()
 
         return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+# ========================================
+# DASHBOARD DATA API ENDPOINTS
+# ========================================
+@app.route('/api/dashboard/summary')
+@login_required
+def get_dashboard_summary():
+    """Lấy thống kê tổng quan cho Dashboard KPIs"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        
+        # Tổng số xe đang hoạt động
+        cur.execute("SELECT COUNT(*) as total FROM phuong_tien WHERE trang_thai_hoat_dong IN ('Đang chạy', 'Đang dừng')")
+        total_vehicles = cur.fetchone()['total']
+        
+        # Số xe đang chạy
+        cur.execute("SELECT COUNT(*) as total FROM phuong_tien WHERE trang_thai_hoat_dong = 'Đang chạy'")
+        running_vehicles = cur.fetchone()['total']
+        
+        # Số cảnh báo chưa đọc
+        cur.execute("SELECT COUNT(*) as total FROM canh_bao_vi_pham WHERE da_doc = 0")
+        unread_alerts = cur.fetchone()['total']
+        
+        # Số vi phạm hôm nay
+        cur.execute("""
+            SELECT COUNT(*) as total FROM canh_bao_vi_pham 
+            WHERE DATE(thoi_gian_vi_pham) = CURDATE() AND muc_do IN ('critical', 'warning')
+        """)
+        today_violations = cur.fetchone()['total']
+        
+        # Số tài xế đang hoạt động
+        cur.execute("SELECT COUNT(*) as total FROM tai_xe WHERE trang_thai_hoat_dong = 1")
+        active_drivers = cur.fetchone()['total']
+        
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_vehicles': total_vehicles,
+                'running_vehicles': running_vehicles,
+                'unread_alerts': unread_alerts,
+                'today_violations': today_violations,
+                'active_drivers': active_drivers
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/dashboard/vehicles')
+@login_required
+def get_dashboard_vehicles():
+    """Lấy danh sách phương tiện cho bảng Dashboard"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                pt.id, pt.bien_so, pt.loai_xe, pt.hinh_anh_xe,
+                pt.trang_thai_hoat_dong, pt.toc_do_hien_tai,
+                tx.ho_ten as tai_xe_ten, tx.so_dien_thoai, tx.diem_danh_gia,
+                td.ten_tuyen as tuyen_duong_ten
+            FROM phuong_tien pt
+            LEFT JOIN tai_xe tx ON pt.id_tai_xe = tx.id
+            LEFT JOIN tuyen_duong td ON pt.id_tuyen_duong = td.id
+            ORDER BY pt.bien_so
+        ''')
+        vehicles = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_vehicles = []
+        for v in vehicles:
+            formatted_vehicles.append({
+                'id': v['id'],
+                'bien_so': v['bien_so'],
+                'loai_xe': v['loai_xe'],
+                'hinh_anh_xe': v['hinh_anh_xe'] or 'default-car.png',
+                'trang_thai_hoat_dong': v['trang_thai_hoat_dong'],
+                'toc_do_hien_tai': v['toc_do_hien_tai'],
+                'tai_xe_ten': v['tai_xe_ten'] or 'N/A',
+                'so_dien_thoai': v['so_dien_thoai'] or 'N/A',
+                'diem_danh_gia': v['diem_danh_gia'],
+                'tuyen_duong_ten': v['tuyen_duong_ten'] or 'N/A'
+            })
+
+        return jsonify({'success': True, 'vehicles': formatted_vehicles})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/dashboard/drivers')
+@login_required
+def get_dashboard_drivers():
+    """Lấy danh sách tài xế"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                tx.id, tx.ma_tai_xe, tx.ho_ten, tx.so_dien_thoai,
+                tx.so_giay_phep_lai_xe, tx.diem_danh_gia, tx.trang_thai_hoat_dong,
+                COUNT(pt.id) as so_xe_dang_lai
+            FROM tai_xe tx
+            LEFT JOIN phuong_tien pt ON tx.id = pt.id_tai_xe
+            GROUP BY tx.id
+            ORDER BY tx.diem_danh_gia DESC
+        ''')
+        drivers = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_drivers = []
+        for d in drivers:
+            formatted_drivers.append({
+                'id': d['id'],
+                'ma_tai_xe': d['ma_tai_xe'],
+                'ho_ten': d['ho_ten'],
+                'so_dien_thoai': d['so_dien_thoai'],
+                'so_giay_phep_lai_xe': d['so_giay_phep_lai_xe'],
+                'diem_danh_gia': d['diem_danh_gia'],
+                'trang_thai_hoat_dong': bool(d['trang_thai_hoat_dong']),
+                'so_xe_dang_lai': d['so_xe_dang_lai'] or 0
+            })
+
+        return jsonify({'success': True, 'drivers': formatted_drivers})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/dashboard/routes')
+@login_required
+def get_dashboard_routes():
+    """Lấy danh sách tuyến đường"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                td.id, td.ten_tuyen, td.mo_ta, td.toa_do_lat, td.toa_do_lng, td.trang_thai,
+                COUNT(pt.id) as so_xe_dang_chay
+            FROM tuyen_duong td
+            LEFT JOIN phuong_tien pt ON td.id = pt.id_tuyen_duong
+            GROUP BY td.id
+            ORDER BY td.ten_tuyen
+        ''')
+        routes = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_routes = []
+        for r in routes:
+            formatted_routes.append({
+                'id': r['id'],
+                'ten_tuyen': r['ten_tuyen'],
+                'mo_ta': r['mo_ta'],
+                'toa_do_lat': float(r['toa_do_lat']) if r['toa_do_lat'] else None,
+                'toa_do_lng': float(r['toa_do_lng']) if r['toa_do_lng'] else None,
+                'trang_thai': r['trang_thai'],
+                'so_xe_dang_chay': r['so_xe_dang_chay'] or 0
+            })
+
+        return jsonify({'success': True, 'routes': formatted_routes})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/dashboard/alerts/recent')
+@login_required
+def get_recent_alerts():
+    """Lấy 10 cảnh báo gần nhất cho Dashboard"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                a.id, a.loai_vi_pham, a.noi_dung_vi_pham, a.muc_do, a.thoi_gian_vi_pham, a.da_doc,
+                pt.bien_so, tx.ho_ten as tai_xe_ten
+            FROM canh_bao_vi_pham a
+            LEFT JOIN phuong_tien pt ON a.id_phuong_tien = pt.id
+            LEFT JOIN tai_xe tx ON a.id_tai_xe = tx.id
+            ORDER BY a.thoi_gian_vi_pham DESC
+            LIMIT 10
+        ''')
+        alerts = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_alerts = []
+        for a in alerts:
+            formatted_alerts.append({
+                'id': a['id'],
+                'loai_vi_pham': a['loai_vi_pham'],
+                'noi_dung_vi_pham': a['noi_dung_vi_pham'],
+                'muc_do': a['muc_do'],
+                'thoi_gian_vi_pham': a['thoi_gian_vi_pham'].isoformat() if a['thoi_gian_vi_pham'] else None,
+                'da_doc': bool(a['da_doc']),
+                'bien_so': a['bien_so'],
+                'tai_xe_ten': a['tai_xe_ten']
+            })
+
+        return jsonify({'success': True, 'alerts': formatted_alerts})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/dashboard/admin-warnings/recent')
+@login_required
+def get_recent_admin_warnings():
+    """Lấy 10 cảnh báo admin gần nhất"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                w.id, w.noi_dung_thong_bao, w.muc_do_uu_tien, w.da_doc, w.ngay_tao,
+                w.bien_so_xe, u.ho_ten as admin_ten
+            FROM thong_bao_admin w
+            LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+            ORDER BY w.ngay_tao DESC
+            LIMIT 10
+        ''')
+        warnings = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_warnings = []
+        for w in warnings:
+            formatted_warnings.append({
+                'id': w['id'],
+                'noi_dung_thong_bao': w['noi_dung_thong_bao'],
+                'muc_do_uu_tien': w['muc_do_uu_tien'],
+                'da_doc': bool(w['da_doc']),
+                'ngay_tao': w['ngay_tao'].isoformat() if w['ngay_tao'] else None,
+                'bien_so_xe': w['bien_so_xe'],
+                'admin_ten': w['admin_ten']
+            })
+
+        return jsonify({'success': True, 'warnings': formatted_warnings})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 

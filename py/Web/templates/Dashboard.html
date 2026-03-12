@@ -4270,68 +4270,77 @@ function printAlert(index) {
 }
 
 // Vehicles Management
-var vehiclesData = [
-  { plate: '29B-222.22', type: 'bus', typeLabel: 'Xe khách 45 chỗ', owner: 'Công ty ABC', driver: 'Trần Văn Hoan', year: 2022, km: '45,230 km', status: 'active', image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400', company: 'company1' },
-  { plate: '30G-666.66', type: 'taxi', typeLabel: 'Taxi 4 chỗ', owner: 'Taxi Hà Nội', driver: 'Vũ Thị Hồng', year: 2021, km: '78,450 km', status: 'active', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400', company: 'company2' },
-  { plate: '29A-111.11', type: 'car', typeLabel: 'Ô tô 5 chỗ', owner: 'Transport Co.', driver: 'Nguyễn Văn Đức', year: 2023, km: '12,890 km', status: 'active', image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=400', company: 'company3' },
-  { plate: '29LD-777.77', type: 'bus', typeLabel: 'Xe du lịch 29 chỗ', owner: 'Công ty ABC', driver: 'Lê Văn Minh', year: 2020, km: '125,670 km', status: 'maintenance', image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400', company: 'company1' },
-  { plate: '30F-888.88', type: 'truck', typeLabel: 'Xe tải 5 tấn', owner: 'Transport Co.', driver: 'Phạm Văn Hùng', year: 2021, km: '89,340 km', status: 'active', image: 'https://images.unsplash.com/photo-1601584115197-0f44b69f5a3b?w=400', company: 'company3' },
-  { plate: '30E-999.99', type: 'car', typeLabel: 'Ô tô 7 chỗ', owner: 'Taxi Hà Nội', driver: 'Hoàng Thị Lan', year: 2022, km: '34,560 km', status: 'active', image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=400', company: 'company2' }
-];
+var vehiclesData = [];
 
-function loadVehiclesData() {
+// Load vehicles from API
+async function loadVehiclesData() {
   const grid = document.getElementById('vehicleGrid');
   
-  grid.innerHTML = vehiclesData.map(v => `
-    <div class="vehicle-card" data-type="${v.type}" data-status="${v.status}" data-company="${v.company}" style="background: var(--bg-card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); transition: var(--transition);">
-      <div class="vehicle-image" style="position: relative; height: 200px; overflow: hidden;">
-        <img src="${v.image}" alt="${v.plate}" style="width: 100%; height: 100%; object-fit: cover;">
-        <span class="vehicle-status status-${v.status}" style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; ${v.status === 'active' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : v.status === 'maintenance' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(117, 117, 117, 0.15); color: var(--text-muted);'}">${v.status === 'active' ? 'Hoạt động' : v.status === 'maintenance' ? 'Bảo trì' : 'Ngừng hoạt động'}</span>
-        ${v.status === 'active' ? `
-        <div class="vehicle-live" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; gap: 5px;">
-          <span class="live-dot" style="width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite;"></span>
-          LIVE
+  try {
+    const response = await fetch('/api/dashboard/vehicles');
+    const data = await response.json();
+    
+    if (data.success && data.vehicles) {
+      vehiclesData = data.vehicles;
+      
+      if (vehiclesData.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-car" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i><p>Không có phương tiện nào</p></div>';
+        return;
+      }
+      
+      grid.innerHTML = vehiclesData.map(v => {
+        const statusClass = v.trang_thai_hoat_dong.includes('Đang chạy') ? 'running' : v.trang_thai_hoat_dong.includes('Đang dừng') ? 'stopped' : 'offline';
+        const statusText = v.trang_thai_hoat_dong;
+        const statusColor = statusClass === 'running' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : statusClass === 'stopped' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(117, 117, 117, 0.15); color: var(--text-muted);';
+        const typeLabel = v.loai_xe === 'car' ? 'Ô tô' : v.loai_xe === 'bus' ? 'Xe buýt' : v.loai_xe === 'truck' ? 'Xe tải' : v.loai_xe;
+        
+        return `
+        <div class="vehicle-card" data-type="${v.loai_xe}" data-status="${statusClass}">
+          <div class="vehicle-image" style="position: relative; height: 200px; overflow: hidden;">
+            <img src="/py/pictures/xe/${v.hinh_anh_xe}" alt="${v.bien_so}" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'" style="width: 100%; height: 100%; object-fit: cover;">
+            <span class="vehicle-status" style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; ${statusColor}">${statusText}</span>
+            ${statusClass === 'running' ? `
+            <div class="vehicle-live" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; gap: 5px;">
+              <span class="live-dot" style="width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite;"></span>
+              LIVE
+            </div>
+            ` : ''}
+          </div>
+          <div class="vehicle-info" style="padding: 15px;">
+            <div class="vehicle-plate" style="font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 5px;">${v.bien_so}</div>
+            <div class="vehicle-type" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">${typeLabel}</div>
+            <div class="vehicle-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div class="detail-item">
+                <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Tài xế</div>
+                <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.tai_xe_ten}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">SĐT</div>
+                <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.so_dien_thoai}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Tuyến đường</div>
+                <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.tuyen_duong_ten}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Điểm</div>
+                <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.diem_danh_gia}</div>
+              </div>
+            </div>
+            <div class="vehicle-actions" style="display: flex; gap: 5px;">
+              <button class="btn btn-primary" onclick="viewVehicle('${v.bien_so}')" style="flex: 1; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem
+                </button>
+              <button class="btn btn-success" onclick="trackVehicle('${v.bien_so}')" style="flex: 1; padding: 8px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-location-dot"></i> Theo dõi</button>
+            </div>
+          </div>
         </div>
-        ` : ''}
-      </div>
-      <div class="vehicle-info" style="padding: 15px;">
-        <div class="vehicle-plate" style="font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 5px;">${v.plate}</div>
-        <div class="vehicle-type" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">${v.typeLabel}</div>
-        <div class="vehicle-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-          <div class="detail-item">
-            <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Chủ xe</div>
-            <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.owner}</div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Tài xế</div>
-            <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.driver}</div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">Năm SX</div>
-            <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.year}</div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">KM đã chạy</div>
-            <div class="detail-value" style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${v.km}</div>
-          </div>
-        </div>
-        <div class="vehicle-actions" style="display: flex; gap: 5px;">
-          <button class="btn btn-primary" onclick="viewVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem 
-            </button>
-          <button class="btn btn-outline" onclick="editVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
-          <button class="btn btn-success" onclick="trackVehicle('${v.plate}')" style="flex: 1; padding: 8px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-location-dot"></i> Theo dõi</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  
-  // Animate stats
-  const activeCount = vehiclesData.filter(v => v.status === 'active').length;
-  const maintenanceCount = vehiclesData.filter(v => v.status === 'maintenance').length;
-  animateValue('activeVehicles', 0, activeCount, 1000);
-  setTimeout(() => animateValue('maintenanceVehicles', 0, maintenanceCount, 1000), 200);
-  setTimeout(() => animateValue('violationsToday', 0, 8, 1000), 400);
-  setTimeout(() => animateValue('totalTrips', 0, 156, 600));
+        `;
+      }).join('');
+    }
+  } catch (error) {
+    console.error('Error loading vehicles:', error);
+    grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--danger);"><i class="fa-solid fa-circle-exclamation" style="font-size: 48px; margin-bottom: 15px;"></i><p>Không thể tải dữ liệu</p></div>';
+  }
 }
 
 function viewVehicle(plate) {
@@ -4401,97 +4410,89 @@ document.getElementById('vehicleSearch')?.addEventListener('input', function(e) 
 });
 
 // Routes Management
-var routesData = [
-  { code: 'T001', name: 'Mỹ Đình - Hải Phòng', start: 'Bến xe Mỹ Đình', end: 'Bến xe Hải Phòng', distance: '102 km', duration: '120 phút', vehicles: '12 xe/ngày', status: 'active',
-    path: [[21.0300, 105.7800], [21.0250, 105.8200], [21.0200, 105.8600], [20.9500, 106.1000]], color: '#4a9eff' },
-  { code: 'T002', name: 'Nội Bài - Trung tâm Hà Nội', start: 'Sân bay Nội Bài', end: 'Hồ Hoàn Kiếm', distance: '28 km', duration: '45 phút', vehicles: '45 xe/ngày', status: 'active',
-    path: [[21.2200, 105.8000], [21.1500, 105.8200], [21.0800, 105.8400], [21.0285, 105.8542]], color: '#00c853' },
-  { code: 'T003', name: 'Hồ Tây - Lăng Bác', start: 'Hồ Tây', end: 'Lăng Chủ tịch', distance: '8 km', duration: '25 phút', vehicles: '28 xe/ngày', status: 'active',
-    path: [[21.0450, 105.8150], [21.0400, 105.8250], [21.0350, 105.8350]], color: '#ffc107' },
-  { code: 'T004', name: 'Cầu Giấy - Long Biên', start: 'Cầu Giấy', end: 'Long Biên', distance: '15 km', duration: '40 phút', vehicles: '20 xe/ngày', status: 'active',
-    path: [[21.0350, 105.7900], [21.0300, 105.8100], [21.0250, 105.8300], [21.0200, 105.8500]], color: '#ff5252' },
-  { code: 'T005', name: 'Hà Đông - Hoàn Kiếm', start: 'Hà Đông', end: 'Hồ Gươm', distance: '12 km', duration: '35 phút', vehicles: '35 xe/ngày', status: 'active',
-    path: [[20.9800, 105.7800], [21.0000, 105.8000], [21.0150, 105.8200], [21.0285, 105.8542]], color: '#9c27b0' }
-];
+var routesData = [];
 
-function loadRoutesData() {
+async function loadRoutesData() {
   const list = document.getElementById('routeList');
   
-  list.innerHTML = routesData.map(r => `
-    <div class="route-item" data-code="${r.code}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='${r.color}'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
-      <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span class="route-code" style="font-weight: 600; color: ${r.color};">${r.code}</span>
-        <span class="route-status status-active" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: rgba(0, 200, 83, 0.15); color: var(--success);">Hoạt động</span>
-      </div>
-      <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
-      <div class="route-points" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary);">
-        <span class="point point-start" style="display: flex; align-items: center; gap: 5px; color: var(--success);">
-          <i class="fa-solid fa-circle-dot" style="font-size: 8px;"></i> ${r.start}
-        </span>
-        <span class="route-arrow" style="color: var(--text-muted);"><i class="fa-solid fa-arrow-right"></i></span>
-        <span class="point point-end" style="display: flex; align-items: center; gap: 5px; color: var(--danger);">
-          <i class="fa-solid fa-location-dot" style="font-size: 8px;"></i> ${r.end}
-        </span>
-      </div>
-      <div class="route-info" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-ruler-horizontal" style="color: var(--accent);"></i> ${r.distance}
-        </span>
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-clock" style="color: var(--warning);"></i> ${r.duration}
-        </span>
-        <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-bus" style="color: var(--success);"></i> ${r.vehicles}
-        </span>
-      </div>
-      <div class="route-actions" style="display: flex; gap: 5px;">
-        <button class="btn btn-primary" onclick="viewRoute('${r.code}')" style="flex: 1; padding: 6px; background: ${r.color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
-        <button class="btn btn-outline" onclick="editRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
-      </div>
-    </div>
-  `).join('');
-  
-  // Animate stats
-  animateValue('activeRoutes', 0, 28, 1000);
-  setTimeout(() => animateValue('totalRoutes', 0, 35, 1000), 200);
-  setTimeout(() => animateValue('avgDuration', 0, 45, 1000), 400);
-  setTimeout(() => animateValue('todayPassengers', 0, 1247, 600));
+  try {
+    const response = await fetch('/api/dashboard/routes');
+    const data = await response.json();
+    
+    if (data.success && data.routes) {
+      routesData = data.routes;
+      
+      if (routesData.length === 0) {
+        list.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-route" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i><p>Không có tuyến đường nào</p></div>';
+        return;
+      }
+      
+      const statusColors = { 'active': '#00c853', 'waiting': '#ffc107', 'offline': '#757575' };
+      const statusTexts = { 'active': 'Hoạt động', 'waiting': 'Chờ', 'offline': 'Offline' };
+      
+      list.innerHTML = routesData.map(r => {
+        const statusColor = statusColors[r.trang_thai] || '#757575';
+        const statusText = statusTexts[r.trang_thai] || r.trang_thai;
+        
+        return `
+        <div class="route-item" data-code="${r.id}" data-lat="${r.toa_do_lat || ''}" data-lng="${r.toa_do_lng || ''}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='${statusColor}'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'" onclick="focusRoute('${r.id}', ${r.toa_do_lat}, ${r.toa_do_lng})">
+          <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span class="route-code" style="font-weight: 600; color: ${statusColor};">${r.id.toUpperCase()}</span>
+            <span class="route-status status-active" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${statusColor}25; color: ${statusColor};">${statusText}</span>
+          </div>
+          <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.ten_tuyen}</div>
+          <div class="route-description" style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">${r.mo_ta || 'Không có mô tả'}</div>
+          <div class="route-info" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
+            <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-bus" style="color: var(--success);"></i> ${r.so_xe_dang_chay} xe
+            </span>
+            ${r.toa_do_lat ? `
+            <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-location-dot" style="color: var(--accent);"></i> ${parseFloat(r.toa_do_lat).toFixed(4)}, ${parseFloat(r.toa_do_lng).toFixed(4)}
+            </span>
+            ` : ''}
+          </div>
+          <div class="route-actions" style="display: flex; gap: 5px;">
+            <button class="btn btn-primary" onclick="viewRoute('${r.id}')" style="flex: 1; padding: 6px; background: ${statusColor}; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
+            <button class="btn btn-outline" onclick="editRoute('${r.id}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+  } catch (error) {
+    console.error('Error loading routes:', error);
+    list.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--danger);"><i class="fa-solid fa-circle-exclamation" style="font-size: 48px; margin-bottom: 15px;"></i><p>Không thể tải dữ liệu</p></div>';
+  }
 }
 
-function viewRoute(code) {
-  const route = routesData.find(r => r.code === code);
-  if (!route) return;
-  
-  showToast('info', 'Tuyến đường', `Đang xem tuyến ${code}: ${route.name}`);
-  
-  // Focus map on selected route
-  if (routesMap && route.path) {
-    // Clear existing markers and polylines
+function focusRoute(id, lat, lng) {
+  if (routesMap && lat && lng) {
+    routesMap.setView([lat, lng], 13);
+    
+    // Clear existing markers
     routesMap.eachLayer(layer => {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+      if (layer instanceof L.Marker) {
         routesMap.removeLayer(layer);
       }
     });
     
-    // Draw selected route
-    L.polyline(route.path, {
-      color: route.color,
-      weight: 6,
-      opacity: 1,
-      dashArray: '10, 10'
-    }).addTo(routesMap).bindPopup(`<b>${route.name}</b>`).openPopup();
-    
-    // Add start and end markers
-    L.marker(route.path[0]).addTo(routesMap)
-      .bindPopup(`<b>${route.code}</b><br>📍 Điểm đầu: ${route.start}`)
+    // Add marker
+    L.marker([lat, lng]).addTo(routesMap)
+      .bindPopup(`<b>${id.toUpperCase()}</b>`)
       .openPopup();
-    
-    L.marker(route.path[route.path.length - 1]).addTo(routesMap)
-      .bindPopup(`<b>${route.code}</b><br>🏁 Điểm cuối: ${route.end}`);
-    
-    // Fit bounds to show entire route
-    const bounds = route.path;
-    routesMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+  }
+}
+
+function viewRoute(code) {
+  const route = routesData.find(r => r.id === code);
+  if (!route) return;
+
+  showToast('info', 'Tuyến đường', `Đang xem tuyến ${code}: ${route.ten_tuyen}`);
+  
+  // Focus on route location
+  if (routesMap && route.toa_do_lat && route.toa_do_lng) {
+    focusRoute(code, route.toa_do_lat, route.toa_do_lng);
   }
 }
 
@@ -4847,50 +4848,58 @@ function applyFilter() {
 }
 
 // Drivers Management
-function loadDriversData() {
+async function loadDriversData() {
   const grid = document.getElementById('driverGrid');
-  const drivers = [
-    { name: 'Trần Văn Hoan', code: 'MX001 - 29B-222.22', trips: 156, rating: 4.9, violations: 12, phone: '0909 888 999', company: 'ABC Transport', experience: '5 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-    { name: 'Vũ Thị Hồng', code: 'MX002 - 30G-666.66', trips: 203, rating: 4.8, violations: 8, phone: '0912 345 678', company: 'Taxi Hà Nội', experience: '3 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-    { name: 'Nguyễn Văn Đức', code: 'MX003 - 29A-111.11', trips: 89, rating: 4.5, violations: 15, phone: '0988 777 666', company: 'Transport Co.', experience: '2 năm', status: 'offline', avatar: 'https://randomuser.me/api/portraits/men/67.jpg' },
-    { name: 'Lê Văn Minh', code: 'MX004 - 29LD-777.77', trips: 178, rating: 3.8, violations: 24, phone: '0933 222 111', company: 'ABC Transport', experience: '4 năm', status: 'warning', avatar: 'https://randomuser.me/api/portraits/men/85.jpg' },
-    { name: 'Phạm Văn Hùng', code: 'MX005 - 30F-888.88', trips: 245, rating: 4.9, violations: 5, phone: '0977 666 555', company: 'Transport Co.', experience: '7 năm', status: 'online', avatar: 'https://randomuser.me/api/portraits/men/22.jpg' },
-    { name: 'Hoàng Thị Lan', code: 'MX006 - 30E-999.99', trips: 134, rating: 4.6, violations: 9, phone: '0966 555 444', company: 'Taxi Hà Nội', experience: '3 năm', status: 'offline', avatar: 'https://randomuser.me/api/portraits/women/68.jpg' },
-  ];
   
-  grid.innerHTML = drivers.map(d => `
-    <div class="driver-card" data-status="${d.status}" data-rating="${Math.floor(d.rating)}" data-company="${d.company.toLowerCase().replace(' ', '')}" style="background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); transition: var(--transition); position: relative;">
-      <span class="driver-status status-${d.status}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; ${d.status === 'online' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : d.status === 'offline' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(255, 82, 82, 0.15); color: var(--danger);'}">${d.status === 'online' ? 'Đang lái' : d.status === 'offline' ? 'Nghỉ' : 'Cảnh báo'}</span>
-      <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
-        <div class="driver-avatar"><img src="${d.avatar}" alt="${d.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
-      </div>
-      <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
-        <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${d.name}</div>
-        <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${d.code}</div>
-        <div class="driver-stats" style="display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.trips}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Chuyến</div></div>
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">${d.rating}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Đánh giá</div></div>
-          <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--danger);">${d.violations}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Vi phạm</div></div>
+  try {
+    const response = await fetch('/api/dashboard/drivers');
+    const data = await response.json();
+    
+    if (data.success && data.drivers) {
+      const drivers = data.drivers;
+      
+      if (drivers.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-user" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i><p>Không có tài xế nào</p></div>';
+        return;
+      }
+      
+      grid.innerHTML = drivers.map(d => {
+        const statusClass = d.trang_thai_hoat_dong ? 'online' : 'offline';
+        const statusText = d.trang_thai_hoat_dong ? 'Đang lái' : 'Nghỉ';
+        const statusColor = statusClass === 'online' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : 'background: rgba(255, 193, 7, 0.15); color: var(--warning);';
+        const avatarUrl = `/py/pictures/drivers/${d.ma_tai_xe}.jpg`;
+        
+        return `
+        <div class="driver-card" data-status="${statusClass}" data-rating="${Math.floor(d.diem_danh_gia / 20)}">
+          <span class="driver-status status-${statusClass}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; ${statusColor}">${statusText}</span>
+          <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
+            <div class="driver-avatar"><img src="${avatarUrl}" alt="${d.ho_ten}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(d.ho_ten)}&size=80&background=random'" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
+          </div>
+          <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
+            <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${d.ho_ten}</div>
+            <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${d.ma_tai_xe || 'N/A'}</div>
+            <div class="driver-stats" style="display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.so_xe_dang_lai}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Xe</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">${d.diem_danh_gia}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Điểm</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.so_dien_thoai || 'N/A'}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">SĐT</div></div>
+            </div>
+          </div>
+          <div class="driver-details" style="font-size: 12px; margin-bottom: 12px;">
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">GPLX</span><span class="detail-value" style="color: var(--text-primary);">${d.so_giay_phep_lai_xe || 'N/A'}</span></div>
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Trạng thái</span><span class="detail-value" style="color: ${d.trang_thai_hoat_dong ? 'var(--success)' : 'var(--warning)'};">${statusText}</span></div>
+          </div>
+          <div class="driver-actions" style="display: flex; gap: 5px;">
+            <button class="btn btn-success" onclick="callDriver('${d.so_dien_thoai || ''}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
+            <button class="btn btn-outline" onclick="editDriver('${d.ho_ten}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+          </div>
         </div>
-      </div>
-      <div class="driver-details" style="font-size: 12px; margin-bottom: 12px;">
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">SĐT</span><span class="detail-value" style="color: var(--text-primary);">${d.phone}</span></div>
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">Công ty</span><span class="detail-value" style="color: var(--text-primary);">${d.company}</span></div>
-        <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Kinh nghiệm</span><span class="detail-value" style="color: var(--text-primary);">${d.experience}</span></div>
-      </div>
-      <div class="driver-actions" style="display: flex; gap: 5px;">
-        <button class="btn btn-success" onclick="callDriver('${d.phone}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
-        <button class="btn btn-outline" onclick="editDriver('${d.name}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
-        <button class="btn btn-danger" onclick="deleteDriver('${d.name}')" style="flex: 1; padding: 6px; background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash"></i> Xóa</button>
-      </div>
-    </div>
-  `).join('');
-  
-  // Animate stats
-  animateValue('activeDrivers', 0, 38, 1000);
-  setTimeout(() => animateValue('totalDrivers', 0, 52, 1000), 200);
-  setTimeout(() => animateValue('violations', 0, 12, 1000), 400);
-  setTimeout(() => animateValue('topDrivers', 0, 8, 1000), 600);
+        `;
+      }).join('');
+    }
+  } catch (error) {
+    console.error('Error loading drivers:', error);
+    grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--danger);"><i class="fa-solid fa-circle-exclamation" style="font-size: 48px; margin-bottom: 15px;"></i><p>Không thể tải dữ liệu</p></div>';
+  }
 }
 
 // Placeholder modal functions
@@ -6671,6 +6680,47 @@ function pollAINewAlerts() {
 
 // Poll cảnh báo mới mỗi 3 giây
 setInterval(pollAINewAlerts, 3000);
+
+// ========================================
+// DASHBOARD SUMMARY - Load KPI data from API
+// ========================================
+async function loadDashboardSummary() {
+  try {
+    const response = await fetch('/api/dashboard/summary');
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      const summary = data.data;
+      
+      // Update KPI cards
+      const kpiMappings = {
+        'totalVehicles': summary.total_vehicles,
+        'runningVehicles': summary.running_vehicles,
+        'activeDrivers': summary.active_drivers,
+        'unreadAlerts': summary.unread_alerts,
+        'violationsToday': summary.today_violations
+      };
+      
+      for (const [elementId, value] of Object.entries(kpiMappings)) {
+        const element = document.getElementById(elementId);
+        if (element) {
+          animateValue(elementId, 0, value, 1000);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error loading dashboard summary:', error);
+  }
+}
+
+// Load dashboard data when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Load dashboard summary KPIs
+  loadDashboardSummary();
+  
+  // Refresh dashboard data every 30 seconds
+  setInterval(loadDashboardSummary, 30000);
+});
 </script>
 
 </body>
