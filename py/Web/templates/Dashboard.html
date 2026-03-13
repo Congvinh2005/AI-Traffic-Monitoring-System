@@ -3984,6 +3984,9 @@ async function loadWarningsData() {
         'obstacle': 'Vật cản'
       };
       
+      // Lưu warnings vào biến global để dùng trong modal
+      window.aiWarnings = warnings;
+      
       tbody.innerHTML = warnings.map((w, i) => {
         const icon = typeIcons[w.loai_vi_pham] || '⚠️';
         const typeLabel = typeNames[w.loai_vi_pham] || w.loai_vi_pham;
@@ -4001,11 +4004,11 @@ async function loadWarningsData() {
           <td><span class="status-badge ${statusClass === 'pending' ? 'status-stopped' : 'status-running'}">${statusText}</span></td>
           <td>
             <div style="display: flex; gap: 5px; justify-content: center;">
-              <button class="btn btn-action btn-alert" onclick="markAlertAsRead(${w.id})" style="padding: 4px 8px; font-size: 10px;" title="Đánh dấu đã đọc">
-                <i class="fa-solid fa-check"></i> Đọc
+              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.bien_so || ''}')" style="padding: 4px 8px; font-size: 10px;" title="Cảnh cáo">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
               </button>
-              <button class="btn btn-action btn-video" onclick="viewViolationDetail(${w.id}, '${w.loai_vi_pham}')" style="padding: 4px 8px; font-size: 10px;" title="Xem chi tiết">
-                <i class="fa-solid fa-eye"></i> Chi tiết
+              <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.bien_so || 'N/A'}', '${typeLabel}', '/py/video_input/lech_lan.mp4')" style="padding: 4px 8px; font-size: 10px;" title="Video">
+                <i class="fa-solid fa-circle-play"></i> Video
               </button>
             </div>
           </td>
@@ -4072,13 +4075,20 @@ async function loadAdminAlertsData() {
     const response = await fetch('/api/dashboard/admin-warnings/recent');
     const data = await response.json();
     
+    console.log('Admin warnings API response:', data);
+    
     if (data.success && data.warnings) {
       const alerts = data.warnings;
+      
+      console.log('First alert:', alerts[0]);
       
       if (alerts.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-check-circle" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i><p>Không có cảnh báo admin nào</p></td></tr>';
         return;
       }
+      
+      // Lưu alerts vào biến global để dùng trong modal
+      window.adminAlerts = alerts;
       
       const priorityLabels = {
         'low': 'Thấp',
@@ -4097,16 +4107,18 @@ async function loadAdminAlertsData() {
         const priorityClass = priorityColors[a.muc_do_uu_tien] || 'status-running';
         const dateStr = a.ngay_tao ? new Date(a.ngay_tao).toLocaleString('vi-VN') : 'N/A';
         
+        console.log(`Alert ${i}:`, a);
+        
         return `
         <tr>
           <td>${i + 1}</td>
           <td><strong style="color: var(--accent);">${a.bien_so_xe || 'N/A'}</strong></td>
-          <td>N/A</td>
+          <td>${a.tai_xe_ten || 'N/A'}</td>
           <td>${a.noi_dung_thong_bao}</td>
           <td><span class="status-badge ${priorityClass}">${priorityLabel}</span></td>
           <td>${dateStr}</td>
           <td>
-            <button class="btn btn-action" onclick="viewAdminAlertDetail(${a.id})" style="padding: 4px 8px; font-size: 10px;">
+            <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
               <i class="fa-solid fa-eye"></i> Xem
             </button>
           </td>
@@ -4120,10 +4132,131 @@ async function loadAdminAlertsData() {
   }
 }
 
-// Xem chi tiết cảnh báo admin
-function viewAdminAlertDetail(alertId) {
-  showToast('info', 'Chi tiết cảnh báo', `Đang xem chi tiết cảnh báo #${alertId}`);
-  // In future: Open modal with full details
+// Xem chi tiết cảnh báo admin (giữ nguyên modal ban đầu)
+function viewAlert(index) {
+  const alert = window.adminAlerts[index];
+  console.log('viewAlert called with index:', index);
+  console.log('window.adminAlerts:', window.adminAlerts);
+  console.log('Selected alert:', alert);
+  
+  if (!alert) {
+    showToast('error', 'Lỗi', 'Không tìm thấy cảnh báo. Vui lòng tải lại trang.');
+    return;
+  }
+  
+  const priorityColors = {
+    high: { bg: 'rgba(255, 82, 82, 0.15)', color: 'var(--danger)', text: 'Cao' },
+    medium: { bg: 'rgba(255, 193, 7, 0.15)', color: 'var(--warning)', text: 'Trung bình' },
+    low: { bg: 'rgba(74, 158, 255, 0.15)', color: 'var(--accent)', text: 'Thấp' }
+  };
+  
+  const priorityStyle = priorityColors[alert.muc_do_uu_tien] || priorityColors.medium;
+  
+  const modal = document.createElement('div');
+  modal.id = 'alertDetailModal';
+  modal.className = 'modal-overlay';
+  
+  // Safe access to alert properties
+  const bienSo = alert.bien_so_xe || 'N/A';
+  const taiXe = alert.tai_xe_ten || 'Chưa xác định';
+  const sdt = alert.so_dien_thoai || 'N/A';
+  const thoiGian = alert.ngay_tao ? new Date(alert.ngay_tao).toLocaleString('vi-VN') : 'N/A';
+  const mucDo = priorityStyle.text;
+  const trangThai = alert.da_doc ? '✓ Đã đọc' : '⏳ Chưa đọc';
+  const nguoiGui = alert.admin_ten || 'Admin';
+  const noiDung = alert.noi_dung_thong_bao || 'Không có nội dung';
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-bullhorn" style="color: var(--accent);"></i> Chi tiết cảnh báo từ Admin</h3>
+        <button class="modal-close" onclick="closeAlertModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="warning-info">
+          <div class="warning-info-item">
+            <label>Biển số xe:</label>
+            <span class="plate-highlight">${bienSo}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Tài xế:</label>
+            <span>${taiXe}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Số điện thoại:</label>
+            <span>${sdt}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Thời gian:</label>
+            <span><i class="fa-regular fa-clock"></i> ${thoiGian}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Mức độ ưu tiên:</label>
+            <span style="background: ${priorityStyle.bg}; color: ${priorityStyle.color}; padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid ${priorityStyle.color};">${mucDo}</span>
+          </div>
+          <div class="warning-info-item">
+            <label>Trạng thái:</label>
+            <span style="color: ${alert.da_doc ? 'var(--success)' : 'var(--warning)'}; font-weight: 600;">
+              ${trangThai}
+            </span>
+          </div>
+          <div class="warning-info-item">
+            <label>Người gửi:</label>
+            <span><i class="fa-solid fa-user-shield"></i> ${nguoiGui}</span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="alertContent"><i class="fa-solid fa-message"></i> Nội dung cảnh cáo từ Admin:</label>
+          <textarea id="alertContent" readonly style="background: var(--bg-input); cursor: not-allowed;">${noiDung}</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAlertModal()">
+          <i class="fa-solid fa-xmark"></i> Đóng
+        </button>
+        ${!alert.da_doc ? `
+        <button class="btn btn-primary" onclick="markAdminWarningAsRead(${alert.id}, ${index})">
+          <i class="fa-solid fa-check"></i> Đánh dấu đã đọc
+        </button>
+        ` : `
+        <button class="btn btn-download" onclick="printAlert(${index})">
+          <i class="fa-solid fa-print"></i> In cảnh báo
+        </button>
+        `}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function closeAlertModal() {
+  const modal = document.getElementById('alertDetailModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function markAdminWarningAsRead(alertId, index) {
+  fetch(`/api/admin-warnings/${alertId}/read`, { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast('success', 'Thành công', 'Đã đánh dấu cảnh báo đã đọc');
+        closeAlertModal();
+        loadAdminAlertsData();
+      }
+    })
+    .catch(error => {
+      showToast('error', 'Lỗi', 'Không thể kết nối đến server');
+    });
+}
+
+function printAlert(index) {
+  const alert = window.adminAlerts[index];
+  showToast('info', 'In cảnh báo', `Đang chuẩn bị in cảnh báo cho xe ${alert.bien_so_xe}...`);
+  window.print();
 }
 
 function loadNotificationsData() {
@@ -4958,38 +5091,51 @@ async function loadDriversData() {
         return;
       }
       
-      grid.innerHTML = drivers.map(d => {
-        const statusClass = d.trang_thai_hoat_dong ? 'online' : 'offline';
-        const statusText = d.trang_thai_hoat_dong ? 'Đang lái' : 'Nghỉ';
-        const statusColor = statusClass === 'online' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : 'background: rgba(255, 193, 7, 0.15); color: var(--warning);';
-        const avatarUrl = `/py/pictures/drivers/${d.ma_tai_xe}.jpg`;
-        
-        return `
-        <div class="driver-card" data-status="${statusClass}" data-rating="${Math.floor(d.diem_danh_gia / 20)}">
-          <span class="driver-status status-${statusClass}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; ${statusColor}">${statusText}</span>
+      // Convert database data to match old CSS format
+      const formattedDrivers = drivers.map(d => ({
+        name: d.ho_ten,
+        code: `${d.ma_tai_xe || 'N/A'}`,
+        trips: d.so_xe_dang_lai || 0,
+        rating: (d.diem_danh_gia / 20).toFixed(1), // Convert 100-point scale to 5-star scale
+        violations: 0, // Not available in database
+        phone: d.so_dien_thoai || 'N/A',
+        company: 'Transport Co.', // Not available in database
+        experience: 'N/A', // Not available in database
+        status: d.trang_thai_hoat_dong ? 'online' : 'offline',
+        avatar: `/py/pictures/drivers/${d.ma_tai_xe || 'default'}.jpg`
+      }));
+      
+      grid.innerHTML = formattedDrivers.map(d => `
+        <div class="driver-card" data-status="${d.status}" data-rating="${Math.floor(parseFloat(d.rating))}" data-company="${d.company.toLowerCase().replace(' ', '')}">
+          <span class="driver-status status-${d.status}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; ${d.status === 'online' ? 'background: rgba(0, 200, 83, 0.15); color: var(--success);' : d.status === 'offline' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(255, 82, 82, 0.15); color: var(--danger);'}">${d.status === 'online' ? 'Đang lái' : d.status === 'offline' ? 'Nghỉ' : 'Cảnh báo'}</span>
           <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
-            <div class="driver-avatar"><img src="${avatarUrl}" alt="${d.ho_ten}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(d.ho_ten)}&size=80&background=random'" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
+            <div class="driver-avatar"><img src="${d.avatar}" alt="${d.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&size=80&background=random'" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
           </div>
           <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
-            <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${d.ho_ten}</div>
-            <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${d.ma_tai_xe || 'N/A'}</div>
+            <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${d.name}</div>
+            <div class="driver-code" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${d.code}</div>
             <div class="driver-stats" style="display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
-              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.so_xe_dang_lai}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Xe</div></div>
-              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">${d.diem_danh_gia}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Điểm</div></div>
-              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.so_dien_thoai || 'N/A'}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">SĐT</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.trips}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Xe</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--accent);">${d.rating}⭐</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">Điểm</div></div>
+              <div class="driver-stat"><div class="driver-stat-value" style="font-size: 16px; font-weight: bold; color: var(--text-primary);">${d.phone}</div><div class="driver-stat-label" style="font-size: 10px; color: var(--text-muted);">SĐT</div></div>
             </div>
           </div>
           <div class="driver-details" style="font-size: 12px; margin-bottom: 12px;">
             <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border-color);"><span class="detail-label" style="color: var(--text-muted);">GPLX</span><span class="detail-value" style="color: var(--text-primary);">${d.so_giay_phep_lai_xe || 'N/A'}</span></div>
-            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Trạng thái</span><span class="detail-value" style="color: ${d.trang_thai_hoat_dong ? 'var(--success)' : 'var(--warning)'};">${statusText}</span></div>
+            <div class="detail-row" style="display: flex; justify-content: space-between; padding: 4px 0;"><span class="detail-label" style="color: var(--text-muted);">Trạng thái</span><span class="detail-value" style="color: ${d.status === 'online' ? 'var(--success)' : 'var(--warning)'};">${d.status === 'online' ? 'Đang lái' : 'Nghỉ'}</span></div>
           </div>
           <div class="driver-actions" style="display: flex; gap: 5px;">
-            <button class="btn btn-success" onclick="callDriver('${d.so_dien_thoai || ''}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
-            <button class="btn btn-outline" onclick="editDriver('${d.ho_ten}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+            <button class="btn btn-success" onclick="callDriver('${d.phone}')" style="flex: 1; padding: 6px; background: rgba(0, 200, 83, 0.15); color: var(--success); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-phone"></i> Gọi</button>
+            <button class="btn btn-outline" onclick="editDriver('${d.name}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+            <button class="btn btn-danger" onclick="deleteDriver('${d.name}')" style="flex: 1; padding: 6px; background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash"></i> Xóa</button>
           </div>
         </div>
-        `;
-      }).join('');
+      `).join('');
+      
+      // Animate stats
+      const activeCount = drivers.filter(d => d.trang_thai_hoat_dong).length;
+      animateValue('activeDrivers', 0, activeCount, 1000);
+      setTimeout(() => animateValue('totalDrivers', 0, drivers.length, 1000), 200);
     }
   } catch (error) {
     console.error('Error loading drivers:', error);

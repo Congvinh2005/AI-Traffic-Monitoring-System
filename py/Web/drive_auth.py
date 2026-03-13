@@ -648,11 +648,14 @@ def get_recent_admin_warnings():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT 
+            SELECT
                 w.id, w.noi_dung_thong_bao, w.muc_do_uu_tien, w.da_doc, w.ngay_tao,
-                w.bien_so_xe, u.ho_ten as admin_ten
+                w.bien_so_xe, u.ho_ten as admin_ten,
+                pt.id_tai_xe, tx.ho_ten as tai_xe_ten, tx.so_dien_thoai
             FROM thong_bao_admin w
             LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+            LEFT JOIN phuong_tien pt ON w.bien_so_xe = pt.bien_so
+            LEFT JOIN tai_xe tx ON pt.id_tai_xe = tx.id
             ORDER BY w.ngay_tao DESC
             LIMIT 10
         ''')
@@ -664,12 +667,14 @@ def get_recent_admin_warnings():
         for w in warnings:
             formatted_warnings.append({
                 'id': w['id'],
+                'bien_so_xe': w['bien_so_xe'],
+                'tai_xe_ten': w['tai_xe_ten'] or 'Chưa xác định',
+                'so_dien_thoai': w['so_dien_thoai'] or 'N/A',
                 'noi_dung_thong_bao': w['noi_dung_thong_bao'],
                 'muc_do_uu_tien': w['muc_do_uu_tien'],
                 'da_doc': bool(w['da_doc']),
                 'ngay_tao': w['ngay_tao'].isoformat() if w['ngay_tao'] else None,
-                'bien_so_xe': w['bien_so_xe'],
-                'admin_ten': w['admin_ten']
+                'admin_ten': w['admin_ten'] or 'Admin'
             })
 
         return jsonify({'success': True, 'warnings': formatted_warnings})
