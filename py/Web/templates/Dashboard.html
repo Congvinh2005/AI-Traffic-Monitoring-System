@@ -4145,6 +4145,7 @@ var vehiclesData = rawVehiclesData.map(v => ({
     image: v.image ? '/static/images/' + v.image : 'https://images.unsplash.com/photo-1549317661-bd32c8ce0be2?w=500',
     owner: 'Công ty ABC',
     driver: v.driver_name || 'Chưa phân công',
+    driver_image: v.driver_image,
     year: '2023',
     km: '15,000'
 }));
@@ -4161,7 +4162,7 @@ function loadVehiclesData() {
     <div class="vehicle-card" data-type="${v.type}" data-status="${v.status}" data-company="${v.company}" style="background: var(--bg-card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); transition: var(--transition);">
       <div class="vehicle-image" style="position: relative; height: 200px; overflow: hidden;">
         <img src="${v.image}" alt="${v.plate}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1549317661-bd32c8ce0be2?w=500'">
-        <span class="vehicle-status status-${v.status}" style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; ${v.status === 'active' ? 'background: rgba(0, 200, 83, 0.25); color: var(--success);' : v.status === 'maintenance' ? 'background: rgba(255, 193, 7, 0.15); color: var(--warning);' : 'background: rgba(117, 117, 117, 0.15); color: var(--text-muted);'}">${v.status === 'active' ? 'Hoạt động' : v.status === 'maintenance' ? 'Bảo trì' : 'Ngừng hoạt động'}</span>
+        <span class="vehicle-status status-${v.status}" style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; ${v.status === 'active' ? 'background: rgba(0, 200, 83, 0.25); color: var(--success);' : v.status === 'maintenance' ? 'background: rgba(255, 193, 7, 0.25); color: var(--warning);' : 'background: rgba(117, 117, 117, 0.25); color: var(--text-muted);'}">${v.status === 'active' ? 'Hoạt động' : v.status === 'maintenance' ? 'Bảo trì' : 'Ngừng hoạt động'}</span>
         ${v.status === 'active' ? `
         <div class="vehicle-live" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; gap: 5px;">
           <span class="live-dot" style="width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite;"></span>
@@ -4300,7 +4301,7 @@ function loadRoutesData() {
       <div class="route-item" data-code="${r.code}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
         <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span class="route-code" style="font-weight: 600; color: var(--accent);">${r.code}</span>
-          <span class="route-status status-${r.status === 'Hoạt động' ? 'active' : 'inactive'}" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.15)' : 'rgba(255, 82, 82, 0.15)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
+          <span class="route-status status-${r.status === 'Hoạt động' ? 'active' : 'inactive'}" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.25)' : 'rgba(255, 82, 82, 0.25)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
         </div>
         <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
         <div class="route-points" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary);">
@@ -4734,9 +4735,14 @@ function loadDriversData() {
     {% if drivers|length > 0 %}
       {% for d in drivers %}
         <div class="driver-card" data-status="{{ 'online' if d.status == 'Đang làm việc' else 'offline' if d.status == 'Đang nghỉ' else 'warning' }}" data-company="abc" style="background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); transition: var(--transition); position: relative;">
-          <span class="driver-status status-{{ 'online' if d.status == 'Đang làm việc' else 'offline' if d.status == 'Đang nghỉ' else 'warning' }}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; {% if d.status == 'Đang làm việc' %}background: rgba(0, 200, 83, 0.15); color: var(--success);{% elif d.status == 'Đang nghỉ' %}background: rgba(255, 193, 7, 0.15); color: var(--warning);{% else %}background: rgba(255, 82, 82, 0.15); color: var(--danger);{% endif %}">{{ "Đang làm việc" if d.status == "Đang làm việc" else "Nghỉ" if d.status == "Đang nghỉ" else "Cảnh báo" }}</span>
+          <span class="driver-status status-{{ 'online' if d.status == 'Đang làm việc' else 'offline' if d.status == 'Đang nghỉ' else 'warning' }}" style="position: absolute; top: 10px; left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; z-index: 10; {% if d.status == 'Đang làm việc' %}background: rgba(0, 200, 83, 0.25); color: var(--success);{% elif d.status == 'Đang nghỉ' %}background: rgba(255, 193, 7, 0.25); color: var(--warning);{% else %}background: rgba(255, 82, 82, 0.25); color: var(--danger);{% endif %}">{{ "Đang làm việc" if d.status == "Đang làm việc" else "Nghỉ" if d.status == "Đang nghỉ" else "Cảnh báo" }}</span>
           <div class="driver-header" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; margin-top: 10px;">
-            <div class="driver-avatar"><img src="{{ d.avatar if d.avatar else 'https://randomuser.me/api/portraits/men/32.jpg' }}" alt="{{ d.name }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);"></div>
+            <div class="driver-avatar">
+              <img src="{{ url_for('static', filename='images/' + d.avatar) if d.avatar else 'https://randomuser.me/api/portraits/men/32.jpg' }}" 
+                   alt="{{ d.name }}" 
+                   onerror="this.src='https://randomuser.me/api/portraits/men/32.jpg'"
+                   style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color);">
+            </div>
           </div>
           <div class="driver-info" style="text-align: center; margin-bottom: 12px;">
             <div class="driver-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ d.name }}</div>
