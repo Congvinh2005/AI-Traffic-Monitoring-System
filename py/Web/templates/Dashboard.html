@@ -2731,8 +2731,8 @@ tr:hover {
             <td>{{ 'Xe khách' if v.type == 'bus' else 'Xe tải' if v.type == 'truck' else 'Ô tô' }}</td>
             <td>{{ v.driver_name }}</td>
             <td>{{ v.phone }}</td>
-            <td>{{ v.location }}</td>
-            <td>{{ v.location }} → ...</td>
+            <td>{{ v.vi_tri }}</td>
+            <td>{{ v.location }} </td>
             <td>08:00 {{ now }}</td>
             <td>
               {% if v.status == 'Đang chạy' %}
@@ -5804,6 +5804,7 @@ const vehicles = {{ all_vehicles|default([], true)|tojson|safe }}.map(v => ({
   speed: v.speed || 0,
   remainingKm: 10, // Simulated
   currentAddress: v.location || "Đang cập nhật",
+  vi_tri: v.vi_tri || "Chưa cập nhật",
   route: (v.location || "Chưa rõ") + " -> ...",
   lat: v.lat || 21.0285,
   lng: v.lng || 105.8542,

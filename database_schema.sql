@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.0
 -- https://www.phpmyadmin.net/
 --
--- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th3 14, 2026 lúc 04:24 PM
--- Phiên bản máy phục vụ: 10.4.32-MariaDB
--- Phiên bản PHP: 8.0.30
+-- Máy chủ: localhost
+-- Thời gian đã tạo: Th3 14, 2026 lúc 05:35 PM
+-- Phiên bản máy phục vụ: 10.4.27-MariaDB
+-- Phiên bản PHP: 7.4.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -119,27 +119,19 @@ CREATE TABLE `canh_bao_vi_pham` (
 --
 
 INSERT INTO `canh_bao_vi_pham` (`id`, `loai_vi_pham`, `noi_dung_vi_pham`, `muc_do`, `thoi_gian_vi_pham`, `id_phuong_tien`, `id_tai_xe`, `id_video_ghi_hinh`, `da_doc`) VALUES
-(1, 'eye', 'Tài xế nhắm mắt quá lâu', 'critical', '2026-03-12 10:15:00', 1, 1, NULL, 0),
-(2, 'phone', 'Phát hiện dùng điện thoại', 'critical', '2026-03-12 11:20:30', 2, 2, NULL, 1),
-(3, 'yawn', 'Tài xế đang ngáp ngủ', 'warning', '2026-03-12 12:05:15', 3, 3, NULL, 0),
-(4, 'seatbelt', 'Không đeo dây an toàn', 'critical', '2026-03-12 14:10:00', 4, 4, NULL, 1),
-(5, 'collision', 'Cảnh báo va chạm phía trước', 'critical', '2026-03-12 16:46:00', 6, 6, NULL, 0),
-(33, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 15:57:00', 3, 3, NULL, 0),
-(34, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 15:57:06', 3, 3, NULL, 0),
-(42, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 16:04:40', 3, 3, NULL, 0),
-(54, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 21:18:01', 5, 5, NULL, 1),
-(55, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:35', 5, 5, NULL, 0),
-(56, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:36', 5, 5, NULL, 0),
-(57, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:40', 5, 5, NULL, 0),
-(60, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 21:50:08', 5, 5, NULL, 0),
-(61, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:40', 4, 4, NULL, 0),
-(62, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:43', 4, 4, NULL, 0),
-(63, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:47', 4, 4, NULL, 0),
-(67, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 22:19:35', 3, 3, NULL, 0),
-(73, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 22:19:55', 3, 3, NULL, 0),
-(74, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:02', 3, 3, NULL, 0),
-(75, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:10', 3, 3, NULL, 0),
-(76, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:10', 3, 3, NULL, 0);
+(77, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-14 22:44:36', 5, 5, NULL, 0),
+(78, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:44:44', 5, 5, NULL, 1),
+(79, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:07:42', 5, 5, 7, 0),
+(80, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:07:45', 5, 5, 7, 0),
+(81, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:07:46', 5, 5, 7, 0),
+(82, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:01', 5, 5, NULL, 0),
+(83, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(84, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(85, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(86, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(87, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(88, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:03', 5, 5, NULL, 0),
+(89, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:08', 5, 5, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -184,6 +176,7 @@ CREATE TABLE `phuong_tien` (
   `hinh_anh_xe` varchar(255) DEFAULT NULL,
   `id_tai_xe` int(11) DEFAULT NULL,
   `id_tuyen_duong` varchar(50) DEFAULT NULL,
+  `vi_tri` varchar(50) NOT NULL,
   `trang_thai_hoat_dong` varchar(50) DEFAULT 'Đang dừng',
   `toc_do_hien_tai` int(11) DEFAULT 0,
   `lat` double DEFAULT 21.0285,
@@ -194,14 +187,14 @@ CREATE TABLE `phuong_tien` (
 -- Đang đổ dữ liệu cho bảng `phuong_tien`
 --
 
-INSERT INTO `phuong_tien` (`id`, `bien_so`, `loai_xe`, `hinh_anh_xe`, `id_tai_xe`, `id_tuyen_duong`, `trang_thai_hoat_dong`, `toc_do_hien_tai`, `lat`, `lng`) VALUES
-(1, '29A-111.11', 'car', 'car1.jpg', 1, 'T001', 'Đang chạy', 45, 21.045, 105.81),
-(2, '29B-222.22', 'bus', 'bus1.jpg', 2, 'T002', 'Đang dừng', 0, 21.03, 105.78),
-(3, '30E-333.33', 'car', 'car2.jpg', 3, 'T003', 'Đang chạy', 30, 21.04, 105.835),
-(4, '29H-444.44', 'truck', 'truck1.jpg', 4, 'T004', 'Đang chạy', 50, 21.025, 105.86),
-(5, '15B-555.55', 'bus', 'bus2.jpg', 5, 'T005', 'Đang chạy', 40, 21.035, 105.82),
-(6, '30G-666.66', 'car', 'car3.jpg', 6, 'T003', 'Đang chạy', 40, 21.015, 105.83),
-(7, '29LD-777.77', 'bus', 'bus3.jpg', 7, 'T002', 'Đang chạy', 60, 21.0285, 105.8542);
+INSERT INTO `phuong_tien` (`id`, `bien_so`, `loai_xe`, `hinh_anh_xe`, `id_tai_xe`, `id_tuyen_duong`, `vi_tri`, `trang_thai_hoat_dong`, `toc_do_hien_tai`, `lat`, `lng`) VALUES
+(1, '29A-111.11', 'car', 'car1.jpg', 1, 'T001', 'Hải phòng', 'Đang chạy', 45, 21.045, 105.81),
+(2, '29B-222.22', 'bus', 'bus1.jpg', 2, 'T002', '', 'Đang dừng', 0, 21.03, 105.78),
+(3, '30E-333.33', 'car', 'car2.jpg', 3, 'T003', '', 'Đang chạy', 30, 21.04, 105.835),
+(4, '29H-444.44', 'truck', 'truck1.jpg', 4, 'T004', '', 'Đang chạy', 50, 21.025, 105.86),
+(5, '15B-555.55', 'bus', 'bus2.jpg', 5, 'T005', '', 'Đang chạy', 40, 21.035, 105.82),
+(6, '30G-666.66', 'car', 'car3.jpg', 6, 'T003', '', 'Đang chạy', 40, 21.015, 105.83),
+(7, '29LD-777.77', 'bus', 'bus3.jpg', 7, 'T002', '', 'Đang chạy', 60, 21.0285, 105.8542);
 
 -- --------------------------------------------------------
 
@@ -257,11 +250,7 @@ CREATE TABLE `thong_bao_admin` (
 --
 
 INSERT INTO `thong_bao_admin` (`id`, `id_admin`, `bien_so_xe`, `noi_dung_thong_bao`, `muc_do_uu_tien`, `da_doc`, `ngay_tao`, `ngay_doc`) VALUES
-(1, 1, '29A-111.11', 'Đề nghị tài xế Đức dừng xe ở trạm nghỉ tiếp theo, phát hiện mệt mỏi.', 'high', 0, '2026-03-12 03:20:00', NULL),
-(2, 1, '29B-222.22', 'Cảnh cáo: Không được sử dụng điện thoại lúc đang lái xe.', 'high', 1, '2026-03-12 04:25:00', NULL),
-(3, 1, '15B-555.55', 'Lưu ý giữ khoảng cách an toàn với xe phía trước.', 'medium', 0, '2026-03-12 08:00:00', NULL),
-(4, 1, 'null', 'tập trung vào', 'high', 0, '2026-03-14 14:14:34', NULL),
-(5, 1, '15B-555.55', 'tỉnh ngủ đi em', 'high', 1, '2026-03-14 14:18:25', '2026-03-14 14:18:51');
+(6, 1, '15B-555.55', 'đi chậm thôi bạn ơi', 'high', 1, '2026-03-14 16:06:35', '2026-03-14 16:06:42');
 
 -- --------------------------------------------------------
 
@@ -291,11 +280,11 @@ CREATE TABLE `tuyen_duong` (
 --
 
 INSERT INTO `tuyen_duong` (`id`, `ten_tuyen`, `mo_ta`, `start_lat`, `start_lng`, `end_lat`, `end_lng`, `toa_do_lat`, `toa_do_lng`, `distance`, `duration`, `vehicles`, `route_color`, `trang_thai`) VALUES
-('T001', 'Mỹ Đình - Hải Phòng', 'Tuyến đường từ bến xe Mỹ Đình đến bến xe Hải Phòng', 21.03000000, 105.78000000, 20.95000000, 106.10000000, NULL, NULL, 102.00, 120, '12 xe/ngày', '#4a9eff', 'active'),
-('T002', 'Nội Bài - Trung tâm Hà Nội', 'Tuyến đường từ sân bay Nội Bài vào trung tâm Hà Nội', 21.22000000, 105.80000000, 21.02850000, 105.85420000, NULL, NULL, 28.00, 45, '45 xe/ngày', '#00c853', 'active'),
-('T003', 'Hồ Tây - Lăng Bác', 'Tuyến đường du lịch từ Hồ Tây đến Lăng Bác', 21.04500000, 105.81500000, 21.03500000, 105.83500000, NULL, NULL, 8.00, 25, '28 xe/ngày', '#ffc107', 'active'),
-('T004', 'Cầu Giấy - Long Biên', 'Tuyến đường nối quận Cầu Giấy và Long Biên', 21.03500000, 105.79000000, 21.02000000, 105.85000000, NULL, NULL, 15.00, 40, '20 xe/ngày', '#ff5252', 'active'),
-('T005', 'Hà Đông  - Hoàn Kiếm', 'Tuyến đường từ Hà Đông vào hồ Hoàn Kiếm', 20.98000000, 105.78000000, 21.02850000, 105.85420000, NULL, NULL, 12.00, 35, '35 xe/ngày', '#9c27b0', 'active');
+('T001', 'Mỹ Đình - Hải Phòng', 'Tuyến đường từ bến xe Mỹ Đình đến bến xe Hải Phòng', '21.03000000', '105.78000000', '20.95000000', '106.10000000', NULL, NULL, '102.00', 120, '12 xe/ngày', '#4a9eff', 'active'),
+('T002', 'Nội Bài - Trung tâm Hà Nội', 'Tuyến đường từ sân bay Nội Bài vào trung tâm Hà Nội', '21.22000000', '105.80000000', '21.02850000', '105.85420000', NULL, NULL, '28.00', 45, '45 xe/ngày', '#00c853', 'active'),
+('T003', 'Hồ Tây - Lăng Bác', 'Tuyến đường du lịch từ Hồ Tây đến Lăng Bác', '21.04500000', '105.81500000', '21.03500000', '105.83500000', NULL, NULL, '8.00', 25, '28 xe/ngày', '#ffc107', 'active'),
+('T004', 'Cầu Giấy - Long Biên', 'Tuyến đường nối quận Cầu Giấy và Long Biên', '21.03500000', '105.79000000', '21.02000000', '105.85000000', NULL, NULL, '15.00', 40, '20 xe/ngày', '#ff5252', 'active'),
+('T005', 'Hà Đông  - Hoàn Kiếm', 'Tuyến đường từ Hà Đông vào hồ Hoàn Kiếm', '20.98000000', '105.78000000', '21.02850000', '105.85420000', NULL, NULL, '12.00', 35, '35 xe/ngày', '#9c27b0', 'active');
 
 -- --------------------------------------------------------
 
@@ -317,25 +306,25 @@ CREATE TABLE `tuyen_duong_path` (
 --
 
 INSERT INTO `tuyen_duong_path` (`id`, `id_tuyen_duong`, `point_order`, `latitude`, `longitude`, `created_at`) VALUES
-(1, 'T001', 1, 21.03000000, 105.78000000, '2026-03-14 03:11:19'),
-(2, 'T001', 2, 21.02500000, 105.82000000, '2026-03-14 03:11:19'),
-(3, 'T001', 3, 21.02000000, 105.86000000, '2026-03-14 03:11:19'),
-(4, 'T001', 4, 20.95000000, 106.10000000, '2026-03-14 03:11:19'),
-(5, 'T002', 1, 21.22000000, 105.80000000, '2026-03-14 03:11:19'),
-(6, 'T002', 2, 21.15000000, 105.82000000, '2026-03-14 03:11:19'),
-(7, 'T002', 3, 21.08000000, 105.84000000, '2026-03-14 03:11:19'),
-(8, 'T002', 4, 21.02850000, 105.85420000, '2026-03-14 03:11:19'),
-(9, 'T003', 1, 21.04500000, 105.81500000, '2026-03-14 03:11:19'),
-(10, 'T003', 2, 21.04000000, 105.82500000, '2026-03-14 03:11:19'),
-(11, 'T003', 3, 21.03500000, 105.83500000, '2026-03-14 03:11:19'),
-(12, 'T004', 1, 21.03500000, 105.79000000, '2026-03-14 03:11:19'),
-(13, 'T004', 2, 21.03000000, 105.81000000, '2026-03-14 03:11:19'),
-(14, 'T004', 3, 21.02500000, 105.83000000, '2026-03-14 03:11:19'),
-(15, 'T004', 4, 21.02000000, 105.85000000, '2026-03-14 03:11:19'),
-(16, 'T005', 1, 20.98000000, 105.78000000, '2026-03-14 03:11:19'),
-(17, 'T005', 2, 21.00000000, 105.80000000, '2026-03-14 03:11:19'),
-(18, 'T005', 3, 21.01500000, 105.82000000, '2026-03-14 03:11:19'),
-(19, 'T005', 4, 21.02850000, 105.85420000, '2026-03-14 03:11:19');
+(1, 'T001', 1, '21.03000000', '105.78000000', '2026-03-14 03:11:19'),
+(2, 'T001', 2, '21.02500000', '105.82000000', '2026-03-14 03:11:19'),
+(3, 'T001', 3, '21.02000000', '105.86000000', '2026-03-14 03:11:19'),
+(4, 'T001', 4, '20.95000000', '106.10000000', '2026-03-14 03:11:19'),
+(5, 'T002', 1, '21.22000000', '105.80000000', '2026-03-14 03:11:19'),
+(6, 'T002', 2, '21.15000000', '105.82000000', '2026-03-14 03:11:19'),
+(7, 'T002', 3, '21.08000000', '105.84000000', '2026-03-14 03:11:19'),
+(8, 'T002', 4, '21.02850000', '105.85420000', '2026-03-14 03:11:19'),
+(9, 'T003', 1, '21.04500000', '105.81500000', '2026-03-14 03:11:19'),
+(10, 'T003', 2, '21.04000000', '105.82500000', '2026-03-14 03:11:19'),
+(11, 'T003', 3, '21.03500000', '105.83500000', '2026-03-14 03:11:19'),
+(12, 'T004', 1, '21.03500000', '105.79000000', '2026-03-14 03:11:19'),
+(13, 'T004', 2, '21.03000000', '105.81000000', '2026-03-14 03:11:19'),
+(14, 'T004', 3, '21.02500000', '105.83000000', '2026-03-14 03:11:19'),
+(15, 'T004', 4, '21.02000000', '105.85000000', '2026-03-14 03:11:19'),
+(16, 'T005', 1, '20.98000000', '105.78000000', '2026-03-14 03:11:19'),
+(17, 'T005', 2, '21.00000000', '105.80000000', '2026-03-14 03:11:19'),
+(18, 'T005', 3, '21.01500000', '105.82000000', '2026-03-14 03:11:19'),
+(19, 'T005', 4, '21.02850000', '105.85420000', '2026-03-14 03:11:19');
 
 -- --------------------------------------------------------
 
@@ -352,6 +341,13 @@ CREATE TABLE `video_ghi_hinh` (
   `thoi_gian_ket_thuc` datetime DEFAULT NULL,
   `kich_thuoc_file` bigint(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `video_ghi_hinh`
+--
+
+INSERT INTO `video_ghi_hinh` (`id`, `id_camera`, `ten_file_video`, `duong_dan_file`, `thoi_gian_bat_dau`, `thoi_gian_ket_thuc`, `kich_thuoc_file`) VALUES
+(7, 1, 'output_20260314_230740.mp4', '/recordings/output_20260314_230740.mp4', '2026-03-14 23:07:40', '2026-03-14 23:07:47', 974530);
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -452,7 +448,7 @@ ALTER TABLE `camera_xe`
 -- AUTO_INCREMENT cho bảng `canh_bao_vi_pham`
 --
 ALTER TABLE `canh_bao_vi_pham`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT cho bảng `nguoi_dung`
@@ -476,7 +472,7 @@ ALTER TABLE `tai_xe`
 -- AUTO_INCREMENT cho bảng `thong_bao_admin`
 --
 ALTER TABLE `thong_bao_admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT cho bảng `tuyen_duong_path`
@@ -488,7 +484,7 @@ ALTER TABLE `tuyen_duong_path`
 -- AUTO_INCREMENT cho bảng `video_ghi_hinh`
 --
 ALTER TABLE `video_ghi_hinh`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
