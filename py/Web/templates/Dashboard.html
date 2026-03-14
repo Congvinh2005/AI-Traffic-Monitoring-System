@@ -2426,7 +2426,7 @@ tr:hover {
     </div>
     <span>Admin</span>
 
-    <div class="avatar" title="Admin" style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #2a7eff); display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: var(--transition);">AD</div>
+    <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Admin" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; cursor: pointer; transition: var(--transition);" title="Admin">
   </div>
 </div>
 
@@ -3862,10 +3862,14 @@ function loadWarningsData(page = 1) {
 
       const alerts = data.alerts;
       const startIdx = (data.page - 1) * data.per_page + 1;
+      const totalItems = data.total;
 
-      tbody.innerHTML = alerts.map((w, i) => `
+      tbody.innerHTML = alerts.map((w, i) => {
+        // STT giảm dần: item đầu tiên (mới nhất) có STT lớn nhất
+        const stt = totalItems - (startIdx - 1) - i;
+        return `
         <tr>
-          <td>${startIdx + i}</td>
+          <td>${stt}</td>
           <td><strong>${w.vehicle_plate || 'Không rõ'}</strong></td>
           <td>${w.driver_name || 'Không rõ'}</td>
           <td>${w.message || w.type || 'Không rõ'}</td>
@@ -3882,7 +3886,7 @@ function loadWarningsData(page = 1) {
             </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
 
       const pendingCount = alerts.filter(w => !w.is_read).length;
       document.getElementById('warningBadge').textContent = pendingCount;
@@ -3983,12 +3987,16 @@ function loadAdminAlertsData(page = 1) {
 
       const alerts = data.warnings;
       const startIdx = (data.page - 1) * data.per_page + 1;
-      
+      const totalItems = data.total;
+
       window.adminAlerts = alerts; // Save globally
 
-      tbody.innerHTML = alerts.map((a, i) => `
+      tbody.innerHTML = alerts.map((a, i) => {
+        // STT giảm dần: item đầu tiên (mới nhất) có STT lớn nhất
+        const stt = totalItems - (startIdx - 1) - i;
+        return `
         <tr>
-          <td>${startIdx + i}</td>
+          <td>${stt}</td>
           <td><strong>${a.vehicle_plate || 'Không rõ'}</strong></td>
           <td>${a.driver_name || 'Không rõ'}</td>
           <td>${a.message || ''}</td>
@@ -4000,7 +4008,7 @@ function loadAdminAlertsData(page = 1) {
             </button>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
       
       // Update pagination
       adminAlertsCurrentPage = data.page;
@@ -6673,6 +6681,68 @@ function pollAINewAlerts() {
 
 // Poll cảnh báo mới mỗi 3 giây
 setInterval(pollAINewAlerts, 3000);
+
+// ========================================
+// FILTER EVENT LISTENERS
+// ========================================
+
+// Warning Type Filter
+document.getElementById('warningTypeFilter')?.addEventListener('change', function(e) {
+  const type = e.target.value;
+  const tbody = document.getElementById('warningsTableBody');
+  const rows = tbody.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    if (type === 'all' || text.includes(type.toLowerCase())) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
+// Warning Status Filter
+document.getElementById('warningStatusFilter')?.addEventListener('change', function(e) {
+  const status = e.target.value;
+  const tbody = document.getElementById('warningsTableBody');
+  const rows = tbody.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    if (status === 'all') {
+      row.style.display = '';
+    } else if (status === 'pending' && text.includes('chưa xử lý')) {
+      row.style.display = '';
+    } else if (status === 'processed' && text.includes('đã xử lý')) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
+// Alert Priority Filter
+document.getElementById('alertPriorityFilter')?.addEventListener('change', function(e) {
+  const priority = e.target.value;
+  const tbody = document.getElementById('alertsTableBody');
+  const rows = tbody.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    if (priority === 'all') {
+      row.style.display = '';
+    } else if (priority === 'high' && text.includes('cao')) {
+      row.style.display = '';
+    } else if (priority === 'medium' && text.includes('trung bình')) {
+      row.style.display = '';
+    } else if (priority === 'low' && text.includes('thấp')) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
 </script>
 
 </body>
