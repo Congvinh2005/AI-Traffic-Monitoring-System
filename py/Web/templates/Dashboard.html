@@ -4276,7 +4276,9 @@ document.getElementById('vehicleSearch')?.addEventListener('input', function(e) 
   });
 });
 
-// Routes Management - Sample data with full path coordinates
+// Routes Management - Using data from database
+// Uncomment sample data below for testing without database
+/*
 var routesData = [
   { code: 'T001', name: 'Mỹ Đình - Hải Phòng', start: 'Bến xe Mỹ Đình', end: 'Bến xe Hải Phòng', distance: 102, duration: 120, vehicles: '12 xe/ngày', status: 'Hoạt động',
     path: [[21.0300, 105.7800], [21.0250, 105.8200], [21.0200, 105.8600], [20.9500, 106.1000]], color: '#4a9eff' },
@@ -4289,20 +4291,25 @@ var routesData = [
   { code: 'T005', name: 'Hà Đông - Hoàn Kiếm', start: 'Hà Đông', end: 'Hồ Gươm', distance: 12, duration: 35, vehicles: '35 xe/ngày', status: 'Hoạt động',
     path: [[20.9800, 105.7800], [21.0000, 105.8000], [21.0150, 105.8200], [21.0285, 105.8542]], color: '#9c27b0' }
 ];
+*/
 
-// Uncomment below to use data from database instead of sample data
-// var routesData = {{ routes|default([], true)|tojson|safe }};
+// Use data from database (recommended)
+var routesData = {{ routes|default([], true)|tojson|safe }};
 
 function loadRoutesData() {
   const list = document.getElementById('routeList');
 
   if (routesData && routesData.length > 0) {
     list.innerHTML = routesData.map(r => {
+      const routeColor = r.color || '#4a9eff';
       // Store path in data attribute for later use
       return `
-      <div class="route-item" data-code="${r.code}" data-path='${JSON.stringify(r.path)}' style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
+      <div class="route-item" data-code="${r.code}" data-path='${JSON.stringify(r.path)}' style="background: var(--bg-input); border-radius: 8px; padding: 12px; border-left: 4px solid ${routeColor}; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.boxShadow='0 4px 15px ${routeColor}40'" onmouseout="this.style.transform='scale(1)'; this.boxShadow='none'">
         <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span class="route-code" style="font-weight: 600; color: var(--accent);">${r.code}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="route-code" style="font-weight: 600; color: ${routeColor};">${r.code}</span>
+            <span style="width: 12px; height: 12px; background: ${routeColor}; border-radius: 50%; display: inline-block;"></span>
+          </div>
           <span class="route-status" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.25)' : 'rgba(255, 82, 82, 0.25)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
         </div>
         <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
@@ -4317,14 +4324,14 @@ function loadRoutesData() {
         </div>
         <div class="route-info" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
           <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-ruler-horizontal" style="color: var(--accent);"></i> ${r.distance} km
+            <i class="fa-solid fa-ruler-horizontal" style="color: ${routeColor};"></i> ${r.distance} km
           </span>
           <span class="route-info-item" style="display: flex; align-items: center; gap: 5px;">
             <i class="fa-solid fa-clock" style="color: var(--warning);"></i> ${r.duration} phút
           </span>
         </div>
         <div class="route-actions" style="display: flex; gap: 5px;">
-          <button class="btn btn-primary" onclick="viewRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
+          <button class="btn btn-primary" onclick="viewRoute('${r.code}')" style="flex: 1; padding: 6px; background: ${routeColor}; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-eye"></i> Xem</button>
           <button class="btn btn-outline" onclick="editRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
         </div>
       </div>

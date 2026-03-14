@@ -298,17 +298,38 @@ def dashboard():
 
         # Lấy danh sách toàn bộ tuyến đường (bao gồm tọa độ起点 và终点)
         cur.execute('''
-            SELECT id as code, ten_tuyen as name, 
-                   COALESCE(start_lat, toa_do_lat) as start_lat, 
-                   COALESCE(start_lng, toa_do_lng) as start_lng,
-                   COALESCE(end_lat, toa_do_lat) as end_lat, 
-                   COALESCE(end_lng, toa_do_lng) as end_lng,
-                   'Khu vực trung tâm' as start, 'Tuyến cố định' as end,
-                   0 as distance, 0 as duration,
-                   IF(trang_thai = 'active', 'Hoạt động', 'Ngừng hoạt động') as status
+            SELECT 
+                id as code, 
+                ten_tuyen as name,
+                mo_ta as description,
+                COALESCE(start_lat, toa_do_lat) as start_lat, 
+                COALESCE(start_lng, toa_do_lng) as start_lng,
+                COALESCE(end_lat, toa_do_lat) as end_lat, 
+                COALESCE(end_lng, toa_do_lng) as end_lng,
+                distance,
+                duration,
+                vehicles,
+                route_color as color,
+                'Khu vực trung tâm' as start, 
+                'Tuyến cố định' as end,
+                0 as distance_old, 
+                0 as duration_old,
+                IF(trang_thai = 'active', 'Hoạt động', 'Ngừng hoạt động') as status
             FROM tuyen_duong
         ''')
         routes = cur.fetchall()
+        
+        # Lấy danh sách path cho tất cả các tuyến
+        for route in routes:
+            cur.execute('''
+                SELECT latitude, longitude 
+                FROM tuyen_duong_path 
+                WHERE id_tuyen_duong = %s 
+                ORDER BY point_order ASC
+            ''', (route['code'],))
+            path_points = cur.fetchall()
+            # Chuyển thành mảng [[lat, lng], [lat, lng], ...]
+            route['path'] = [[float(p['latitude']), float(p['longitude'])] for p in path_points]
         
         cur.execute('''
             SELECT 
@@ -916,7 +937,7 @@ def api_groq_law_chat():
 @app.route('/api/routes', methods=['GET'])
 @login_required
 def get_routes():
-    """Lấy danh sách tất cả tuyến đường với tọa độ起点 và终点"""
+    """Lấy danh sách tất cả tuyến đường với path chi tiết"""
     try:
         conn = get_db_connection()
         if not conn:
@@ -927,28 +948,45 @@ def get_routes():
             SELECT 
                 id, ten_tuyen, mo_ta,
                 start_lat, start_lng, end_lat, end_lng,
+                distance, duration, vehicles, route_color,
                 toa_do_lat, toa_do_lng, trang_thai
             FROM tuyen_duong
             ORDER BY ten_tuyen ASC
         ''')
         routes = cur.fetchall()
-        cur.close()
-        conn.close()
-
+        
+        # Lấy path cho từng tuyến
         formatted_routes = []
         for route in routes:
+            cur.execute('''
+                SELECT latitude, longitude 
+                FROM tuyen_duong_path 
+                WHERE id_tuyen_duong = %s 
+                ORDER BY point_order ASC
+            ''', (route['id'],))
+            path_points = cur.fetchall()
+            
             formatted_routes.append({
                 'id': route['id'],
+                'code': route['id'],
                 'name': route['ten_tuyen'],
                 'description': route['mo_ta'],
                 'start_lat': float(route['start_lat']) if route['start_lat'] else None,
                 'start_lng': float(route['start_lng']) if route['start_lng'] else None,
                 'end_lat': float(route['end_lat']) if route['end_lat'] else None,
                 'end_lng': float(route['end_lng']) if route['end_lng'] else None,
+                'distance': float(route['distance']) if route['distance'] else 0,
+                'duration': int(route['duration']) if route['duration'] else 0,
+                'vehicles': route['vehicles'],
+                'color': route['route_color'] or '#4a9eff',
                 'center_lat': float(route['toa_do_lat']) if route['toa_do_lat'] else None,
                 'center_lng': float(route['toa_do_lng']) if route['toa_do_lng'] else None,
-                'status': route['trang_thai']
+                'status': 'Hoạt động' if route['trang_thai'] == 'active' else 'Ngừng hoạt động',
+                'path': [[float(p['latitude']), float(p['longitude'])] for p in path_points]
             })
+
+        cur.close()
+        conn.close()
 
         return jsonify({'success': True, 'routes': formatted_routes})
     except Exception as e:
@@ -1006,14 +1044,18 @@ def create_route():
         route_id = data.get('id', '').strip()
         name = data.get('name', '').strip()
         description = data.get('description', '')
-        start_lat = data.get('start_lat')
-        start_lng = data.get('start_lng')
-        end_lat = data.get('end_lat')
-        end_lng = data.get('end_lng')
+        distance = data.get('distance', 0)
+        duration = data.get('duration', 0)
+        vehicles = data.get('vehicles', '')
+        color = data.get('color', '#4a9eff')
         status = data.get('status', 'active')
+        path = data.get('path', [])  # Mảng [[lat, lng], [lat, lng], ...]
 
         if not route_id or not name:
             return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
+
+        if not path or len(path) < 2:
+            return jsonify({'success': False, 'message': 'Tuyến đường cần ít nhất 2 điểm tọa độ'}), 400
 
         conn = get_db_connection()
         if not conn:
@@ -1026,11 +1068,24 @@ def create_route():
         if cur.fetchone():
             return jsonify({'success': False, 'message': 'Mã tuyến đường đã tồn tại'}), 400
 
+        # Lấy tọa độ điểm đầu và cuối
+        start_lat, start_lng = path[0]
+        end_lat, end_lng = path[-1]
+
         cur.execute('''
             INSERT INTO tuyen_duong 
-            (id, ten_tuyen, mo_ta, start_lat, start_lng, end_lat, end_lng, trang_thai)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (route_id, name, description, start_lat, start_lng, end_lat, end_lng, status))
+            (id, ten_tuyen, mo_ta, start_lat, start_lng, end_lat, end_lng, 
+             distance, duration, vehicles, route_color, trang_thai)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (route_id, name, description, start_lat, start_lng, end_lat, end_lng, 
+              distance, duration, vehicles, color, status))
+        
+        # Insert các điểm path
+        for i, (lat, lng) in enumerate(path):
+            cur.execute('''
+                INSERT INTO tuyen_duong_path (id_tuyen_duong, point_order, latitude, longitude)
+                VALUES (%s, %s, %s, %s)
+            ''', (route_id, i + 1, lat, lng))
         
         conn.commit()
         cur.close()
@@ -1048,14 +1103,18 @@ def update_route(route_id):
         data = request.get_json()
         name = data.get('name', '').strip()
         description = data.get('description', '')
-        start_lat = data.get('start_lat')
-        start_lng = data.get('start_lng')
-        end_lat = data.get('end_lat')
-        end_lng = data.get('end_lng')
+        distance = data.get('distance', 0)
+        duration = data.get('duration', 0)
+        vehicles = data.get('vehicles', '')
+        color = data.get('color', '#4a9eff')
         status = data.get('status', 'active')
+        path = data.get('path', [])  # Mảng [[lat, lng], [lat, lng], ...]
 
         if not name:
             return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
+
+        if path and len(path) < 2:
+            return jsonify({'success': False, 'message': 'Tuyến đường cần ít nhất 2 điểm tọa độ'}), 400
 
         conn = get_db_connection()
         if not conn:
@@ -1068,12 +1127,35 @@ def update_route(route_id):
         if not cur.fetchone():
             return jsonify({'success': False, 'message': 'Tuyến đường không tồn tại'}), 404
 
-        cur.execute('''
-            UPDATE tuyen_duong 
-            SET ten_tuyen = %s, mo_ta = %s, start_lat = %s, start_lng = %s, 
-                end_lat = %s, end_lng = %s, trang_thai = %s
-            WHERE id = %s
-        ''', (name, description, start_lat, start_lng, end_lat, end_lng, status, route_id))
+        # Nếu có path mới, cập nhật tọa độ đầu cuối
+        if path:
+            start_lat, start_lng = path[0]
+            end_lat, end_lng = path[-1]
+            
+            cur.execute('''
+                UPDATE tuyen_duong 
+                SET ten_tuyen = %s, mo_ta = %s, start_lat = %s, start_lng = %s, 
+                    end_lat = %s, end_lng = %s, distance = %s, duration = %s, 
+                    vehicles = %s, route_color = %s, trang_thai = %s
+                WHERE id = %s
+            ''', (name, description, start_lat, start_lng, end_lat, end_lng, 
+                  distance, duration, vehicles, color, status, route_id))
+            
+            # Xóa path cũ và thêm path mới
+            cur.execute('DELETE FROM tuyen_duong_path WHERE id_tuyen_duong = %s', (route_id,))
+            for i, (lat, lng) in enumerate(path):
+                cur.execute('''
+                    INSERT INTO tuyen_duong_path (id_tuyen_duong, point_order, latitude, longitude)
+                    VALUES (%s, %s, %s, %s)
+                ''', (route_id, i + 1, lat, lng))
+        else:
+            # Chỉ cập nhật thông tin cơ bản
+            cur.execute('''
+                UPDATE tuyen_duong 
+                SET ten_tuyen = %s, mo_ta = %s, distance = %s, duration = %s, 
+                    vehicles = %s, route_color = %s, trang_thai = %s
+                WHERE id = %s
+            ''', (name, description, distance, duration, vehicles, color, status, route_id))
         
         conn.commit()
         cur.close()
