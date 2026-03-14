@@ -3964,33 +3964,113 @@ function updatePagination(page, totalPages, perPage) {
 
 
 var adminAlertsData = {{ admin_alerts|default([])|tojson|safe }};
+var adminAlertsCurrentPage = 1;
+var adminAlertsTotalPages = 1;
 
-function loadAdminAlertsData() {
+function loadAdminAlertsData(page = 1) {
   const tbody = document.getElementById('alertsTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải...</td></tr>';
+
+  fetch(`/api/admin-warnings?page=${page}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success || !data.warnings || data.warnings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có thông báo nào</td></tr>';
+        window.adminAlerts = [];
+        updateAdminAlertsPagination(0, 0, 0);
+        return;
+      }
+
+      const alerts = data.warnings;
+      const startIdx = (data.page - 1) * data.per_page + 1;
+      
+      window.adminAlerts = alerts; // Save globally
+
+      tbody.innerHTML = alerts.map((a, i) => `
+        <tr>
+          <td>${startIdx + i}</td>
+          <td><strong>${a.vehicle_plate || 'Không rõ'}</strong></td>
+          <td>${a.admin_name || 'Không rõ'}</td>
+          <td>${a.message || ''}</td>
+          <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priority === 'high' ? 'Cao' : a.priority === 'medium' ? 'Trung bình' : 'Thấp'}</span></td>
+          <td>${a.created_at ? new Date(a.created_at).toLocaleString('vi-VN') : ''}</td>
+          <td>
+            <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
+              <i class="fa-solid fa-eye"></i> Xem chi tiết
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      
+      // Update pagination
+      adminAlertsCurrentPage = data.page;
+      adminAlertsTotalPages = data.total_pages;
+      updateAdminAlertsPagination(data.page, data.total_pages, data.per_page);
+    })
+    .catch(err => {
+      console.error('Error loading admin alerts:', err);
+      // Fallback to static data
+      if (!adminAlertsData || adminAlertsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có thông báo nào</td></tr>';
+        window.adminAlerts = [];
+        updateAdminAlertsPagination(0, 0, 0);
+        return;
+      }
+      
+      window.adminAlerts = adminAlertsData;
+      tbody.innerHTML = adminAlertsData.map((a, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${a.plate || 'Không rõ'}</strong></td>
+          <td>${a.driver || 'Không rõ'}</td>
+          <td>${a.content || ''}</td>
+          <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priorityLabel || 'Bình thường'}</span></td>
+          <td>${a.date || ''}</td>
+          <td>
+            <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
+              <i class="fa-solid fa-eye"></i> Xem chi tiết
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      updateAdminAlertsPagination(0, 0, 0);
+    });
+}
+
+function updateAdminAlertsPagination(page, totalPages, perPage) {
+  // Xóa pagination cũ nếu có
+  const oldPagination = document.querySelector('.admin-alerts-pagination');
+  if (oldPagination) oldPagination.remove();
   
-  if (!adminAlertsData || adminAlertsData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có thông báo nào</td></tr>';
-    window.adminAlerts = [];
-    return;
-  }
-
-  window.adminAlerts = adminAlertsData; // Save globally
-
-  tbody.innerHTML = adminAlertsData.map((a, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><strong>${a.plate || 'Không rõ'}</strong></td>
-      <td>${a.driver || 'Không rõ'}</td>
-      <td>${a.content || ''}</td>
-      <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priorityLabel || 'Bình thường'}</span></td>
-      <td>${a.date || ''}</td>
-      <td>
-        <button class="btn btn-action" onclick="viewAlert(${i})" style="padding: 4px 8px; font-size: 10px;">
-          <i class="fa-solid fa-eye"></i> Xem chi tiết
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  if (totalPages <= 1) return;
+  
+  const alertsSection = document.querySelector('#admin-alerts .table-section');
+  const paginationDiv = document.createElement('div');
+  paginationDiv.className = 'table-controls admin-alerts-pagination';
+  paginationDiv.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:10px;margin-top:15px;padding:15px;background:var(--bg-card);border-radius:8px;';
+  
+  const perPageLabel = perPage === 15 ? '(15 cảnh báo/trang)' : `(${perPage} cảnh báo/trang)`;
+  
+  let html = `
+    <button class="btn btn-secondary" onclick="loadAdminAlertsData(1)" ${page === 1 ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      <i class="fa-solid fa-angles-left"></i> Đầu
+    </button>
+    <button class="btn btn-secondary" onclick="loadAdminAlertsData(${page - 1})" ${page === 1 ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      <i class="fa-solid fa-angle-left"></i> Trước
+    </button>
+    <span style="color:var(--text-secondary);margin:0 10px;">
+      Trang ${page}/${totalPages} ${perPageLabel}
+    </span>
+    <button class="btn btn-secondary" onclick="loadAdminAlertsData(${page + 1})" ${page === totalPages ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      Sau <i class="fa-solid fa-angle-right"></i>
+    </button>
+    <button class="btn btn-secondary" onclick="loadAdminAlertsData(${totalPages})" ${page === totalPages ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      Cuối <i class="fa-solid fa-angles-right"></i>
+    </button>
+  `;
+  
+  paginationDiv.innerHTML = html;
+  alertsSection.appendChild(paginationDiv);
 }
 
 function loadNotificationsData() {

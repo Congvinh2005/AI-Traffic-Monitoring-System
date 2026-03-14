@@ -573,7 +573,19 @@ def get_admin_warnings():
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
+        # Phân trang: 15 cảnh báo/trang
+        page = request.args.get('page', 1, type=int)
+        per_page = 15
+        offset = (page - 1) * per_page
+
         cur = conn.cursor()
+        
+        # Đếm tổng số cảnh báo
+        cur.execute('SELECT COUNT(*) as total FROM thong_bao_admin')
+        total = cur.fetchone()['total']
+        total_pages = (total + per_page - 1) // per_page
+        
+        # Lấy cảnh báo theo trang
         cur.execute('''
             SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
                    w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
@@ -581,8 +593,8 @@ def get_admin_warnings():
             FROM thong_bao_admin w
             LEFT JOIN nguoi_dung u ON w.id_admin = u.id
             ORDER BY w.ngay_tao DESC
-            LIMIT 100
-        ''')
+            LIMIT %s OFFSET %s
+        ''', (per_page, offset))
         warnings = cur.fetchall()
         cur.close()
         conn.close()
@@ -599,7 +611,14 @@ def get_admin_warnings():
                 'admin_name': warning['admin_name']
             })
 
-        return jsonify({'success': True, 'warnings': formatted_warnings})
+        return jsonify({
+            'success': True, 
+            'warnings': formatted_warnings,
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': total_pages
+        })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
