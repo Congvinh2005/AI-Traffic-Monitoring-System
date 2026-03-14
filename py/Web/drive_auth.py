@@ -158,15 +158,18 @@ def api_login():
         cur.execute('SELECT id, ten_dang_nhap as username, mat_khau as password, vai_tro as role, ho_ten as full_name, trang_thai_hoat_dong as is_active FROM nguoi_dung WHERE ten_dang_nhap = %s', (username,))
         user = cur.fetchone()
         cur.close()
-        conn.close()
+        cur.close() # Close the initial cursor
 
         if not user:
+            conn.close()
             return jsonify({'success': False, 'message': 'Tên đăng nhập không tồn tại'}), 401
 
         if not user['is_active']:
+            conn.close()
             return jsonify({'success': False, 'message': 'Tài khoản đã bị khóa'}), 403
 
         if not bcrypt.check_password_hash(user['password'], password):
+            conn.close()
             return jsonify({'success': False, 'message': 'Mật khẩu không đúng'}), 401
 
         session.permanent = True
@@ -174,6 +177,23 @@ def api_login():
         session['username'] = user['username']
         session['role'] = user['role']
         session['full_name'] = user['full_name']
+
+        # Nếu là tài xế, tìm tai_xe_id và vehicle_id tương ứng
+        if user['role'] == 'user':
+            cur = conn.cursor()
+            # Tìm ID tài xế từ ID người dùng
+            cur.execute('SELECT id FROM tai_xe WHERE id_nguoi_dung = %s', (user['id'],))
+            driver = cur.fetchone()
+            if driver:
+                session['tai_xe_id'] = driver['id']
+                # Tìm ID xe mà tài xế này đang lái
+                cur.execute('SELECT id FROM phuong_tien WHERE id_tai_xe = %s', (driver['id'],))
+                vehicle = cur.fetchone()
+                if vehicle:
+                    session['vehicle_id'] = vehicle['id']
+            cur.close()
+
+        conn.close()
 
         redirect_url = '/dashboard' if user['role'] == 'admin' else '/trang_chu'
 
@@ -262,7 +282,8 @@ def dashboard():
                    t.ho_ten as driver_name, t.so_dien_thoai as phone, t.diem_danh_gia as score,
                    t.anh_dai_dien as driver_image,
                    td.ten_tuyen as location,
-                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed
+                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed,
+                   p.lat, p.lng
             FROM phuong_tien p
             LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
@@ -277,7 +298,8 @@ def dashboard():
                    t.ho_ten as driver_name, t.so_dien_thoai as phone, t.diem_danh_gia as score,
                    t.anh_dai_dien as driver_image,
                    td.ten_tuyen as location,
-                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed
+                   p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed,
+                   p.lat, p.lng
             FROM phuong_tien p
             LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
@@ -335,6 +357,7 @@ def dashboard():
             SELECT 
                 p.bien_so as plate, 
                 t.ho_ten as driver, 
+                td.ten_tuyen as location,
                 c.loai_vi_pham as type, 
                 c.noi_dung_vi_pham as typeLabel, 
                 DATE_FORMAT(c.thoi_gian_vi_pham, '%H:%i %d/%m/%Y') as time, 
@@ -344,6 +367,7 @@ def dashboard():
             LEFT JOIN phuong_tien p ON c.id_phuong_tien = p.id
             LEFT JOIN tai_xe t ON c.id_tai_xe = t.id
             LEFT JOIN video_ghi_hinh v ON c.id_video_ghi_hinh = v.id
+            LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
             ORDER BY c.thoi_gian_vi_pham DESC
             LIMIT 50
         ''')
@@ -375,7 +399,7 @@ def dashboard():
         cur.close()
         conn.close()
         
-        return render_template('Dashboard.html', vehicles=vehicles, all_vehicles=all_vehicles, stats=stats, drivers=drivers, routes=routes, warnings=warnings, admin_alerts=admin_alerts, user=session.get('user'), page=page, total_pages=total_pages)
+        return render_template('Dashboard.html', vehicles=vehicles, all_vehicles=all_vehicles, stats=stats, drivers=drivers, routes=routes, warnings=warnings, admin_alerts=admin_alerts, user=session.get('user'), page=page, total_pages=total_pages, now=datetime.now().strftime('%H:%M %d/%m/%Y'))
     except Exception as e:
         import traceback
         return Response(traceback.format_exc(), mimetype="text/plain")
@@ -383,17 +407,26 @@ def dashboard():
 @app.route('/trang_chu')
 @login_required
 def trang_chu_page():
-    return render_template('trang_chu.html', user=session.get('user'))
+    return render_template('trang_chu.html', 
+                           user=session.get('user'),
+                           tai_xe_id=session.get('tai_xe_id'),
+                           vehicle_id=session.get('vehicle_id'))
 
 @app.route('/tu_van')
 @login_required
 def tu_van_page():
-    return render_template('tu_van.html', user=session.get('user'))
+    return render_template('tu_van.html', 
+                           user=session.get('user'),
+                           tai_xe_id=session.get('tai_xe_id'),
+                           vehicle_id=session.get('vehicle_id'))
 
 @app.route('/lai_xe')
 @login_required
 def lai_xe_page():
-    return render_template('lai_xe.html', user=session.get('user'))
+    return render_template('lai_xe.html', 
+                           user=session.get('user'),
+                           tai_xe_id=session.get('tai_xe_id'),
+                           vehicle_id=session.get('vehicle_id'))
 
 @app.route('/lich_su')
 @login_required
@@ -554,16 +587,37 @@ def mark_warning_as_read(warning_id):
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
 # ========================================
+# MONITORING VEHICLE CONTROL
+# ========================================
+@app.route('/api/set_monitoring_vehicle', methods=['POST'])
+@login_required
+def set_monitoring_vehicle():
+    """Set vehicle_id for monitoring - dùng khi admin/driver bắt đầu giám sát xe cụ thể"""
+    from models import current_monitoring_vehicle_id
+    import models
+    data = request.get_json()
+    v_id = data.get('vehicle_id') if data else None
+    if v_id:
+        models.current_monitoring_vehicle_id = int(v_id)
+    else:
+        models.current_monitoring_vehicle_id = None
+    return jsonify({'success': True, 'vehicle_id': models.current_monitoring_vehicle_id})
+
+# ========================================
 # VIDEO STREAMING ROUTES
 # ========================================
 @app.route('/video_driver')
 def video_driver():
-    return Response(driver_monitor(),
+    import models
+    vehicle_id = session.get('vehicle_id') or models.current_monitoring_vehicle_id
+    return Response(driver_monitor(vehicle_id),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/video_traffic')
 def video_traffic():
-    return Response(traffic_sign_monitor(),
+    import models
+    vehicle_id = session.get('vehicle_id') or models.current_monitoring_vehicle_id
+    return Response(traffic_sign_monitor(vehicle_id),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/video_sign')
@@ -604,7 +658,8 @@ def video_sign():
 
 @app.route('/video_vacham')
 def video_vacham():
-    return Response(collision_monitor(),
+    vehicle_id = session.get('vehicle_id')
+    return Response(collision_monitor(vehicle_id),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/py/video_input/<path:filename>')

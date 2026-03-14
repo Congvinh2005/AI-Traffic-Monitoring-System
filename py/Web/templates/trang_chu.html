@@ -399,6 +399,58 @@
             border-color: rgb(255, 255, 255);
             filter: brightness(1.1);
         }
+
+        /* AI Alert Overlay */
+        #ai-alert-overlay {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            width: 80%;
+            max-width: 600px;
+            display: none;
+            animation: slideDown 0.5s ease;
+        }
+
+        .ai-alert-card {
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 2px solid white;
+        }
+
+        .ai-alert-icon {
+            font-size: 40px;
+            animation: pulse 1s infinite;
+        }
+
+        .ai-alert-content h2 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+        }
+
+        .ai-alert-content p {
+            margin: 0;
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 
@@ -407,6 +459,17 @@
         <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
     </button>
     <div class="app">
+        <!-- AI Alert Overlay -->
+        <div id="ai-alert-overlay">
+            <div class="ai-alert-card">
+                <div class="ai-alert-icon">🚨</div>
+                <div class="ai-alert-content">
+                    <h2 id="ai-alert-title">CẢNH BÁO NGUY HIỂM</h2>
+                    <p id="ai-alert-msg">Phát hiện vi phạm!</p>
+                </div>
+            </div>
+        </div>
+        
         <div class="container">
             <div class="app-grid">
                 <div class="app-item dien-thoai">
@@ -467,6 +530,59 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // AI Alert Logic for Driver
+        const myVehicleId = {{ vehicle_id|default(0, true)|tojson }};
+        let lastAlertId = 0;
+        let alertTimeout = null;
+
+        function checkMyAlerts() {
+            fetch('/api/get_ai_alerts_history')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
+                        const latestAlert = data.alerts[data.alerts.length - 1];
+                        
+                        // Nếu là cảnh báo cho xe này và là ID mới
+                        if (latestAlert.vehicle_id == myVehicleId && latestAlert.id > lastAlertId) {
+                            showAIWarning(latestAlert);
+                            lastAlertId = latestAlert.id;
+                        }
+                    }
+                })
+                .catch(err => console.error('Lỗi lấy cảnh báo:', err));
+        }
+
+        function showAIWarning(alert) {
+            const overlay = document.getElementById('ai-alert-overlay');
+            const msgEl = document.getElementById('ai-alert-msg');
+            const titleEl = document.getElementById('ai-alert-title');
+            
+            titleEl.textContent = alert.level === 'critical' ? '🚨 CẢNH BÁO NGUY HIỂM' : '⚠️ NHẮC NHỞ';
+            msgEl.textContent = alert.message;
+            
+            overlay.style.display = 'block';
+            
+            // Tự động tắt sau 5 giây
+            if (alertTimeout) clearTimeout(alertTimeout);
+            alertTimeout = setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 5000);
+            
+            // Phát âm thanh cảnh báo nếu có (tùy chọn)
+            try {
+                const audio = new Audio('/static/sounds/warning.mp3');
+                audio.play();
+            } catch(e) {}
+        }
+
+        // Poll mỗi 2 giây
+        if (myVehicleId) {
+            setInterval(checkMyAlerts, 2000);
+            console.log('Driver monitoring started for vehicle ID:', myVehicleId);
+        }
+    </script>
 </body>
 
 

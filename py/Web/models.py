@@ -22,14 +22,17 @@ from flask import session
 # ========================================
 ai_alerts_queue = []
 ai_alerts_lock = threading.Lock()
+ai_alert_counter = 0 # Thêm counter cho ID
 MAX_ALERTS_HISTORY = 50
 current_monitoring_vehicle_id = None
 
 def add_ai_alert(alert_type, message, vehicle_id=None):
     """Thêm cảnh báo AI vào hàng đợi"""
-    global ai_alerts_queue
+    global ai_alerts_queue, ai_alert_counter
     with ai_alerts_lock:
+        ai_alert_counter += 1
         alert = {
+            'id': ai_alert_counter, # Gán ID duy nhất
             'type': alert_type,
             'message': message,
             'vehicle_id': vehicle_id,
@@ -53,10 +56,35 @@ def add_ai_alert(alert_type, message, vehicle_id=None):
                 charset='utf8mb4'
             )
             cur = conn.cursor()
+            
+            # Lấy thông tin phương tiện và tài xế
+            plate = 'N/A'
+            driver_name = 'N/A'
+            driver_id = None
+            
+            if vehicle_id:
+                cur.execute("""
+                    SELECT p.bien_so, t.id as id_tai_xe, t.ho_ten 
+                    FROM phuong_tien p
+                    LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+                    WHERE p.id = %s
+                """, (vehicle_id,))
+                res = cur.fetchone()
+                if res:
+                    plate = res['bien_so']
+                    driver_id = res['id_tai_xe']
+                    driver_name = res['ho_ten']
+            
+            # Cập nhật thông tin vào object alert trong queue
+            alert['plate'] = plate
+            alert['driver_name'] = driver_name
+            # Ghi đè tin nhắn để có thêm thông tin nếu cần
+            # alert['message'] = f"[{plate} - {driver_name}] {message}"
+            
             cur.execute("""
-                INSERT INTO canh_bao_vi_pham (loai_vi_pham, noi_dung_vi_pham, muc_do, thoi_gian_vi_pham, id_phuong_tien) 
-                VALUES (%s, %s, %s, NOW(), %s)
-            """, (alert_type, message, alert['level'], vehicle_id))
+                INSERT INTO canh_bao_vi_pham (loai_vi_pham, noi_dung_vi_pham, muc_do, thoi_gian_vi_pham, id_phuong_tien, id_tai_xe) 
+                VALUES (%s, %s, %s, NOW(), %s, %s)
+            """, (alert_type, message, alert['level'], vehicle_id, driver_id))
             conn.commit()
             cur.close()
             conn.close()
@@ -706,7 +734,7 @@ def init_app():
 # ========================================
 # VIDEO MONITORING FUNCTIONS
 # ========================================
-def driver_monitor():
+def driver_monitor(vehicle_id=None):
     """Generator function for driver monitoring video stream"""
     global latest_warning, warnings, video_writer, is_recording, active_video_stream, warning_states
     try:
@@ -813,7 +841,7 @@ def driver_monitor():
                                 chopmat_sound.play()
                             warnings["eye"] = "NHẮM MẮT QUÁ LÂU!"
                             if previous_warnings["eye"] != "NHẮM MẮT QUÁ LÂU!":
-                                add_ai_alert("eye", "Tài xế đang nhắm mắt quá lâu!", current_monitoring_vehicle_id)
+                                add_ai_alert("eye", "Tài xế đang nhắm mắt quá lâu!", vehicle_id)
                     else:
                         eye_closed_time = None
 
@@ -828,7 +856,7 @@ def driver_monitor():
                                 ngap_sound.play()
                             warnings["yawn"] = "NGÁP NGỦ!"
                             if previous_warnings["yawn"] != "NGÁP NGỦ!":
-                                add_ai_alert("yawn", "Tài xế đang ngáp ngủ!", current_monitoring_vehicle_id)
+                                add_ai_alert("yawn", "Tài xế đang ngáp ngủ!", vehicle_id)
                     else:
                         counter_yawn = 0
                         alarm_yawn_on = False
@@ -841,7 +869,7 @@ def driver_monitor():
                             dau_quay_sound.play()
                         warnings["head"] = "MẤT TẬP TRUNG !"
                         if previous_warnings["head"] != "MẤT TẬP TRUNG !":
-                            add_ai_alert("head", "Tài xế mất tập trung (quay đầu/ngửa đầu)!", current_monitoring_vehicle_id)
+                            add_ai_alert("head", "Tài xế mất tập trung (quay đầu/ngửa đầu)!", vehicle_id)
 
                     cv2.rectangle(frame, (10, 10), (200, 75), (0, 0, 0), cv2.FILLED)
                     cv2.putText(frame, f"Pitch: {pitch:.1f}", (10, 30),
@@ -864,7 +892,7 @@ def driver_monitor():
                                 phone_baodong.play()
                             warnings["phone"] = "DÙNG ĐIỆN THOẠI!"
                             if previous_warnings["phone"] != "DÙNG ĐIỆN THOẠI!":
-                                add_ai_alert("phone", "Tài xế đang dùng điện thoại!", current_monitoring_vehicle_id)
+                                add_ai_alert("phone", "Tài xế đang dùng điện thoại!", vehicle_id)
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                             cv2.putText(frame, label, (x1, y1 - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
@@ -889,13 +917,13 @@ def driver_monitor():
                         seatbelt_baodong.play()
                     warnings["seatbelt"] = "KHÔNG ĐEO DÂY AN TOÀN!"
                     if previous_warnings["seatbelt"] != "KHÔNG ĐEO DÂY AN TOÀN!":
-                        add_ai_alert("seatbelt", "Tài xế không đeo dây an toàn!", current_monitoring_vehicle_id)
+                        add_ai_alert("seatbelt", "Tài xế không đeo dây an toàn!", vehicle_id)
 
             # Hand detection
             if warning_states["hand"]:
                 frame = hand_detector.findArmsAndHands(frame)
                 if warnings["hand"] and previous_warnings["hand"] != warnings["hand"]:
-                    add_ai_alert("hand", warnings["hand"], current_monitoring_vehicle_id)
+                    add_ai_alert("hand", warnings["hand"], vehicle_id)
 
             # Update previous warnings
             for key in previous_warnings:
@@ -919,7 +947,7 @@ def driver_monitor():
         active_video_stream = None
 
 
-def traffic_sign_monitor():
+def traffic_sign_monitor(vehicle_id=None):
     """Generator function for traffic sign monitoring video stream"""
     global warnings, video_writer, is_recording, active_video_stream, latest_sign_image_path, latest_sign_label
     try:
@@ -998,7 +1026,7 @@ def traffic_sign_monitor():
         active_video_stream = None
 
 
-def collision_monitor():
+def collision_monitor(vehicle_id=None):
     """Generator function for collision monitoring video stream"""
     global warnings, video_writer, is_recording, active_video_stream, last_collision_warning
     try:

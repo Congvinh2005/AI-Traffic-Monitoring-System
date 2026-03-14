@@ -1419,6 +1419,7 @@
     </audio>
 
     <script>
+      const myVehicleId = {{ vehicle_id|default(0, true)|tojson }};
       let warningInterval = null;
       let currentSectionId = null;
       let startTimes = {
@@ -1669,7 +1670,17 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mode: sectionId }),
-        }).then(() => startMonitoring(sectionId));
+        }).then(() => {
+          // Gửi vehicle_id đang được giám sát lên server
+          if (myVehicleId && sectionId !== 'sign') {
+            fetch("/api/set_monitoring_vehicle", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ vehicle_id: myVehicleId }),
+            });
+          }
+          startMonitoring(sectionId);
+        });
       }
 
       function startMonitoring(sectionId) {

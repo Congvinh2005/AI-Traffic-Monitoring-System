@@ -838,6 +838,15 @@ th {
   text-overflow: ellipsis;
 }
 
+tbody tr {
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  background-color: rgba(74, 158, 255, 0.05) !important;
+}
+
 /* Column widths */
 th:nth-child(1),  /* STT */
 td:nth-child(1) { width: 45px; text-align: center; }
@@ -2709,7 +2718,7 @@ tr:hover {
         {% set t_pages = total_pages|default(1, true)|int %}
         {% if vehicles %}
           {% for v in vehicles %}
-          <tr>
+          <tr onclick="focusVehicle({{ v.id }})" title="Click để xem vị trí trên bản đồ">
             <td>{{ (cur_page - 1) * 5 + loop.index }}</td>
             <td>
               {% if v.image %}
@@ -3833,38 +3842,75 @@ var warningsData = {{ warnings|default([])|tojson|safe }};
 
 function loadWarningsData() {
   const tbody = document.getElementById('warningsTableBody');
-  
-  if (!warningsData || warningsData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Không có cảnh báo nào</td></tr>';
-    document.getElementById('warningBadge').textContent = '0';
-    return;
-  }
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Đang tải...</td></tr>';
 
-  tbody.innerHTML = warningsData.map((w, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><strong>${w.plate || 'Không rõ'}</strong></td>
-      <td>${w.driver || 'Không rõ'}</td>
-      <td>${w.typeLabel || 'Không rõ'}</td>
-      <td>${w.time || ''}</td>
-      <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
-      <td>
-        <div style="display: flex; gap: 5px;">
-          <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}')" style="padding: 4px 8px; font-size: 10px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
-          </button>
-          <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}', '${w.typeLabel}', '${w.video}')" style="padding: 4px 8px; font-size: 10px;">
-            <i class="fa-solid fa-circle-play"></i> Video
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  fetch('/api/alerts')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success || !data.alerts || data.alerts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Không có cảnh báo nào</td></tr>';
+        document.getElementById('warningBadge').textContent = '0';
+        return;
+      }
 
-  // Update badge
-  const pendingCount = warningsData.filter(w => w.status === 'pending').length;
-  document.getElementById('warningBadge').textContent = pendingCount;
+      const alerts = data.alerts;
+      tbody.innerHTML = alerts.map((w, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${w.vehicle_plate || 'Không rõ'}</strong></td>
+          <td>${w.driver_name || 'Không rõ'}</td>
+          <td>${w.message || w.type || 'Không rõ'}</td>
+          <td>${w.timestamp ? new Date(w.timestamp).toLocaleString('vi-VN') : ''}</td>
+          <td><span class="status-badge ${w.is_read ? 'status-running' : 'status-stopped'}">${w.is_read ? 'Đã xử lý' : 'Chưa xử lý'}</span></td>
+          <td>
+            <div style="display:flex;gap:5px;">
+              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.vehicle_plate}')" style="padding:4px 8px;font-size:10px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
+              </button>
+              <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.vehicle_plate}','${w.type}','${w.video_path||''}')" style="padding:4px 8px;font-size:10px;">
+                <i class="fa-solid fa-circle-play"></i> Video
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      const pendingCount = alerts.filter(w => !w.is_read).length;
+      document.getElementById('warningBadge').textContent = pendingCount;
+    })
+    .catch(err => {
+      console.error('Error loading warnings:', err);
+      // Fallback to static data
+      if (!warningsData || warningsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Không có cảnh báo nào</td></tr>';
+        document.getElementById('warningBadge').textContent = '0';
+        return;
+      }
+      tbody.innerHTML = warningsData.map((w, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${w.plate || 'Không rõ'}</strong></td>
+          <td>${w.driver || 'Không rõ'}</td>
+          <td>${w.typeLabel || 'Không rõ'}</td>
+          <td>${w.time || ''}</td>
+          <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
+          <td>
+            <div style="display:flex;gap:5px;">
+              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}')" style="padding:4px 8px;font-size:10px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
+              </button>
+              <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}','${w.typeLabel}','${w.video}')" style="padding:4px 8px;font-size:10px;">
+                <i class="fa-solid fa-circle-play"></i> Video
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+      const pendingCount = warningsData.filter(w => w.status === 'pending').length;
+      document.getElementById('warningBadge').textContent = pendingCount;
+    });
 }
+
 
 var adminAlertsData = {{ admin_alerts|default([])|tojson|safe }};
 
@@ -5372,7 +5418,19 @@ function submitWarning() {
 }
 
 function viewCamera(plate) {
-  showToast('info', 'Camera', `Đang kết nối camera xe ${plate}...`);
+  // Tìm vehicle_id theo biển số để set monitoring
+  const vehicle = vehicles.find(v => v.plate === plate);
+  if (vehicle && vehicle.id) {
+    fetch('/api/set_monitoring_vehicle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicle_id: vehicle.id })
+    }).then(() => {
+      showToast('info', 'Camera', `Đang kết nối camera xe ${plate}... (Giám sát xe ID: ${vehicle.id})`);
+    });
+  } else {
+    showToast('info', 'Camera', `Đang kết nối camera xe ${plate}...`);
+  }
 }
 
 function viewReport(plate) {
@@ -5574,8 +5632,10 @@ var trafficLayer = null;
 // Car & Bus icons
 var carIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048315.png";
 var busIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048333.png";
+var truckIconUrl = "https://cdn-icons-png.flaticon.com/512/1048/1048324.png";
 var CarIcon = L.icon({ iconUrl: carIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
 var BusIcon = L.icon({ iconUrl: busIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
+var TruckIcon = L.icon({ iconUrl: truckIconUrl, iconSize: [35, 35], iconAnchor: [17, 17], popupAnchor: [0, -10] });
 
 function calculateETA(km, speed) {
   if (speed <= 0) return "Không xác định";
@@ -5585,14 +5645,23 @@ function calculateETA(km, speed) {
   return Math.floor(minutes / 60) + " giờ " + (minutes % 60) + " phút";
 }
 
-const vehicles = [
-  { id: 1, plate: "29A-111.11", type: "car", driver: "Nguyễn Văn Đức", phone: "0988 777 666", speed: 45, remainingKm: 12.5, currentAddress: "Võ Chí Công", route: "Nội Bài -> Võ Chí Công", lat: 21.0450, lng: 105.8100, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+1", videoDashcam: "/py/video_input/car1.mp4", imgDriver: "https://randomuser.me/api/portraits/men/67.jpg" },
-  { id: 2, plate: "29B-222.22", type: "bus", driver: "Trần Văn Hoan", phone: "0909 888 999", speed: 0, remainingKm: 5, currentAddress: "Bến xe Mỹ Đình", route: "Mỹ Đình -> Hải Phòng", lat: 21.0300, lng: 105.7800, status: 0, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+2", videoDashcam: "/py/video_input/car2.mp4", imgDriver: "https://randomuser.me/api/portraits/men/32.jpg" },
-  { id: 3, plate: "30G-666.66", type: "car", driver: "Vũ Thị Hồng", phone: "0912 345 678", speed: 40, remainingKm: 3.2, currentAddress: "Hồ Tây", route: "Hồ Tây -> Lăng Bác", lat: 21.0400, lng: 105.8350, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+3", videoDashcam: "/py/video_input/car3.mp4", imgDriver: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: 4, plate: "29LD-777.77", type: "bus", driver: "Lê Văn Minh", phone: "0933 222 111", speed: 60, remainingKm: 15, currentAddress: "Cầu Chương Dương", route: "Nhà Hát Lớn -> Bát Tràng", lat: 21.0250, lng: 105.8600, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Bus+4", videoDashcam: "/py/video_input/car4.mp4", imgDriver: "https://randomuser.me/api/portraits/men/85.jpg" },
-  { id: 5, plate: "30F-888.88", type: "car", driver: "Phạm Văn Hùng", phone: "0977 666 555", speed: 50, remainingKm: 25, currentAddress: "Cầu Giấy", route: "Cầu Giấy -> Long Biên", lat: 21.0350, lng: 105.8200, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+5", videoDashcam: "/py/video_input/car5.mp4", imgDriver: "https://randomuser.me/api/portraits/men/22.jpg" },
-  { id: 6, plate: "30E-999.99", type: "car", driver: "Hoàng Thị Lan", phone: "0966 555 444", speed: 35, remainingKm: 8, currentAddress: "Đống Đa", route: "Đống Đa -> Hai Bà Trưng", lat: 21.0150, lng: 105.8300, status: 1, imgVehicle: "https://via.placeholder.com/300x150?text=Car+6", videoDashcam: "/py/video_input/car6.mp4", imgDriver: "https://randomuser.me/api/portraits/women/68.jpg" }
-];
+const vehicles = {{ all_vehicles|default([], true)|tojson|safe }}.map(v => ({
+  id: v.id,
+  plate: v.plate_number,
+  type: v.type,
+  driver: v.driver_name,
+  phone: v.phone,
+  speed: v.speed || 0,
+  remainingKm: 10, // Simulated
+  currentAddress: v.location || "Đang cập nhật",
+  route: (v.location || "Chưa rõ") + " -> ...",
+  lat: v.lat || 21.0285,
+  lng: v.lng || 105.8542,
+  status: v.status === 'Đang chạy' ? 1 : 0,
+  imgVehicle: v.image ? '/static/images/' + v.image : 'https://via.placeholder.com/300x150?text=Vehicle',
+  videoDashcam: '/py/video_input/car1.mp4',
+  imgDriver: v.driver_image ? '/static/images/' + v.driver_image : 'https://randomuser.me/api/portraits/lego/1.jpg'
+}));
 
 function initMap() {
   map = L.map('map').setView([21.0285, 105.8542], 12);
@@ -5602,7 +5671,7 @@ function initMap() {
   }).addTo(map);
 
   vehicles.forEach(vehicle => {
-    let iconObj = (vehicle.type === 'car') ? CarIcon : BusIcon;
+    let iconObj = (vehicle.type === 'car') ? CarIcon : (vehicle.type === 'truck') ? TruckIcon : BusIcon;
     let statusText = vehicle.status === 1 ? "Đang chạy" : "Đang dừng";
     let statusClass = vehicle.status === 1 ? "tag-run" : "tag-stop";
 
@@ -6376,8 +6445,9 @@ function pollAINewAlerts() {
             const newAlert = document.createElement('div');
             newAlert.className = `alert-item ${latestAlert.level}`;
             newAlert.style.animation = 'slideIn 0.3s ease-out';
+            const info = `[${latestAlert.plate || 'N/A'} - ${latestAlert.driver_name || 'N/A'}]`;
             newAlert.innerHTML = `
-              <div>${icon} ${latestAlert.message}</div>
+              <div>${icon} ${info} ${latestAlert.message}</div>
               <div class="alert-time"><i class="fa-regular fa-clock"></i> ${new Date().toLocaleTimeString()}</div>
             `;
             // Thêm vào đầu danh sách
@@ -6393,7 +6463,8 @@ function pollAINewAlerts() {
           }
 
           // Hiển thị toast notification
-          showToast('warning', 'Cảnh báo AI mới', latestAlert.message);
+          const toastMsg = `[${latestAlert.plate || 'N/A'}] ${latestAlert.message}`;
+          showToast('warning', 'Cảnh báo AI mới', toastMsg);
 
           // Chỉ hiển thị vào chatbot nếu đang mở
           const chatWidget = document.getElementById('chatWidget');
