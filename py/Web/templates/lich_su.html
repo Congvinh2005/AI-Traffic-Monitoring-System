@@ -365,8 +365,7 @@
         .modal-content {
             background: var(--bg-card);
             border-radius: 12px;
-            max-width: 800px;
-            width: 90%;
+            width: 680px;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -516,7 +515,7 @@
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <video id="modal-video" controls style="width: 100%; border-radius: 8px;">
+                <video id="modal-video" controls style="width: 640px; height: 480px; border-radius: 8px; background: #000;">
                     <source src="" type="video/mp4">
                     Trình duyệt không hỗ trợ video.
                 </video>
@@ -700,8 +699,13 @@
                     </div>
                 </div>
                 <div class="card-actions">
-                    ${alert.video_path ? `<button class="btn btn-primary" onclick="playVideo('${alert.video_path}')"><i class="fa-solid fa-play"></i> Xem video</button>` : ''}
-                    ${!alert.is_read ? `<button class="btn btn-success" onclick="markAsRead(${alert.id})"><i class="fa-solid fa-check"></i> Đánh dấu đã đọc</button>` : ''}
+                    <button class="btn btn-primary" onclick='playVideo("${alert.video_path || ''}", ${JSON.stringify(alert)})'>
+                        <i class="fa-solid fa-play"></i> Xem video
+                    </button>
+                    ${!alert.is_read
+                        ? `<button class="btn btn-success" onclick="markAsRead(${alert.id})"><i class="fa-solid fa-check"></i> Đánh dấu đã đọc</button>`
+                        : ''
+                    }
                 </div>
             `;
 
@@ -836,7 +840,7 @@
                 <div class="card-body">
                     <div class="info-item" style="grid-column: 1 / -1;">
                         <span class="info-label">Nội dung</span>
-                        <span class="info-value">${warning.message}</span>
+                        <span class="info-value" style="font-size: 15px; font-weight: 600; color: var(--warning-color); background: rgba(255, 152, 0, 0.1); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--warning-color); display: block; margin-top: 6px;">${warning.message}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Phương tiện</span>
@@ -850,9 +854,14 @@
                         <span class="info-label">Trạng thái</span>
                         <span class="info-value">${warning.is_read ? '<span style="color: var(--success-color);">Đã đọc</span>' : '<span style="color: var(--warning-color);">Chưa đọc</span>'}</span>
                     </div>
-                </div>
-                <div class="card-actions">
-                    ${!warning.is_read ? `<button class="btn btn-success" onclick="markWarningAsRead(${warning.id})"><i class="fa-solid fa-check"></i> Đánh dấu đã đọc</button>` : ''}
+                    ${!warning.is_read 
+                        ? `<div class="info-item">
+                            <button class="btn btn-success" onclick="markWarningAsRead(${warning.id})">
+                                <i class="fa-solid fa-check"></i> Đánh dấu đã đọc
+                            </button>
+                           </div>` 
+                        : ''
+                    }
                 </div>
             `;
 
@@ -860,24 +869,98 @@
         }
 
         // Video modal
-        function openVideoModal(videoPath, title) {
+        function playVideo(videoPath, alert) {
             const modal = document.getElementById('video-modal');
             const video = document.getElementById('modal-video');
             const titleEl = document.getElementById('modal-title');
 
-            video.src = videoPath;
-            titleEl.textContent = title;
+            // Set video source
+            video.src = videoPath || '';
+            
+            // Create violation info HTML
+            const typeIcons = {
+                'eye': 'fa-eye',
+                'yawn': 'fa-face-tired',
+                'head': 'fa-head-side',
+                'phone': 'fa-mobile-screen',
+                'seatbelt': 'fa-user-shield',
+                'hand': 'fa-hand',
+                'collision': 'fa-car-crash',
+                'lane': 'fa-road',
+                'obstacle': 'fa-triangle-exclamation'
+            };
+
+            const typeNames = {
+                'eye': 'Nhắm mắt quá lâu',
+                'yawn': 'Ngáp ngủ',
+                'head': 'Mất tập trung',
+                'phone': 'Dùng điện thoại',
+                'seatbelt': 'Không đeo dây an toàn',
+                'hand': 'Không cầm vô lăng',
+                'collision': 'Va chạm',
+                'lane': 'Lệch làn',
+                'obstacle': 'Vật cản'
+            };
+
+            const timeStr = alert.timestamp ? new Date(alert.timestamp).toLocaleString('vi-VN') : 'N/A';
+            const violationName = typeNames[alert.type] || alert.type;
+            const icon = typeIcons[alert.type] || 'fa-exclamation';
+
+            titleEl.innerHTML = `
+                <i class="fa-solid ${icon}" style="color: var(--danger-color);"></i>
+                Chi tiết vi phạm
+            `;
+            
+            // Add info below video
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'violation-info';
+            infoDiv.style.cssText = 'margin-top: 15px; padding: 15px; background: var(--bg-card); border-radius: 8px;';
+            infoDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 14px;">
+                    <div><strong>Loại vi phạm:</strong> ${violationName}</div>
+                    <div><strong>Thời gian:</strong> ${timeStr}</div>
+                    <div><strong>Biển số:</strong> ${alert.vehicle_plate || 'N/A'}</div>
+                    <div><strong>Tài xế:</strong> ${alert.driver_name || 'N/A'}</div>
+                    <div><strong>Mức độ:</strong> 
+                        <span style="color: ${alert.level === 'critical' ? 'var(--danger-color)' : alert.level === 'warning' ? 'var(--warning-color)' : 'var(--primary-color)'}">
+                            ${alert.level === 'critical' ? 'Nghiêm trọng' : alert.level === 'warning' ? 'Cảnh báo' : 'Thông tin'}
+                        </span>
+                    </div>
+                    <div><strong>Trạng thái:</strong> 
+                        <span style="color: ${alert.is_read ? 'var(--success-color)' : 'var(--warning-color)'}">
+                            ${alert.is_read ? 'Đã đọc' : 'Chưa đọc'}
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            // Remove old info if exists
+            const oldInfo = modal.querySelector('.violation-info');
+            if (oldInfo) oldInfo.remove();
+            
+            // Insert info after video
+            const videoEl = modal.querySelector('#modal-video');
+            videoEl.parentNode.insertBefore(infoDiv, videoEl.nextSibling);
+            
             modal.classList.add('active');
-            video.play();
+            
+            if (videoPath) {
+                video.play();
+            }
         }
 
         function closeModal() {
             const modal = document.getElementById('video-modal');
             const video = document.getElementById('modal-video');
-            
+
+            // Remove violation info
+            const infoDiv = modal.querySelector('.violation-info');
+            if (infoDiv) infoDiv.remove();
+
             modal.classList.remove('active');
             video.pause();
             video.currentTime = 0;
+            video.src = '';
         }
 
         // Mark as read
@@ -891,14 +974,15 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    loadViolations();
+                    // Reload lại trang hiện tại
+                    loadViolations(currentPage);
                 } else {
-                    alert('Không thể đánh dấu đã đọc');
+                    showToast('error', 'Không thể đánh dấu đã đọc');
                 }
             })
             .catch(err => {
                 console.error('Error marking as read:', err);
-                alert('Có lỗi xảy ra');
+                showToast('error', 'Có lỗi xảy ra');
             });
         }
 
@@ -954,6 +1038,48 @@
                 closeModal();
             }
         });
+
+        // Show toast notification
+        function showToast(type, title, message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 100000;
+                animation: slideInRight 0.3s ease;
+            `;
+            toast.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 5px;">${title}</div>
+                <div style="font-size: 13px;">${message}</div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

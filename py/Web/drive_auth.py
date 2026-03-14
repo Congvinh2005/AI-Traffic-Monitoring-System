@@ -579,18 +579,21 @@ def get_admin_warnings():
         offset = (page - 1) * per_page
 
         cur = conn.cursor()
-        
+
         # Đếm tổng số cảnh báo
         cur.execute('SELECT COUNT(*) as total FROM thong_bao_admin')
         total = cur.fetchone()['total']
         total_pages = (total + per_page - 1) // per_page
-        
-        # Lấy cảnh báo theo trang
+
+        # Lấy cảnh báo theo trang, JOIN thêm để lấy tên tài xế
         cur.execute('''
             SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
                    w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
-                   u.ho_ten as admin_name
+                   u.ho_ten as admin_name,
+                   t.ho_ten as driver_name
             FROM thong_bao_admin w
+            LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
+            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN nguoi_dung u ON w.id_admin = u.id
             ORDER BY w.ngay_tao DESC
             LIMIT %s OFFSET %s
@@ -608,11 +611,12 @@ def get_admin_warnings():
                 'priority': warning['priority'],
                 'is_read': bool(warning['is_read']),
                 'created_at': warning['created_at'].isoformat() if warning['created_at'] else None,
-                'admin_name': warning['admin_name']
+                'admin_name': warning['admin_name'],
+                'driver_name': warning['driver_name']  # Thêm tên tài xế
             })
 
         return jsonify({
-            'success': True, 
+            'success': True,
             'warnings': formatted_warnings,
             'page': page,
             'per_page': per_page,
@@ -705,6 +709,82 @@ def mark_warning_as_read(warning_id):
         conn.close()
 
         return jsonify({'success': True, 'message': 'Đã đánh dấu đã đọc'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/send-warning', methods=['POST'])
+@login_required
+def send_warning_to_vehicle():
+    """Gửi cảnh báo từ admin đến xe"""
+    try:
+        # Chỉ admin mới được gửi cảnh báo
+        if session.get('role') != 'admin':
+            return jsonify({'success': False, 'message': 'Không có quyền truy cập'}), 403
+
+        data = request.get_json()
+        bien_so = data.get('plate', '').strip()
+        noi_dung = data.get('content', '').strip()
+        muc_do = data.get('priority', 'medium')  # low, medium, high
+
+        if not bien_so or not noi_dung:
+            return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        
+        # Lấy id_admin từ session
+        admin_id = session.get('user_id')
+        
+        # Insert cảnh báo mới vào database
+        cur.execute('''
+            INSERT INTO thong_bao_admin 
+            (id_admin, bien_so_xe, noi_dung_thong_bao, muc_do_uu_tien, da_doc, ngay_tao)
+            VALUES (%s, %s, %s, %s, 0, NOW())
+        ''', (admin_id, bien_so, noi_dung, muc_do))
+        
+        warning_id = cur.lastrowid
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            'success': True, 
+            'message': 'Đã gửi cảnh báo thành công',
+            'warning_id': warning_id
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/mark-alert-processed', methods=['POST'])
+@login_required
+def mark_alert_as_processed():
+    """Đánh dấu cảnh báo AI đã được xử lý (đã gửi cảnh cáo)"""
+    try:
+        # Chỉ admin mới được đánh dấu
+        if session.get('role') != 'admin':
+            return jsonify({'success': False, 'message': 'Không có quyền truy cập'}), 403
+
+        data = request.get_json()
+        alert_id = data.get('alert_id')
+
+        if not alert_id:
+            return jsonify({'success': False, 'message': 'Thiếu alert_id'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        # Đánh dấu đã đọc (da_doc = 1)
+        cur.execute('UPDATE canh_bao_vi_pham SET da_doc = 1 WHERE id = %s', (alert_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Đã đánh dấu đã xử lý'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 

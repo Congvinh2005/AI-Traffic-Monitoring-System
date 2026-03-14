@@ -3862,7 +3862,7 @@ function loadWarningsData(page = 1) {
 
       const alerts = data.alerts;
       const startIdx = (data.page - 1) * data.per_page + 1;
-      
+
       tbody.innerHTML = alerts.map((w, i) => `
         <tr>
           <td>${startIdx + i}</td>
@@ -3873,7 +3873,7 @@ function loadWarningsData(page = 1) {
           <td><span class="status-badge ${w.is_read ? 'status-running' : 'status-stopped'}">${w.is_read ? 'Đã xử lý' : 'Chưa xử lý'}</span></td>
           <td>
             <div style="display:flex;gap:5px;">
-              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.vehicle_plate}')" style="padding:4px 8px;font-size:10px;">
+              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.vehicle_plate}', ${w.id})" style="padding:4px 8px;font-size:10px;">
                 <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
               </button>
               <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.vehicle_plate}','${w.type}','${w.video_path||''}')" style="padding:4px 8px;font-size:10px;">
@@ -3911,7 +3911,7 @@ function loadWarningsData(page = 1) {
           <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
           <td>
             <div style="display:flex;gap:5px;">
-              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}')" style="padding:4px 8px;font-size:10px;">
+              <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}', ${w.id || null})" style="padding:4px 8px;font-size:10px;">
                 <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
               </button>
               <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}','${w.typeLabel}','${w.video}')" style="padding:4px 8px;font-size:10px;">
@@ -3990,7 +3990,7 @@ function loadAdminAlertsData(page = 1) {
         <tr>
           <td>${startIdx + i}</td>
           <td><strong>${a.vehicle_plate || 'Không rõ'}</strong></td>
-          <td>${a.admin_name || 'Không rõ'}</td>
+          <td>${a.driver_name || 'Không rõ'}</td>
           <td>${a.message || ''}</td>
           <td><span class="status-badge ${a.priority === 'high' ? 'status-stopped' : 'status-running'}">${a.priority === 'high' ? 'Cao' : a.priority === 'medium' ? 'Trung bình' : 'Thấp'}</span></td>
           <td>${a.created_at ? new Date(a.created_at).toLocaleString('vi-VN') : ''}</td>
@@ -5447,16 +5447,18 @@ function callDriver(phone) {
 }
 
 let currentWarningPlate = '';
+let currentAlertId = null;
 
-function sendWarning(plate) {
+function sendWarning(plate, alertId = null) {
   currentWarningPlate = plate;
-  
+  currentAlertId = alertId;
+
   // Find vehicle info
   const vehicle = vehicles.find(v => v.plate === plate);
   const driverName = vehicle ? vehicle.driver : 'Không rõ';
   const phone = vehicle ? vehicle.phone : 'Không rõ';
   const location = vehicle ? vehicle.currentAddress : 'Không rõ';
-  
+
   const modal = document.createElement('div');
   modal.id = 'warningModal';
   modal.className = 'modal-overlay';
@@ -5500,9 +5502,9 @@ function sendWarning(plate) {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Focus textarea
   setTimeout(() => {
     document.getElementById('warningContent')?.focus();
@@ -5515,36 +5517,65 @@ function closeWarningModal() {
     modal.remove();
   }
   currentWarningPlate = '';
+  currentAlertId = null;
 }
 
 function submitWarning() {
   const content = document.getElementById('warningContent').value.trim();
-  
+
   if (!content) {
     showToast('warning', 'Thiếu thông tin', 'Vui lòng nhập nội dung cảnh cáo');
     return;
   }
-  
-  // Here you can add API call to save the warning to database
-  // Example:
-  // fetch('/api/send_warning', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     plate: currentWarningPlate,
-  //     content: content,
-  //     admin_id: 'admin'
-  //   })
-  // })
-  
-  showToast('success', 'Thành công', `Đã gửi cảnh báo đến xe ${currentWarningPlate}`);
-  closeWarningModal();
-  
-  // Log for debugging
-  console.log('Warning sent:', {
-    plate: currentWarningPlate,
-    content: content,
-    timestamp: new Date().toISOString()
+
+  // Gửi cảnh báo lên server
+  fetch('/api/send-warning', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      plate: currentWarningPlate,
+      content: content,
+      priority: 'high'  // Mặc định là high priority
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      // Nếu có alert_id, đánh dấu đã xử lý
+      if (currentAlertId) {
+        return fetch('/api/mark-alert-processed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alert_id: currentAlertId })
+        }).then(r => r.json());
+      }
+      return data;
+    }
+    return data;
+  })
+  .then(data => {
+    if (data.success) {
+      showToast('success', 'Thành công', `Đã gửi cảnh báo đến xe ${currentWarningPlate}`);
+      closeWarningModal();
+      
+      // Làm mới dữ liệu cảnh báo để cập nhật trạng thái
+      loadWarningsData(currentPage);
+      
+      // Làm mới tab "Báo cáo vi phạm" (admin alerts)
+      loadAdminAlertsData(adminAlertsCurrentPage);
+      
+      console.log('Warning sent:', {
+        plate: currentWarningPlate,
+        content: content,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      showToast('error', 'Lỗi', data.message || 'Không thể gửi cảnh báo');
+    }
+  })
+  .catch(err => {
+    console.error('Error sending warning:', err);
+    showToast('error', 'Lỗi', 'Không thể gửi cảnh báo. Vui lòng thử lại.');
   });
 }
 
