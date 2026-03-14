@@ -2585,7 +2585,7 @@ tr:hover {
         <span class="cam-label">Camera Tài Xế</span>
       </div>
       <video id="video-tai-xe" autoplay muted loop playsinline>
-        <source src="/py/video_input/ca_bin.mp4" type="video/mp4">
+        <source src="/recordings/ca_bin.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
         <i class="fa-solid fa-wifi"></i> Online
@@ -2598,7 +2598,7 @@ tr:hover {
         <span class="cam-label">Camera Trước</span>
       </div>
       <video id="video-truoc" autoplay muted loop playsinline>
-        <source src="/py/video_input/lech_lan.mp4" type="video/mp4">
+        <source src="/recordings/lech_lan.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
         <i class="fa-solid fa-wifi"></i> Online
@@ -2611,7 +2611,7 @@ tr:hover {
         <span class="cam-label">Camera Hành Khách</span>
       </div>
       <video id="video-hanh-khach" autoplay muted loop playsinline>
-        <source src="/py/video_input/passenger.mp4" type="video/mp4">
+        <source src="/recordings/passenger.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
         <i class="fa-solid fa-wifi"></i> Online
@@ -2624,7 +2624,7 @@ tr:hover {
         <span class="cam-label">Camera Lùi</span>
       </div>
       <video id="video-lui" autoplay muted loop playsinline>
-        <source src="/py/video_input/car1.mp4" type="video/mp4">
+        <source src="/recordings/car1.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
         <i class="fa-solid fa-wifi"></i> Online
@@ -2764,7 +2764,7 @@ tr:hover {
                   <i class="fa-solid fa-bell"></i>
                   <span>Cảnh báo</span>
                 </button>
-                <button class="btn-action btn-video" onclick="viewViolationVideo('{{ v.plate_number }}', 'Bình thường', '/py/video_input/car4.mp4')" title="Xem video vi phạm">
+                <button class="btn-action btn-video" onclick="viewViolationVideo('{{ v.plate_number }}', 'Bình thường', '/recordings/car4.mp4')" title="Xem video vi phạm">
                   <i class="fa-solid fa-circle-play"></i>
                   <span>Video</span>
                 </button>
@@ -5809,7 +5809,7 @@ const vehicles = {{ all_vehicles|default([], true)|tojson|safe }}.map(v => ({
   lng: v.lng || 105.8542,
   status: v.status === 'Đang chạy' ? 1 : 0,
   imgVehicle: v.image ? '/static/images/' + v.image : 'https://via.placeholder.com/300x150?text=Vehicle',
-  videoDashcam: '/py/video_input/car1.mp4',
+  videoDashcam: '/recordings/car1.mp4',
   imgDriver: v.driver_image ? '/static/images/' + v.driver_image : 'https://randomuser.me/api/portraits/lego/1.jpg'
 }));
 
@@ -6159,7 +6159,7 @@ function updateCameraGrid(vehicleId) {
           const video = document.getElementById(videoId);
           if (video && data.cameras[viTri]) {
             const source = video.querySelector('source');
-            const newSrc = `/py/video_input/${data.cameras[viTri].video}`;
+            const newSrc = `/recordings/${data.cameras[viTri].video}`;
             
             // Chỉ cập nhật nếu source khác nhau để tránh giật lag
             if (!source.src.endsWith(newSrc)) {

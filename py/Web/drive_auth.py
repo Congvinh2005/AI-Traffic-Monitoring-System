@@ -31,6 +31,7 @@ from models import (
     
     # Video Recording
     video_writer, is_recording, recording_start_time, fps, frame_width, frame_height, video_codec,
+    current_video_filename, current_video_path, current_video_cam_id,
     
     # AI Models
     detector, predictor, phone_mau, seatbelt_mau, bienbao_model, model_vehicle, model_lane, model_hole,
@@ -950,12 +951,19 @@ def video_vacham():
     return Response(collision_monitor(vehicle_id),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/py/video_input/<path:filename>')
+@app.route('/recordings/<path:filename>')
 def serve_video(filename):
-    """Serve video files cho cam hành trình"""
-    video_path = os.path.join(os.path.dirname(__file__), '..', 'video_input', filename)
-    if os.path.exists(video_path):
-        return send_file(video_path)
+    """Serve video files from recordings or video_input directory"""
+    # 1. Check in root recordings directory (absolute path)
+    recordings_path = os.path.join(os.getcwd(), 'recordings', filename)
+    if os.path.exists(recordings_path):
+        return send_file(recordings_path)
+    
+    # 2. Fallback to py/video_input directory (absolute path)
+    video_input_path = os.path.join(os.getcwd(), 'py', 'video_input', filename)
+    if os.path.exists(video_input_path):
+        return send_file(video_input_path)
+        
     return "Video not found", 404
 
 # ========================================
@@ -1101,33 +1109,109 @@ def set_mode():
 @app.route('/start_recording')
 @login_required
 def start_recording():
-    global video_writer, is_recording, recording_start_time
+    import models
+    from models import (
+        video_writer, is_recording, recording_start_time,
+        current_video_filename, current_video_path, current_video_cam_id,
+        video_codec, fps, frame_width, frame_height
+    )
 
-    if not is_recording:
+    if not models.is_recording:
+        section_id = request.args.get('section_id', 'driver')
+        
+        # Map section_id to camera_id from camera_giam_sat table
+        # 1: Driver, 2: Road/Collision, 3: Sign, 4: Hanoi, 5: Thanh Xuan
+        cam_mapping = {
+            'driver': 1,
+            'vacham': 2,
+            'traffic': 3,
+            'sign': 4 # For traffic flow, using Hanoi trạm as default or based on location
+        }
+        
+        models.current_video_cam_id = cam_mapping.get(section_id, 1)
+        
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'recordings/output_{timestamp}.mp4'
+        models.current_video_filename = f'output_{timestamp}.mp4'
+        models.current_video_path = f'recordings/{models.current_video_filename}'
 
-        video_writer = cv2.VideoWriter(
-            filename,
+        # Ensure directory exists
+        if not os.path.exists('recordings'):
+            os.makedirs('recordings')
+
+        models.video_writer = cv2.VideoWriter(
+            models.current_video_path,
             video_codec,
             fps,
             (frame_width, frame_height)
         )
 
-        is_recording = True
-        recording_start_time = time.time()
-        return "Recording started"
+        models.is_recording = True
+        models.recording_start_time = datetime.now()
+        return f"Recording started for {section_id}"
     return "Already recording"
 
 @app.route('/stop_recording')
 @login_required
 def stop_recording():
-    global is_recording, video_writer
+    import models
+    from models import (
+        is_recording, video_writer, recording_start_time,
+        current_video_filename, current_video_path, current_video_cam_id
+    )
 
-    if is_recording and video_writer is not None:
-        video_writer.release()
-        video_writer = None
-        is_recording = False
+    if models.is_recording and models.video_writer is not None:
+        models.video_writer.release()
+        models.video_writer = None
+        models.is_recording = False
+        
+        end_time = datetime.now()
+        start_time = models.recording_start_time
+        file_path = models.current_video_path
+        file_name = models.current_video_filename
+        cam_id = models.current_video_cam_id
+        
+        # Calculate file size
+        file_size = 0
+        if os.path.exists(file_path):
+            file_size = os.path.getsize(file_path)
+            
+        # Save to database and link to violation
+        try:
+            conn = get_db_connection()
+            if conn:
+                cur = conn.cursor()
+                
+                # 1. Insert into video_ghi_hinh
+                # Format path to be accessible via /recordings/ route
+                web_path = f"/recordings/{file_name}"
+                cur.execute("""
+                    INSERT INTO video_ghi_hinh (id_camera, ten_file_video, duong_dan_file, thoi_gian_bat_dau, thoi_gian_ket_thuc, kich_thuoc_file)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (cam_id, file_name, web_path, start_time, end_time, file_size))
+                
+                video_id = cur.lastrowid
+                
+                # 2. Link all violations for the current vehicle/driver within the recording time range
+                vehicle_id = session.get('vehicle_id') or models.current_monitoring_vehicle_id
+                
+                if vehicle_id:
+                    # Link violations from 10 seconds before start until now
+                    link_start_time = start_time - timedelta(seconds=10)
+                    cur.execute("""
+                        UPDATE canh_bao_vi_pham 
+                        SET id_video_ghi_hinh = %s 
+                        WHERE id_phuong_tien = %s 
+                        AND thoi_gian_vi_pham BETWEEN %s AND %s
+                    """, (video_id, vehicle_id, link_start_time, end_time))
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                return f"Recording stopped and saved (ID: {video_id})"
+        except Exception as e:
+            print(f"Error saving recording to DB: {e}")
+            return f"Recording stopped but error saving to DB: {str(e)}"
+
         return "Recording stopped"
     return "Not recording"
 

@@ -1852,7 +1852,7 @@
       }
 
       function startRecording(sectionId) {
-        fetch("/start_recording")
+        fetch(`/start_recording?section_id=${sectionId}`)
           .then((response) => response.text())
           .then((data) => {
             console.log(data);

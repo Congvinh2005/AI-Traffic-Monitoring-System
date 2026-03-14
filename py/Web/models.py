@@ -142,6 +142,9 @@ def can_play_warning(warning_type):
 video_writer = None
 is_recording = False
 recording_start_time = None
+current_video_filename = None
+current_video_path = None
+current_video_cam_id = None
 fps = 30.0
 frame_width = 1280
 frame_height = 720

@@ -1523,13 +1523,19 @@ def video_vacham():
     return Response(collision_monitor(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/py/video_input/<path:filename>')
+@app.route('/recordings/<path:filename>')
 def serve_video(filename):
-    """Serve video files cho cam hành trình"""
-    # Video nam o thu muc py/video_input/, khong phai py/Web/video_input/
-    video_path = os.path.join(os.path.dirname(__file__), '..', 'video_input', filename)
-    if os.path.exists(video_path):
-        return send_file(video_path)
+    """Serve video files from recordings or video_input directory"""
+    # 1. Check in root recordings directory (absolute path)
+    recordings_path = os.path.join(os.getcwd(), 'recordings', filename)
+    if os.path.exists(recordings_path):
+        return send_file(recordings_path)
+    
+    # 2. Fallback to py/video_input directory (absolute path)
+    video_input_path = os.path.join(os.getcwd(), 'py', 'video_input', filename)
+    if os.path.exists(video_input_path):
+        return send_file(video_input_path)
+        
     return "Video not found", 404
 
 @app.route('/get_warnings')

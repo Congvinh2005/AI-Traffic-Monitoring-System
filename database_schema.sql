@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th3 14, 2026 lúc 10:09 AM
+-- Thời gian đã tạo: Th3 14, 2026 lúc 04:24 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -50,6 +50,55 @@ INSERT INTO `camera_giam_sat` (`id`, `ten_camera`, `vi_tri_lap_dat`, `id_tuyen_d
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `camera_xe`
+--
+
+CREATE TABLE `camera_xe` (
+  `id` int(11) NOT NULL,
+  `id_phuong_tien` int(11) NOT NULL,
+  `ten_camera` varchar(100) NOT NULL,
+  `vi_tri` enum('tai_xe','truoc','hanh_khach','lui') NOT NULL,
+  `video_file` varchar(255) NOT NULL COMMENT 'Tên file video trong thư mục video_input',
+  `trang_thai` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `camera_xe`
+--
+
+INSERT INTO `camera_xe` (`id`, `id_phuong_tien`, `ten_camera`, `vi_tri`, `video_file`, `trang_thai`) VALUES
+(1, 1, 'Camera Tài Xế', 'tai_xe', 'truoc1.mp4', 1),
+(2, 1, 'Camera Trước', 'truoc', 'truoc2.mp4', 1),
+(3, 1, 'Camera Hành Khách', 'hanh_khach', 'trongxe1.mp4', 1),
+(4, 1, 'Camera Lùi', 'lui', 'sau1.mp4', 1),
+(5, 2, 'Camera Tài Xế', 'tai_xe', 'truoc2.mp4', 1),
+(6, 2, 'Camera Trước', 'truoc', 'truoc3.mp4', 1),
+(7, 2, 'Camera Hành Khách', 'hanh_khach', 'trongxe2.mp4', 1),
+(8, 2, 'Camera Lùi', 'lui', 'sau2.mp4', 1),
+(9, 3, 'Camera Tài Xế', 'tai_xe', 'truoc3.mp4', 1),
+(10, 3, 'Camera Trước', 'truoc', 'truoc4.mp4', 1),
+(11, 3, 'Camera Hành Khách', 'hanh_khach', 'trongxe3.mp4', 1),
+(12, 3, 'Camera Lùi', 'lui', 'sau2.mp4', 1),
+(13, 4, 'Camera Tài Xế', 'tai_xe', 'truoc4.mp4', 1),
+(14, 4, 'Camera Trước', 'truoc', 'truoc1.mp4', 1),
+(15, 4, 'Camera Hành Khách', 'hanh_khach', 'trongxe4.mp4', 1),
+(16, 4, 'Camera Lùi', 'lui', 'sau1.mp4', 1),
+(17, 5, 'Camera Tài Xế', 'tai_xe', 'truoc3.mp4', 1),
+(18, 5, 'Camera Trước', 'truoc', 'truoc2.mp4', 1),
+(19, 5, 'Camera Hành Khách', 'hanh_khach', 'trongxe5.mp4', 1),
+(20, 5, 'Camera Lùi', 'lui', 'sau2.mp4', 1),
+(21, 6, 'Camera Tài Xế', 'tai_xe', 'truoc2.mp4', 1),
+(22, 6, 'Camera Trước', 'truoc', 'truoc3.mp4', 1),
+(23, 6, 'Camera Hành Khách', 'hanh_khach', 'trongxe1.mp4', 1),
+(24, 6, 'Camera Lùi', 'lui', 'sau1.mp4', 1),
+(25, 7, 'Camera Tài Xế', 'tai_xe', 'truoc1.mp4', 1),
+(26, 7, 'Camera Trước', 'truoc', 'truoc4.mp4', 1),
+(27, 7, 'Camera Hành Khách', 'hanh_khach', 'trongxe3.mp4', 1),
+(28, 7, 'Camera Lùi', 'lui', 'sau2.mp4', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `canh_bao_vi_pham`
 --
 
@@ -70,28 +119,27 @@ CREATE TABLE `canh_bao_vi_pham` (
 --
 
 INSERT INTO `canh_bao_vi_pham` (`id`, `loai_vi_pham`, `noi_dung_vi_pham`, `muc_do`, `thoi_gian_vi_pham`, `id_phuong_tien`, `id_tai_xe`, `id_video_ghi_hinh`, `da_doc`) VALUES
-(1, 'eye', 'Tài xế nhắm mắt quá lâu', 'critical', '2026-03-12 10:15:00', 1, 1, 1, 0),
-(2, 'phone', 'Phát hiện dùng điện thoại', 'critical', '2026-03-12 11:20:30', 2, 2, 3, 1),
+(1, 'eye', 'Tài xế nhắm mắt quá lâu', 'critical', '2026-03-12 10:15:00', 1, 1, NULL, 0),
+(2, 'phone', 'Phát hiện dùng điện thoại', 'critical', '2026-03-12 11:20:30', 2, 2, NULL, 1),
 (3, 'yawn', 'Tài xế đang ngáp ngủ', 'warning', '2026-03-12 12:05:15', 3, 3, NULL, 0),
 (4, 'seatbelt', 'Không đeo dây an toàn', 'critical', '2026-03-12 14:10:00', 4, 4, NULL, 1),
-(5, 'collision', 'Cảnh báo va chạm phía trước', 'critical', '2026-03-12 16:46:00', 6, 6, 2, 0),
-(6, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-13 13:26:07', NULL, NULL, NULL, 0),
-(7, 'hand', 'CẢNH BÁO: KHÔNG CẦM VÔ LĂNG!', 'warning', '2026-03-13 13:26:11', NULL, NULL, NULL, 0),
-(8, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-13 13:26:16', NULL, NULL, NULL, 0),
-(9, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-13 13:29:27', NULL, NULL, NULL, 0),
+(5, 'collision', 'Cảnh báo va chạm phía trước', 'critical', '2026-03-12 16:46:00', 6, 6, NULL, 0),
 (33, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 15:57:00', 3, 3, NULL, 0),
 (34, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 15:57:06', 3, 3, NULL, 0),
 (42, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 16:04:40', 3, 3, NULL, 0),
-(43, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 16:05:13', NULL, NULL, NULL, 0),
-(44, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 16:05:14', NULL, NULL, NULL, 0),
-(45, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 16:05:14', NULL, NULL, NULL, 0),
-(46, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-14 16:08:48', NULL, NULL, NULL, 0),
-(47, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:51', NULL, NULL, NULL, 0),
-(48, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:51', NULL, NULL, NULL, 0),
-(49, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:51', NULL, NULL, NULL, 0),
-(50, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:53', NULL, NULL, NULL, 0),
-(51, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:55', NULL, NULL, NULL, 0),
-(52, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 16:08:57', NULL, NULL, NULL, 0);
+(54, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 21:18:01', 5, 5, NULL, 1),
+(55, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:35', 5, 5, NULL, 0),
+(56, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:36', 5, 5, NULL, 0),
+(57, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 21:21:40', 5, 5, NULL, 0),
+(60, 'eye', 'Tài xế đang nhắm mắt quá lâu!', 'critical', '2026-03-14 21:50:08', 5, 5, NULL, 0),
+(61, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:40', 4, 4, NULL, 0),
+(62, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:43', 4, 4, NULL, 0),
+(63, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 22:13:47', 4, 4, NULL, 0),
+(67, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 22:19:35', 3, 3, NULL, 0),
+(73, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-14 22:19:55', 3, 3, NULL, 0),
+(74, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:02', 3, 3, NULL, 0),
+(75, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:10', 3, 3, NULL, 0),
+(76, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-14 22:20:10', 3, 3, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -211,7 +259,9 @@ CREATE TABLE `thong_bao_admin` (
 INSERT INTO `thong_bao_admin` (`id`, `id_admin`, `bien_so_xe`, `noi_dung_thong_bao`, `muc_do_uu_tien`, `da_doc`, `ngay_tao`, `ngay_doc`) VALUES
 (1, 1, '29A-111.11', 'Đề nghị tài xế Đức dừng xe ở trạm nghỉ tiếp theo, phát hiện mệt mỏi.', 'high', 0, '2026-03-12 03:20:00', NULL),
 (2, 1, '29B-222.22', 'Cảnh cáo: Không được sử dụng điện thoại lúc đang lái xe.', 'high', 1, '2026-03-12 04:25:00', NULL),
-(3, 1, '15B-555.55', 'Lưu ý giữ khoảng cách an toàn với xe phía trước.', 'medium', 0, '2026-03-12 08:00:00', NULL);
+(3, 1, '15B-555.55', 'Lưu ý giữ khoảng cách an toàn với xe phía trước.', 'medium', 0, '2026-03-12 08:00:00', NULL),
+(4, 1, 'null', 'tập trung vào', 'high', 0, '2026-03-14 14:14:34', NULL),
+(5, 1, '15B-555.55', 'tỉnh ngủ đi em', 'high', 1, '2026-03-14 14:18:25', '2026-03-14 14:18:51');
 
 -- --------------------------------------------------------
 
@@ -304,15 +354,6 @@ CREATE TABLE `video_ghi_hinh` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `video_ghi_hinh`
---
-
-INSERT INTO `video_ghi_hinh` (`id`, `id_camera`, `ten_file_video`, `duong_dan_file`, `thoi_gian_bat_dau`, `thoi_gian_ket_thuc`, `kich_thuoc_file`) VALUES
-(1, 1, 'output_20260312_101500.mp4', 'recordings/output_20260312_101500.mp4', '2026-03-12 10:15:00', '2026-03-12 10:17:00', 15400030),
-(2, 2, 'output_20260312_164500.mp4', 'recordings/output_20260312_164500.mp4', '2026-03-12 16:45:00', '2026-03-12 16:48:30', 25611090),
-(3, 1, 'output_20260312_112030.mp4', 'recordings/output_20260312_112030.mp4', '2026-03-12 11:20:30', '2026-03-12 11:21:00', 5800045);
-
---
 -- Chỉ mục cho các bảng đã đổ
 --
 
@@ -322,6 +363,13 @@ INSERT INTO `video_ghi_hinh` (`id`, `id_camera`, `ten_file_video`, `duong_dan_fi
 ALTER TABLE `camera_giam_sat`
   ADD PRIMARY KEY (`id`),
   ADD KEY `id_tuyen_duong` (`id_tuyen_duong`);
+
+--
+-- Chỉ mục cho bảng `camera_xe`
+--
+ALTER TABLE `camera_xe`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_phuong_tien` (`id_phuong_tien`);
 
 --
 -- Chỉ mục cho bảng `canh_bao_vi_pham`
@@ -395,10 +443,16 @@ ALTER TABLE `camera_giam_sat`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT cho bảng `camera_xe`
+--
+ALTER TABLE `camera_xe`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+
+--
 -- AUTO_INCREMENT cho bảng `canh_bao_vi_pham`
 --
 ALTER TABLE `canh_bao_vi_pham`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
 
 --
 -- AUTO_INCREMENT cho bảng `nguoi_dung`
@@ -422,7 +476,7 @@ ALTER TABLE `tai_xe`
 -- AUTO_INCREMENT cho bảng `thong_bao_admin`
 --
 ALTER TABLE `thong_bao_admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `tuyen_duong_path`
@@ -434,7 +488,7 @@ ALTER TABLE `tuyen_duong_path`
 -- AUTO_INCREMENT cho bảng `video_ghi_hinh`
 --
 ALTER TABLE `video_ghi_hinh`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
@@ -445,6 +499,12 @@ ALTER TABLE `video_ghi_hinh`
 --
 ALTER TABLE `camera_giam_sat`
   ADD CONSTRAINT `camera_giam_sat_ibfk_1` FOREIGN KEY (`id_tuyen_duong`) REFERENCES `tuyen_duong` (`id`) ON DELETE SET NULL;
+
+--
+-- Các ràng buộc cho bảng `camera_xe`
+--
+ALTER TABLE `camera_xe`
+  ADD CONSTRAINT `camera_xe_ibfk_1` FOREIGN KEY (`id_phuong_tien`) REFERENCES `phuong_tien` (`id`) ON DELETE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `canh_bao_vi_pham`
@@ -484,64 +544,7 @@ ALTER TABLE `tuyen_duong_path`
 --
 ALTER TABLE `video_ghi_hinh`
   ADD CONSTRAINT `video_ghi_hinh_ibfk_1` FOREIGN KEY (`id_camera`) REFERENCES `camera_giam_sat` (`id`) ON DELETE SET NULL;
-
--- --------------------------------------------------------
---
--- Cấu trúc bảng `camera_xe` - Camera gắn trên từng phương tiện
---
-CREATE TABLE IF NOT EXISTS `camera_xe` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `id_phuong_tien` int(11) NOT NULL,
-  `ten_camera` varchar(100) NOT NULL,
-  `vi_tri` enum('tai_xe','truoc','hanh_khach','lui') NOT NULL,
-  `video_file` varchar(255) NOT NULL COMMENT 'Tên file video trong thư mục video_input',
-  `trang_thai` tinyint(1) DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `id_phuong_tien` (`id_phuong_tien`),
-  CONSTRAINT `camera_xe_ibfk_1` FOREIGN KEY (`id_phuong_tien`) REFERENCES `phuong_tien` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dữ liệu cho bảng `camera_xe`
--- Xe 1: 29A-111.11
-INSERT INTO `camera_xe` (`id_phuong_tien`, `ten_camera`, `vi_tri`, `video_file`) VALUES
-(1, 'Camera Tài Xế',    'tai_xe',        'truoc1.mp4'),
-(1, 'Camera Trước',     'truoc',         'truoc2.mp4'),
-(1, 'Camera Hành Khách','hanh_khach',    'trongxe1.mp4'),
-(1, 'Camera Lùi',       'lui',           'sau1.mp4'),
--- Xe 2: 29B-222.22
-(2, 'Camera Tài Xế',    'tai_xe',        'truoc2.mp4'),
-(2, 'Camera Trước',     'truoc',         'truoc3.mp4'),
-(2, 'Camera Hành Khách','hanh_khach',    'trongxe2.mp4'),
-(2, 'Camera Lùi',       'lui',           'sau2.mp4'),
--- Xe 3: 30E-333.33
-(3, 'Camera Tài Xế',    'tai_xe',        'truoc3.mp4'),
-(3, 'Camera Trước',     'truoc',         'truoc4.mp4'),
-(3, 'Camera Hành Khách','hanh_khach',    'trongxe3.mp4'),
-(3, 'Camera Lùi',       'lui',           'sau2.mp4'),
--- Xe 4: 29H-444.44
-(4, 'Camera Tài Xế',    'tai_xe',        'truoc4.mp4'),
-(4, 'Camera Trước',     'truoc',         'truoc1.mp4'),
-(4, 'Camera Hành Khách','hanh_khach',    'trongxe4.mp4'),
-(4, 'Camera Lùi',       'lui',           'sau1.mp4'),
--- Xe 5: 15B-555.55
-(5, 'Camera Tài Xế',    'tai_xe',        'truoc3.mp4'),
-(5, 'Camera Trước',     'truoc',         'truoc2.mp4'),
-(5, 'Camera Hành Khách','hanh_khach',    'trongxe5.mp4'),
-(5, 'Camera Lùi',       'lui',           'sau2.mp4'),
--- Xe 6: 30G-666.66
-(6, 'Camera Tài Xế',    'tai_xe',        'truoc2.mp4'),
-(6, 'Camera Trước',     'truoc',         'truoc3.mp4'),
-(6, 'Camera Hành Khách','hanh_khach',    'trongxe1.mp4'),
-(6, 'Camera Lùi',       'lui',           'sau1.mp4'),
--- Xe 7: 29LD-777.77
-(7, 'Camera Tài Xế',    'tai_xe',        'truoc1.mp4'),
-(7, 'Camera Trước',     'truoc',         'truoc4.mp4'),
-(7, 'Camera Hành Khách','hanh_khach',    'trongxe3.mp4'),
-(7, 'Camera Lùi',       'lui',           'sau2.mp4');
-
 COMMIT;
-
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
