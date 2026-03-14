@@ -754,6 +754,50 @@ def mark_warning_as_read(warning_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
+@app.route('/api/vehicle-cameras/<int:vehicle_id>')
+@login_required
+def get_vehicle_cameras(vehicle_id):
+    """Lấy danh sách camera video của xe theo ID"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT cx.vi_tri, cx.ten_camera, cx.video_file, p.bien_so, t.ho_ten as driver_name
+            FROM camera_xe cx
+            JOIN phuong_tien p ON cx.id_phuong_tien = p.id
+            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+            WHERE cx.id_phuong_tien = %s AND cx.trang_thai = 1
+            ORDER BY FIELD(cx.vi_tri, 'tai_xe', 'truoc', 'hanh_khach', 'lui')
+        ''', (vehicle_id,))
+        cameras = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if not cameras:
+            return jsonify({
+                'success': True, 'vehicle_id': vehicle_id, 'plate': '', 'driver': '',
+                'cameras': {
+                    'tai_xe': {'ten': 'Camera Tài Xế', 'video': 'ca_bin.mp4'},
+                    'truoc': {'ten': 'Camera Trước', 'video': 'lech_lan.mp4'},
+                    'hanh_khach': {'ten': 'Camera Hành Khách', 'video': 'passenger.mp4'},
+                    'lui': {'ten': 'Camera Lùi', 'video': 'car1.mp4'}
+                }
+            })
+
+        cam_dict = {}
+        plate = ''
+        driver = ''
+        for cam in cameras:
+            plate = cam['bien_so']
+            driver = cam['driver_name'] or ''
+            cam_dict[cam['vi_tri']] = {'ten': cam['ten_camera'], 'video': cam['video_file']}
+
+        return jsonify({'success': True, 'vehicle_id': vehicle_id, 'plate': plate, 'driver': driver, 'cameras': cam_dict})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
 @app.route('/api/send-warning', methods=['POST'])
 @login_required
 def send_warning_to_vehicle():

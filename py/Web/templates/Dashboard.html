@@ -2577,14 +2577,14 @@ tr:hover {
     </div>
   </div>
 
-  <div class="camera-grid-full">
+  <div class="camera-grid-full" id="cameraGrid">
 
-    <div class="camera-item">
+    <div class="camera-item" data-vi-tri="tai_xe">
       <div class="camera-overlay">
         <span class="live-indicator"></span>
-        Camera Tài Xế
+        <span class="cam-label">Camera Tài Xế</span>
       </div>
-      <video autoplay muted loop playsinline>
+      <video id="video-tai-xe" autoplay muted loop playsinline>
         <source src="/py/video_input/ca_bin.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
@@ -2592,12 +2592,12 @@ tr:hover {
       </div>
     </div>
 
-    <div class="camera-item">
+    <div class="camera-item" data-vi-tri="truoc">
       <div class="camera-overlay">
         <span class="live-indicator"></span>
-        Camera Trước
+        <span class="cam-label">Camera Trước</span>
       </div>
-      <video autoplay muted loop playsinline>
+      <video id="video-truoc" autoplay muted loop playsinline>
         <source src="/py/video_input/lech_lan.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
@@ -2605,12 +2605,12 @@ tr:hover {
       </div>
     </div>
 
-    <div class="camera-item">
+    <div class="camera-item" data-vi-tri="hanh_khach">
       <div class="camera-overlay">
         <span class="live-indicator"></span>
-        Camera Khách
+        <span class="cam-label">Camera Hành Khách</span>
       </div>
-      <video autoplay muted loop playsinline>
+      <video id="video-hanh-khach" autoplay muted loop playsinline>
         <source src="/py/video_input/passenger.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
@@ -2618,12 +2618,12 @@ tr:hover {
       </div>
     </div>
 
-    <div class="camera-item">
+    <div class="camera-item" data-vi-tri="lui">
       <div class="camera-overlay">
         <span class="live-indicator"></span>
-        Camera Lùi
+        <span class="cam-label">Camera Lùi</span>
       </div>
-      <video autoplay muted loop playsinline>
+      <video id="video-lui" autoplay muted loop playsinline>
         <source src="/py/video_input/car1.mp4" type="video/mp4">
       </video>
       <div class="camera-status">
@@ -2659,7 +2659,7 @@ tr:hover {
   <div class="section-header" style="margin-bottom: 15px;">
     <div class="section-title">
       <i class="fa-solid fa-truck"></i>
-      <span>Danh sách chuyến đang chạy</span>
+      <span>Danh sách chuyến</span>
     </div>
     <button class="action-btn" onclick="exportTable()">
       <i class="fa-solid fa-file-export"></i> Xuất Excel
@@ -6118,10 +6118,58 @@ function findNearestVehicle() {
 function focusVehicle(id) {
   const vehicle = vehicles.find(v => v.id === id);
   if (vehicle) {
-    map.flyTo([vehicle.lat, vehicle.lng], 16);
-    markers[id].openPopup();
-    showToast('success', 'Đã tìm thấy', `Xe ${vehicle.plate} - Tài xế: ${vehicle.driver}`);
+    if (map) {
+      map.flyTo([vehicle.lat, vehicle.lng], 16);
+      if (markers && markers[id]) markers[id].openPopup();
+    }
+    showToast('success', 'Đã chọn xe', `Xe: ${vehicle.plate} - Tài xế: ${vehicle.driver}`);
+    
+    // Cập nhật camera grid
+    updateCameraGrid(id);
   }
+}
+
+function updateCameraGrid(vehicleId) {
+  const cameraGrid = document.getElementById('cameraGrid');
+  if (!cameraGrid) return;
+
+  // Gọi API lấy dữ liệu camera của xe
+  fetch(`/api/vehicle-cameras/${vehicleId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.cameras) {
+        console.log('Đã cập nhật camera cho xe:', data.plate);
+        
+        const camMapping = {
+          'tai_xe': 'video-tai-xe',
+          'truoc': 'video-truoc',
+          'hanh_khach': 'video-hanh-khach',
+          'lui': 'video-lui'
+        };
+
+        for (const [viTri, videoId] of Object.entries(camMapping)) {
+          const video = document.getElementById(videoId);
+          if (video && data.cameras[viTri]) {
+            const source = video.querySelector('source');
+            const newSrc = `/py/video_input/${data.cameras[viTri].video}`;
+            
+            // Chỉ cập nhật nếu source khác nhau để tránh giật lag
+            if (!source.src.endsWith(newSrc)) {
+              source.src = newSrc;
+              video.load();
+              video.play().catch(e => console.warn('Lỗi tự động phát video:', e));
+            }
+            
+            // Cập nhật nhãn camera (nếu có trong dữ liệu)
+            const camLabel = video.parentElement.querySelector('.cam-label');
+            if (camLabel) {
+              camLabel.textContent = data.cameras[viTri].ten || camLabel.textContent;
+            }
+          }
+        }
+      }
+    })
+    .catch(err => console.error('Lỗi khi tải camera xe:', err));
 }
 
 // ==================== AI ALERTS ====================

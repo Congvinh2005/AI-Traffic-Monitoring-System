@@ -484,7 +484,64 @@ ALTER TABLE `tuyen_duong_path`
 --
 ALTER TABLE `video_ghi_hinh`
   ADD CONSTRAINT `video_ghi_hinh_ibfk_1` FOREIGN KEY (`id_camera`) REFERENCES `camera_giam_sat` (`id`) ON DELETE SET NULL;
+
+-- --------------------------------------------------------
+--
+-- Cấu trúc bảng `camera_xe` - Camera gắn trên từng phương tiện
+--
+CREATE TABLE IF NOT EXISTS `camera_xe` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_phuong_tien` int(11) NOT NULL,
+  `ten_camera` varchar(100) NOT NULL,
+  `vi_tri` enum('tai_xe','truoc','hanh_khach','lui') NOT NULL,
+  `video_file` varchar(255) NOT NULL COMMENT 'Tên file video trong thư mục video_input',
+  `trang_thai` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `id_phuong_tien` (`id_phuong_tien`),
+  CONSTRAINT `camera_xe_ibfk_1` FOREIGN KEY (`id_phuong_tien`) REFERENCES `phuong_tien` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dữ liệu cho bảng `camera_xe`
+-- Xe 1: 29A-111.11
+INSERT INTO `camera_xe` (`id_phuong_tien`, `ten_camera`, `vi_tri`, `video_file`) VALUES
+(1, 'Camera Tài Xế',    'tai_xe',        'truoc1.mp4'),
+(1, 'Camera Trước',     'truoc',         'truoc2.mp4'),
+(1, 'Camera Hành Khách','hanh_khach',    'trongxe1.mp4'),
+(1, 'Camera Lùi',       'lui',           'sau1.mp4'),
+-- Xe 2: 29B-222.22
+(2, 'Camera Tài Xế',    'tai_xe',        'truoc2.mp4'),
+(2, 'Camera Trước',     'truoc',         'truoc3.mp4'),
+(2, 'Camera Hành Khách','hanh_khach',    'trongxe2.mp4'),
+(2, 'Camera Lùi',       'lui',           'sau2.mp4'),
+-- Xe 3: 30E-333.33
+(3, 'Camera Tài Xế',    'tai_xe',        'truoc3.mp4'),
+(3, 'Camera Trước',     'truoc',         'truoc4.mp4'),
+(3, 'Camera Hành Khách','hanh_khach',    'trongxe3.mp4'),
+(3, 'Camera Lùi',       'lui',           'sau2.mp4'),
+-- Xe 4: 29H-444.44
+(4, 'Camera Tài Xế',    'tai_xe',        'truoc4.mp4'),
+(4, 'Camera Trước',     'truoc',         'truoc1.mp4'),
+(4, 'Camera Hành Khách','hanh_khach',    'trongxe4.mp4'),
+(4, 'Camera Lùi',       'lui',           'sau1.mp4'),
+-- Xe 5: 15B-555.55
+(5, 'Camera Tài Xế',    'tai_xe',        'truoc3.mp4'),
+(5, 'Camera Trước',     'truoc',         'truoc2.mp4'),
+(5, 'Camera Hành Khách','hanh_khach',    'trongxe5.mp4'),
+(5, 'Camera Lùi',       'lui',           'sau2.mp4'),
+-- Xe 6: 30G-666.66
+(6, 'Camera Tài Xế',    'tai_xe',        'truoc2.mp4'),
+(6, 'Camera Trước',     'truoc',         'truoc3.mp4'),
+(6, 'Camera Hành Khách','hanh_khach',    'trongxe1.mp4'),
+(6, 'Camera Lùi',       'lui',           'sau1.mp4'),
+-- Xe 7: 29LD-777.77
+(7, 'Camera Tài Xế',    'tai_xe',        'truoc1.mp4'),
+(7, 'Camera Trước',     'truoc',         'truoc4.mp4'),
+(7, 'Camera Hành Khách','hanh_khach',    'trongxe3.mp4'),
+(7, 'Camera Lùi',       'lui',           'sau2.mp4');
+
 COMMIT;
+
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
