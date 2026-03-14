@@ -2743,7 +2743,17 @@ tr:hover {
                 <span class="status-badge status-offline">Offline</span>
               {% endif %}
             </td>
-            <td><span class="violation-badge">✅ Bình thường</span></td>
+            <td>
+              {% if v.violations_count > 0 %}
+                <span class="violation-badge" style="background: rgba(255, 82, 82, 0.15); color: var(--danger);">
+                  ⚠️ {{ v.violations_count }} vi phạm
+                </span>
+              {% else %}
+                <span class="violation-badge" style="background: rgba(0, 200, 83, 0.15); color: var(--success);">
+                  ✅ Bình thường
+                </span>
+              {% endif %}
+            </td>
             <td>
               {% set score = v.score|default(0, true)|float %}
               {% if score >= 90 %}
@@ -3905,12 +3915,14 @@ function loadWarningsData(page = 1) {
         updatePagination(0, 0, 0);
         return;
       }
-      tbody.innerHTML = warningsData.map((w, i) => `
+      tbody.innerHTML = warningsData.map((w, i) => {
+        const violationName = getViolationTypeName(w.type) || w.typeLabel || 'Không rõ';
+        return `
         <tr>
           <td>${i + 1}</td>
           <td><strong>${w.plate || 'Không rõ'}</strong></td>
           <td>${w.driver || 'Không rõ'}</td>
-          <td>${w.typeLabel || 'Không rõ'}</td>
+          <td>${violationName}</td>
           <td>${w.time || ''}</td>
           <td><span class="status-badge ${w.status === 'pending' ? 'status-stopped' : 'status-running'}">${w.status === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}</span></td>
           <td>
@@ -3918,13 +3930,13 @@ function loadWarningsData(page = 1) {
               <button class="btn btn-action btn-alert" onclick="sendWarning('${w.plate}', ${w.id || null})" style="padding:4px 8px;font-size:10px;">
                 <i class="fa-solid fa-triangle-exclamation"></i> Cảnh cáo
               </button>
-              <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}','${w.typeLabel}','${w.video}')" style="padding:4px 8px;font-size:10px;">
+              <button class="btn btn-action btn-video" onclick="viewViolationVideo('${w.plate}','${w.type}','${w.video}')" style="padding:4px 8px;font-size:10px;">
                 <i class="fa-solid fa-circle-play"></i> Video
               </button>
             </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
       const pendingCount = warningsData.filter(w => w.status === 'pending').length;
       document.getElementById('warningBadge').textContent = pendingCount;
     });
@@ -5589,6 +5601,21 @@ function viewReport(plate) {
 
 let currentVideoModal = null;
 
+function getViolationTypeName(type) {
+  const violationNames = {
+    'eye': 'Nhắm mắt quá lâu',
+    'yawn': 'Ngáp ngủ',
+    'head': 'Mất tập trung',
+    'phone': 'Dùng điện thoại',
+    'seatbelt': 'Không đeo dây an toàn',
+    'hand': 'Không cầm vô lăng',
+    'collision': 'Va chạm',
+    'lane': 'Lệch làn',
+    'obstacle': 'Vật cản'
+  };
+  return violationNames[type] || type;
+}
+
 function viewViolationVideo(plate, violationType, videoUrl) {
   const vehicle = vehicles.find(v => v.plate === plate);
   const driverName = vehicle ? vehicle.driver : 'Không rõ';
@@ -5597,6 +5624,9 @@ function viewViolationVideo(plate, violationType, videoUrl) {
   const route = vehicle ? vehicle.route : 'Không rõ';
   const time = new Date().toLocaleString('vi-VN');
   
+  // Convert violation type to Vietnamese name
+  const violationTypeName = getViolationTypeName(violationType);
+
   currentVideoModal = document.createElement('div');
   currentVideoModal.id = 'videoViolationModal';
   currentVideoModal.className = 'video-modal-overlay';
@@ -5620,7 +5650,7 @@ function viewViolationVideo(plate, violationType, videoUrl) {
           </div>
           <div class="video-info-item">
             <label>Vi phạm:</label>
-            <span class="violation-type-badge">${violationType}</span>
+            <span class="violation-type-badge">${violationTypeName}</span>
           </div>
           <div class="video-info-item">
             <label>Tài xế:</label>

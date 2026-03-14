@@ -284,7 +284,8 @@ def dashboard():
                    t.anh_dai_dien as driver_image,
                    td.ten_tuyen as location, p.vi_tri as vi_tri,
                    p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed,
-                   p.lat, p.lng
+                   p.lat, p.lng,
+                   (SELECT COUNT(*) FROM canh_bao_vi_pham WHERE id_phuong_tien = p.id AND da_doc = 0) as violations_count
             FROM phuong_tien p
             LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
@@ -300,7 +301,8 @@ def dashboard():
                    t.anh_dai_dien as driver_image,
                    td.ten_tuyen as location, p.vi_tri as vi_tri,
                    p.trang_thai_hoat_dong as status, p.toc_do_hien_tai as speed,
-                   p.lat, p.lng
+                   p.lat, p.lng,
+                   (SELECT COUNT(*) FROM canh_bao_vi_pham WHERE id_phuong_tien = p.id AND da_doc = 0) as violations_count
             FROM phuong_tien p
             LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN tuyen_duong td ON p.id_tuyen_duong = td.id
