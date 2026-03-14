@@ -3839,12 +3839,16 @@ function loadPageData(pageId) {
 
 // Sample data loaders (to be implemented with real API calls)
 var warningsData = {{ warnings|default([])|tojson|safe }};
+var userRole = '{{ user_role|default("user") }}';
 
 function loadWarningsData() {
   const tbody = document.getElementById('warningsTableBody');
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Đang tải...</td></tr>';
 
-  fetch('/api/alerts')
+  // Admin xem tất cả vi phạm, user chỉ xem vi phạm của mình
+  const apiUrl = userRole === 'admin' ? '/api/all-alerts' : '/api/alerts';
+
+  fetch(apiUrl)
     .then(r => r.json())
     .then(data => {
       if (!data.success || !data.alerts || data.alerts.length === 0) {

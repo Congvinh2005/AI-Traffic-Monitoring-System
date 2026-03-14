@@ -399,7 +399,19 @@ def dashboard():
         cur.close()
         conn.close()
         
-        return render_template('Dashboard.html', vehicles=vehicles, all_vehicles=all_vehicles, stats=stats, drivers=drivers, routes=routes, warnings=warnings, admin_alerts=admin_alerts, user=session.get('user'), page=page, total_pages=total_pages, now=datetime.now().strftime('%H:%M %d/%m/%Y'))
+        return render_template('Dashboard.html', 
+                               vehicles=vehicles, 
+                               all_vehicles=all_vehicles, 
+                               stats=stats, 
+                               drivers=drivers, 
+                               routes=routes, 
+                               warnings=warnings, 
+                               admin_alerts=admin_alerts, 
+                               user=session.get('user'),
+                               user_role=session.get('role'),
+                               page=page, 
+                               total_pages=total_pages, 
+                               now=datetime.now().strftime('%H:%M %d/%m/%Y'))
     except Exception as e:
         import traceback
         return Response(traceback.format_exc(), mimetype="text/plain")
@@ -439,15 +451,19 @@ def lich_su_page():
 @app.route('/api/alerts')
 @login_required
 def get_alerts():
-    """Lấy danh sách cảnh báo AI (vi phạm)"""
+    """Lấy danh sách cảnh báo AI (vi phạm) của tài xế đăng nhập"""
     try:
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
+        tai_xe_id = session.get('tai_xe_id')
+        if not tai_xe_id:
+            return jsonify({'success': False, 'message': 'Không tìm thấy thông tin tài xế'}), 400
+
         cur = conn.cursor()
         cur.execute('''
-            SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level, 
+            SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level,
                    a.thoi_gian_vi_pham as timestamp, a.da_doc as is_read,
                    v.bien_so as vehicle_plate, d.ho_ten as driver_name,
                    vid.duong_dan_file as video_path
@@ -455,9 +471,10 @@ def get_alerts():
             LEFT JOIN phuong_tien v ON a.id_phuong_tien = v.id
             LEFT JOIN tai_xe d ON a.id_tai_xe = d.id
             LEFT JOIN video_ghi_hinh vid ON a.id_video_ghi_hinh = vid.id
+            WHERE a.id_tai_xe = %s
             ORDER BY a.thoi_gian_vi_pham DESC
             LIMIT 100
-        ''')
+        ''', (tai_xe_id,))
         alerts = cur.fetchall()
         cur.close()
         conn.close()
@@ -539,8 +556,8 @@ def get_admin_warnings():
 
         cur = conn.cursor()
         cur.execute('''
-            SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message, 
-                   w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at, 
+            SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
+                   w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
                    u.ho_ten as admin_name
             FROM thong_bao_admin w
             LEFT JOIN nguoi_dung u ON w.id_admin = u.id
@@ -564,6 +581,54 @@ def get_admin_warnings():
             })
 
         return jsonify({'success': True, 'warnings': formatted_warnings})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/all-alerts')
+@login_required
+def get_all_alerts():
+    """Lấy danh sách tất cả cảnh báo AI (vi phạm) - Dành cho admin"""
+    try:
+        # Chỉ admin mới được truy cập
+        if session.get('role') != 'admin':
+            return jsonify({'success': False, 'message': 'Không có quyền truy cập'}), 403
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level,
+                   a.thoi_gian_vi_pham as timestamp, a.da_doc as is_read,
+                   v.bien_so as vehicle_plate, d.ho_ten as driver_name,
+                   vid.duong_dan_file as video_path
+            FROM canh_bao_vi_pham a
+            LEFT JOIN phuong_tien v ON a.id_phuong_tien = v.id
+            LEFT JOIN tai_xe d ON a.id_tai_xe = d.id
+            LEFT JOIN video_ghi_hinh vid ON a.id_video_ghi_hinh = vid.id
+            ORDER BY a.thoi_gian_vi_pham DESC
+            LIMIT 100
+        ''')
+        alerts = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_alerts = []
+        for alert in alerts:
+            formatted_alerts.append({
+                'id': alert['id'],
+                'type': alert['type'],
+                'message': alert['message'],
+                'level': alert['level'],
+                'timestamp': alert['timestamp'].isoformat() if alert['timestamp'] else None,
+                'vehicle_plate': alert['vehicle_plate'],
+                'driver_name': alert['driver_name'],
+                'is_read': bool(alert['is_read']),
+                'video_path': alert['video_path']
+            })
+
+        return jsonify({'success': True, 'alerts': formatted_alerts})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
