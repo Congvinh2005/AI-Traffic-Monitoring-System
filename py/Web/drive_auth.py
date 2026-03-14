@@ -461,7 +461,19 @@ def get_alerts():
         if not tai_xe_id:
             return jsonify({'success': False, 'message': 'Không tìm thấy thông tin tài xế'}), 400
 
+        # Phân trang: 10 vi phạm/trang cho tài xế
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        offset = (page - 1) * per_page
+
         cur = conn.cursor()
+        
+        # Đếm tổng số vi phạm
+        cur.execute('SELECT COUNT(*) as total FROM canh_bao_vi_pham WHERE id_tai_xe = %s', (tai_xe_id,))
+        total = cur.fetchone()['total']
+        total_pages = (total + per_page - 1) // per_page
+        
+        # Lấy vi phạm theo trang
         cur.execute('''
             SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level,
                    a.thoi_gian_vi_pham as timestamp, a.da_doc as is_read,
@@ -473,8 +485,8 @@ def get_alerts():
             LEFT JOIN video_ghi_hinh vid ON a.id_video_ghi_hinh = vid.id
             WHERE a.id_tai_xe = %s
             ORDER BY a.thoi_gian_vi_pham DESC
-            LIMIT 100
-        ''', (tai_xe_id,))
+            LIMIT %s OFFSET %s
+        ''', (tai_xe_id, per_page, offset))
         alerts = cur.fetchall()
         cur.close()
         conn.close()
@@ -493,7 +505,14 @@ def get_alerts():
                 'video_path': alert['video_path']
             })
 
-        return jsonify({'success': True, 'alerts': formatted_alerts})
+        return jsonify({
+            'success': True, 
+            'alerts': formatted_alerts,
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': total_pages
+        })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
@@ -597,7 +616,19 @@ def get_all_alerts():
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
+        # Phân trang: 15 vi phạm/trang cho admin
+        page = request.args.get('page', 1, type=int)
+        per_page = 15
+        offset = (page - 1) * per_page
+
         cur = conn.cursor()
+        
+        # Đếm tổng số vi phạm
+        cur.execute('SELECT COUNT(*) as total FROM canh_bao_vi_pham')
+        total = cur.fetchone()['total']
+        total_pages = (total + per_page - 1) // per_page
+        
+        # Lấy vi phạm theo trang
         cur.execute('''
             SELECT a.id, a.loai_vi_pham as type, a.noi_dung_vi_pham as message, a.muc_do as level,
                    a.thoi_gian_vi_pham as timestamp, a.da_doc as is_read,
@@ -608,8 +639,8 @@ def get_all_alerts():
             LEFT JOIN tai_xe d ON a.id_tai_xe = d.id
             LEFT JOIN video_ghi_hinh vid ON a.id_video_ghi_hinh = vid.id
             ORDER BY a.thoi_gian_vi_pham DESC
-            LIMIT 100
-        ''')
+            LIMIT %s OFFSET %s
+        ''', (per_page, offset))
         alerts = cur.fetchall()
         cur.close()
         conn.close()
@@ -628,7 +659,14 @@ def get_all_alerts():
                 'video_path': alert['video_path']
             })
 
-        return jsonify({'success': True, 'alerts': formatted_alerts})
+        return jsonify({
+            'success': True, 
+            'alerts': formatted_alerts,
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': total_pages
+        })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 

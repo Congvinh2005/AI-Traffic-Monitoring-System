@@ -528,6 +528,11 @@
     </div>
 
     <script>
+        // Global pagination variables
+        let currentPage = 1;
+        let totalPages = 1;
+        const perPage = 10; // 10 vi phạm/trang cho tài xế
+
         // Switch tab
         function switchTab(tabName) {
             // Update active tab button
@@ -542,6 +547,10 @@
             });
             document.getElementById(tabName).classList.add('active');
 
+            // Reset pagination when switching tabs
+            currentPage = 1;
+            totalPages = 1;
+
             // Load data for tab
             if (tabName === 'violations') {
                 loadViolations();
@@ -553,23 +562,28 @@
         }
 
         // Load violations
-        function loadViolations() {
+        function loadViolations(page = 1) {
             const loading = document.getElementById('violations-loading');
             const content = document.getElementById('violations-content');
-            
+
             loading.style.display = 'block';
             content.innerHTML = '';
 
-            fetch('/api/alerts')
+            fetch(`/api/alerts?page=${page}`)
                 .then(res => res.json())
                 .then(data => {
                     loading.style.display = 'none';
-                    
+
                     if (data.success && data.alerts && data.alerts.length > 0) {
                         data.alerts.forEach(alert => {
                             const card = createViolationCard(alert);
                             content.appendChild(card);
                         });
+                        
+                        // Update pagination
+                        currentPage = data.page;
+                        totalPages = data.total_pages;
+                        updateViolationsPagination();
                     } else {
                         content.innerHTML = `
                             <div class="empty-state">
@@ -577,6 +591,9 @@
                                 <p>Không có vi phạm nào</p>
                             </div>
                         `;
+                        // Remove pagination if no data
+                        const oldPagination = document.querySelector('.violations-pagination');
+                        if (oldPagination) oldPagination.remove();
                     }
                 })
                 .catch(err => {
@@ -589,6 +606,40 @@
                         </div>
                     `;
                 });
+        }
+
+        function updateViolationsPagination() {
+            // Remove old pagination
+            const oldPagination = document.querySelector('.violations-pagination');
+            if (oldPagination) oldPagination.remove();
+            
+            if (totalPages <= 1) return;
+            
+            const violationsTab = document.getElementById('violations');
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'violations-pagination';
+            paginationDiv.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:10px;margin-top:20px;padding:15px;background:var(--bg-card);border-radius:8px;';
+            
+            let html = `
+                <button class="btn btn-secondary" onclick="loadViolations(1)" ${currentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    <i class="fa-solid fa-angles-left"></i> Đầu
+                </button>
+                <button class="btn btn-secondary" onclick="loadViolations(${currentPage - 1})" ${currentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    <i class="fa-solid fa-angle-left"></i> Trước
+                </button>
+                <span style="color:var(--text-secondary);margin:0 10px;">
+                    Trang ${currentPage}/${totalPages} (${perPage} vi phạm/trang)
+                </span>
+                <button class="btn btn-secondary" onclick="loadViolations(${currentPage + 1})" ${currentPage === totalPages ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    Sau <i class="fa-solid fa-angle-right"></i>
+                </button>
+                <button class="btn btn-secondary" onclick="loadViolations(${totalPages})" ${currentPage === totalPages ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    Cuối <i class="fa-solid fa-angles-right"></i>
+                </button>
+            `;
+            
+            paginationDiv.innerHTML = html;
+            violationsTab.appendChild(paginationDiv);
         }
 
         function createViolationCard(alert) {

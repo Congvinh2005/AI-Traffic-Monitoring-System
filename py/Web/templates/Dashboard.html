@@ -3840,13 +3840,15 @@ function loadPageData(pageId) {
 // Sample data loaders (to be implemented with real API calls)
 var warningsData = {{ warnings|default([])|tojson|safe }};
 var userRole = '{{ user_role|default("user") }}';
+var currentPage = 1;
+var totalPages = 1;
 
-function loadWarningsData() {
+function loadWarningsData(page = 1) {
   const tbody = document.getElementById('warningsTableBody');
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Đang tải...</td></tr>';
 
   // Admin xem tất cả vi phạm, user chỉ xem vi phạm của mình
-  const apiUrl = userRole === 'admin' ? '/api/all-alerts' : '/api/alerts';
+  const apiUrl = userRole === 'admin' ? `/api/all-alerts?page=${page}` : `/api/alerts?page=${page}`;
 
   fetch(apiUrl)
     .then(r => r.json())
@@ -3854,13 +3856,16 @@ function loadWarningsData() {
       if (!data.success || !data.alerts || data.alerts.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Không có cảnh báo nào</td></tr>';
         document.getElementById('warningBadge').textContent = '0';
+        updatePagination(0, 0, 0);
         return;
       }
 
       const alerts = data.alerts;
+      const startIdx = (data.page - 1) * data.per_page + 1;
+      
       tbody.innerHTML = alerts.map((w, i) => `
         <tr>
-          <td>${i + 1}</td>
+          <td>${startIdx + i}</td>
           <td><strong>${w.vehicle_plate || 'Không rõ'}</strong></td>
           <td>${w.driver_name || 'Không rõ'}</td>
           <td>${w.message || w.type || 'Không rõ'}</td>
@@ -3881,6 +3886,11 @@ function loadWarningsData() {
 
       const pendingCount = alerts.filter(w => !w.is_read).length;
       document.getElementById('warningBadge').textContent = pendingCount;
+      
+      // Cập nhật phân trang
+      currentPage = data.page;
+      totalPages = data.total_pages;
+      updatePagination(data.page, data.total_pages, data.per_page);
     })
     .catch(err => {
       console.error('Error loading warnings:', err);
@@ -3888,6 +3898,7 @@ function loadWarningsData() {
       if (!warningsData || warningsData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Không có cảnh báo nào</td></tr>';
         document.getElementById('warningBadge').textContent = '0';
+        updatePagination(0, 0, 0);
         return;
       }
       tbody.innerHTML = warningsData.map((w, i) => `
@@ -3913,6 +3924,42 @@ function loadWarningsData() {
       const pendingCount = warningsData.filter(w => w.status === 'pending').length;
       document.getElementById('warningBadge').textContent = pendingCount;
     });
+}
+
+function updatePagination(page, totalPages, perPage) {
+  // Xóa pagination cũ nếu có
+  const oldPagination = document.querySelector('.warnings-pagination');
+  if (oldPagination) oldPagination.remove();
+  
+  if (totalPages <= 1) return;
+  
+  const tableSection = document.querySelector('#ai-warnings .table-section');
+  const paginationDiv = document.createElement('div');
+  paginationDiv.className = 'table-controls warnings-pagination';
+  paginationDiv.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:10px;margin-top:15px;padding:15px;background:var(--bg-card);border-radius:8px;';
+  
+  const perPageLabel = perPage === 10 ? '(10 vi phạm/trang)' : '(15 vi phạm/trang)';
+  
+  let html = `
+    <button class="btn btn-secondary" onclick="loadWarningsData(1)" ${page === 1 ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      <i class="fa-solid fa-angles-left"></i> Đầu
+    </button>
+    <button class="btn btn-secondary" onclick="loadWarningsData(${page - 1})" ${page === 1 ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      <i class="fa-solid fa-angle-left"></i> Trước
+    </button>
+    <span style="color:var(--text-secondary);margin:0 10px;">
+      Trang ${page}/${totalPages} ${perPageLabel}
+    </span>
+    <button class="btn btn-secondary" onclick="loadWarningsData(${page + 1})" ${page === totalPages ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      Sau <i class="fa-solid fa-angle-right"></i>
+    </button>
+    <button class="btn btn-secondary" onclick="loadWarningsData(${totalPages})" ${page === totalPages ? 'disabled style="opacity:0.5"' : ''} style="padding:8px 16px;">
+      Cuối <i class="fa-solid fa-angles-right"></i>
+    </button>
+  `;
+  
+  paginationDiv.innerHTML = html;
+  tableSection.appendChild(paginationDiv);
 }
 
 
