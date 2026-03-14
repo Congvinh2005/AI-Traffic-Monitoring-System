@@ -296,9 +296,14 @@ def dashboard():
         ''')
         drivers = cur.fetchall()
 
-        # Lấy danh sách toàn bộ tuyến đường
+        # Lấy danh sách toàn bộ tuyến đường (bao gồm tọa độ起点 và终点)
         cur.execute('''
-            SELECT id as code, ten_tuyen as name, 'Khu vực trung tâm' as start, 'Tuyến cố định' as end, 
+            SELECT id as code, ten_tuyen as name, 
+                   COALESCE(start_lat, toa_do_lat) as start_lat, 
+                   COALESCE(start_lng, toa_do_lng) as start_lng,
+                   COALESCE(end_lat, toa_do_lat) as end_lat, 
+                   COALESCE(end_lng, toa_do_lng) as end_lng,
+                   'Khu vực trung tâm' as start, 'Tuyến cố định' as end,
                    0 as distance, 0 as duration,
                    IF(trang_thai = 'active', 'Hoạt động', 'Ngừng hoạt động') as status
             FROM tuyen_duong
@@ -904,6 +909,205 @@ def api_groq_law_chat():
             'status': 'error',
             'message': str(e)
         }), 400
+
+# ========================================
+# ROUTE MANAGEMENT API ENDPOINTS
+# ========================================
+@app.route('/api/routes', methods=['GET'])
+@login_required
+def get_routes():
+    """Lấy danh sách tất cả tuyến đường với tọa độ起点 và终点"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                id, ten_tuyen, mo_ta,
+                start_lat, start_lng, end_lat, end_lng,
+                toa_do_lat, toa_do_lng, trang_thai
+            FROM tuyen_duong
+            ORDER BY ten_tuyen ASC
+        ''')
+        routes = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        formatted_routes = []
+        for route in routes:
+            formatted_routes.append({
+                'id': route['id'],
+                'name': route['ten_tuyen'],
+                'description': route['mo_ta'],
+                'start_lat': float(route['start_lat']) if route['start_lat'] else None,
+                'start_lng': float(route['start_lng']) if route['start_lng'] else None,
+                'end_lat': float(route['end_lat']) if route['end_lat'] else None,
+                'end_lng': float(route['end_lng']) if route['end_lng'] else None,
+                'center_lat': float(route['toa_do_lat']) if route['toa_do_lat'] else None,
+                'center_lng': float(route['toa_do_lng']) if route['toa_do_lng'] else None,
+                'status': route['trang_thai']
+            })
+
+        return jsonify({'success': True, 'routes': formatted_routes})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/routes/<route_id>', methods=['GET'])
+@login_required
+def get_route_detail(route_id):
+    """Lấy chi tiết một tuyến đường"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT 
+                id, ten_tuyen, mo_ta,
+                start_lat, start_lng, end_lat, end_lng,
+                toa_do_lat, toa_do_lng, trang_thai
+            FROM tuyen_duong
+            WHERE id = %s
+        ''', (route_id,))
+        route = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not route:
+            return jsonify({'success': False, 'message': 'Tuyến đường không tồn tại'}), 404
+
+        return jsonify({
+            'success': True,
+            'route': {
+                'id': route['id'],
+                'name': route['ten_tuyen'],
+                'description': route['mo_ta'],
+                'start_lat': float(route['start_lat']) if route['start_lat'] else None,
+                'start_lng': float(route['start_lng']) if route['start_lng'] else None,
+                'end_lat': float(route['end_lat']) if route['end_lat'] else None,
+                'end_lng': float(route['end_lng']) if route['end_lng'] else None,
+                'center_lat': float(route['toa_do_lat']) if route['toa_do_lat'] else None,
+                'center_lng': float(route['toa_do_lng']) if route['toa_do_lng'] else None,
+                'status': route['trang_thai']
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/routes', methods=['POST'])
+@login_required
+def create_route():
+    """Tạo mới tuyến đường"""
+    try:
+        data = request.get_json()
+        route_id = data.get('id', '').strip()
+        name = data.get('name', '').strip()
+        description = data.get('description', '')
+        start_lat = data.get('start_lat')
+        start_lng = data.get('start_lng')
+        end_lat = data.get('end_lat')
+        end_lng = data.get('end_lng')
+        status = data.get('status', 'active')
+
+        if not route_id or not name:
+            return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        
+        # Check if route exists
+        cur.execute('SELECT id FROM tuyen_duong WHERE id = %s', (route_id,))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Mã tuyến đường đã tồn tại'}), 400
+
+        cur.execute('''
+            INSERT INTO tuyen_duong 
+            (id, ten_tuyen, mo_ta, start_lat, start_lng, end_lat, end_lng, trang_thai)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (route_id, name, description, start_lat, start_lng, end_lat, end_lng, status))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Tạo tuyến đường thành công'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/routes/<route_id>', methods=['PUT'])
+@login_required
+def update_route(route_id):
+    """Cập nhật tuyến đường"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        description = data.get('description', '')
+        start_lat = data.get('start_lat')
+        start_lng = data.get('start_lng')
+        end_lat = data.get('end_lat')
+        end_lng = data.get('end_lng')
+        status = data.get('status', 'active')
+
+        if not name:
+            return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        
+        # Check if route exists
+        cur.execute('SELECT id FROM tuyen_duong WHERE id = %s', (route_id,))
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Tuyến đường không tồn tại'}), 404
+
+        cur.execute('''
+            UPDATE tuyen_duong 
+            SET ten_tuyen = %s, mo_ta = %s, start_lat = %s, start_lng = %s, 
+                end_lat = %s, end_lng = %s, trang_thai = %s
+            WHERE id = %s
+        ''', (name, description, start_lat, start_lng, end_lat, end_lng, status, route_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Cập nhật tuyến đường thành công'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
+
+@app.route('/api/routes/<route_id>', methods=['DELETE'])
+@login_required
+def delete_route(route_id):
+    """Xóa tuyến đường"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+
+        cur = conn.cursor()
+        
+        # Check if route exists
+        cur.execute('SELECT id FROM tuyen_duong WHERE id = %s', (route_id,))
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Tuyến đường không tồn tại'}), 404
+
+        cur.execute('DELETE FROM tuyen_duong WHERE id = %s', (route_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Xóa tuyến đường thành công'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 500
 
 # ========================================
 # MAIN APPLICATION

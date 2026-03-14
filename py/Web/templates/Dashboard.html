@@ -4276,32 +4276,34 @@ document.getElementById('vehicleSearch')?.addEventListener('input', function(e) 
   });
 });
 
-// Routes Management
+// Routes Management - Sample data with full path coordinates
 var routesData = [
-  { code: 'T001', name: 'Mỹ Đình - Hải Phòng', start: 'Bến xe Mỹ Đình', end: 'Bến xe Hải Phòng', distance: '102 km', duration: '120 phút', vehicles: '12 xe/ngày', status: 'active',
+  { code: 'T001', name: 'Mỹ Đình - Hải Phòng', start: 'Bến xe Mỹ Đình', end: 'Bến xe Hải Phòng', distance: 102, duration: 120, vehicles: '12 xe/ngày', status: 'Hoạt động',
     path: [[21.0300, 105.7800], [21.0250, 105.8200], [21.0200, 105.8600], [20.9500, 106.1000]], color: '#4a9eff' },
-  { code: 'T002', name: 'Nội Bài - Trung tâm Hà Nội', start: 'Sân bay Nội Bài', end: 'Hồ Hoàn Kiếm', distance: '28 km', duration: '45 phút', vehicles: '45 xe/ngày', status: 'active',
+  { code: 'T002', name: 'Nội Bài - Trung tâm Hà Nội', start: 'Sân bay Nội Bài', end: 'Hồ Hoàn Kiếm', distance: 28, duration: 45, vehicles: '45 xe/ngày', status: 'Hoạt động',
     path: [[21.2200, 105.8000], [21.1500, 105.8200], [21.0800, 105.8400], [21.0285, 105.8542]], color: '#00c853' },
-  { code: 'T003', name: 'Hồ Tây - Lăng Bác', start: 'Hồ Tây', end: 'Lăng Chủ tịch', distance: '8 km', duration: '25 phút', vehicles: '28 xe/ngày', status: 'active',
+  { code: 'T003', name: 'Hồ Tây - Lăng Bác', start: 'Hồ Tây', end: 'Lăng Chủ tịch', distance: 8, duration: 25, vehicles: '28 xe/ngày', status: 'Hoạt động',
     path: [[21.0450, 105.8150], [21.0400, 105.8250], [21.0350, 105.8350]], color: '#ffc107' },
-  { code: 'T004', name: 'Cầu Giấy - Long Biên', start: 'Cầu Giấy', end: 'Long Biên', distance: '15 km', duration: '40 phút', vehicles: '20 xe/ngày', status: 'active',
+  { code: 'T004', name: 'Cầu Giấy - Long Biên', start: 'Cầu Giấy', end: 'Long Biên', distance: 15, duration: 40, vehicles: '20 xe/ngày', status: 'Hoạt động',
     path: [[21.0350, 105.7900], [21.0300, 105.8100], [21.0250, 105.8300], [21.0200, 105.8500]], color: '#ff5252' },
-  { code: 'T005', name: 'Hà Đông - Hoàn Kiếm', start: 'Hà Đông', end: 'Hồ Gươm', distance: '12 km', duration: '35 phút', vehicles: '35 xe/ngày', status: 'active',
+  { code: 'T005', name: 'Hà Đông - Hoàn Kiếm', start: 'Hà Đông', end: 'Hồ Gươm', distance: 12, duration: 35, vehicles: '35 xe/ngày', status: 'Hoạt động',
     path: [[20.9800, 105.7800], [21.0000, 105.8000], [21.0150, 105.8200], [21.0285, 105.8542]], color: '#9c27b0' }
 ];
 
-// Routes Management
-var routesData = {{ routes|default([], true)|tojson|safe }};
+// Uncomment below to use data from database instead of sample data
+// var routesData = {{ routes|default([], true)|tojson|safe }};
 
 function loadRoutesData() {
   const list = document.getElementById('routeList');
-  
+
   if (routesData && routesData.length > 0) {
-    list.innerHTML = routesData.map(r => `
-      <div class="route-item" data-code="${r.code}" style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
+    list.innerHTML = routesData.map(r => {
+      // Store path in data attribute for later use
+      return `
+      <div class="route-item" data-code="${r.code}" data-path='${JSON.stringify(r.path)}' style="background: var(--bg-input); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);" onmouseover="this.style.transform='scale(1.02)'; this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--border-color)'">
         <div class="route-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span class="route-code" style="font-weight: 600; color: var(--accent);">${r.code}</span>
-          <span class="route-status status-${r.status === 'Hoạt động' ? 'active' : 'inactive'}" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.25)' : 'rgba(255, 82, 82, 0.25)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
+          <span class="route-status" style="padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: ${r.status === 'Hoạt động' ? 'rgba(0, 200, 83, 0.25)' : 'rgba(255, 82, 82, 0.25)'}; color: ${r.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)'};">${r.status}</span>
         </div>
         <div class="route-name" style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${r.name}</div>
         <div class="route-points" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary);">
@@ -4326,11 +4328,12 @@ function loadRoutesData() {
           <button class="btn btn-outline" onclick="editRoute('${r.code}')" style="flex: 1; padding: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
   } else {
     list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Không có dữ liệu tuyến đường</div>';
   }
-  
+
   // Animate stats
   const activeCount = routesData ? routesData.filter(r => r.status === 'Hoạt động').length : 0;
   animateValue('activeRoutes', 0, activeCount, 1000);
@@ -4342,37 +4345,44 @@ function loadRoutesData() {
 function viewRoute(code) {
   const route = routesData.find(r => r.code === code);
   if (!route) return;
-  
+
   showToast('info', 'Tuyến đường', `Đang xem tuyến ${code}: ${route.name}`);
-  
+
+  // Use the full path from route data
+  const routePath = route.path || [];
+
   // Focus map on selected route
-  if (routesMap && route.path) {
+  if (routesMap && routePath.length > 0) {
     // Clear existing markers and polylines
     routesMap.eachLayer(layer => {
       if (layer instanceof L.Marker || layer instanceof L.Polyline) {
         routesMap.removeLayer(layer);
       }
     });
-    
-    // Draw selected route
-    L.polyline(route.path, {
-      color: route.color,
+
+    // Draw selected route line with full path
+    L.polyline(routePath, {
+      color: route.color || '#4a9eff',
       weight: 6,
       opacity: 1,
       dashArray: '10, 10'
-    }).addTo(routesMap).bindPopup(`<b>${route.name}</b>`).openPopup();
-    
-    // Add start and end markers
-    L.marker(route.path[0]).addTo(routesMap)
-      .bindPopup(`<b>${route.code}</b><br>📍 Điểm đầu: ${route.start}`)
-      .openPopup();
-    
-    L.marker(route.path[route.path.length - 1]).addTo(routesMap)
-      .bindPopup(`<b>${route.code}</b><br>🏁 Điểm cuối: ${route.end}`);
-    
+    }).addTo(routesMap).bindPopup(`<b>${route.name}</b>`);
+
+    // Add start marker (first point)
+    if (routePath.length > 0) {
+      L.marker(routePath[0]).addTo(routesMap)
+        .bindPopup(`<b>${route.code}</b><br>📍 <b>Điểm đầu</b><br>${route.start}`)
+        .openPopup();
+    }
+
+    // Add end marker (last point)
+    if (routePath.length > 0) {
+      L.marker(routePath[routePath.length - 1]).addTo(routesMap)
+        .bindPopup(`<b>${route.code}</b><br>🏁 <b>Điểm cuối</b><br>${route.end}`);
+    }
+
     // Fit bounds to show entire route
-    const bounds = route.path;
-    routesMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    routesMap.fitBounds(routePath, { padding: [50, 50], maxZoom: 13 });
   }
 }
 
@@ -4403,36 +4413,43 @@ function initRoutesMap() {
   if (routesMap) {
     routesMap.remove();
   }
-  
+
   // Create new map
-  routesMap = L.map('routesMap').setView([21.0285, 105.8542], 12);
-  
+  routesMap = L.map('routesMap').setView([21.0285, 105.8542], 11);
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(routesMap);
-  
-  // Draw all routes from routesData
+
+  // Draw all routes from routesData with full path
   routesData.forEach(route => {
-    // Draw polyline
-    L.polyline(route.path, {
-      color: route.color,
-      weight: 4,
-      opacity: 0.8,
-      dashArray: '10, 10'
-    }).addTo(routesMap).bindPopup(route.name);
+    const routePath = route.path || [];
     
-    // Add markers at start and end points
-    if (route.path.length > 0) {
-      const startMarker = L.marker(route.path[0]).addTo(routesMap)
-        .bindPopup(`<b>${route.name}</b><br>📍 Điểm đầu`);
-      routeMarkers.push(startMarker);
-      
-      const endMarker = L.marker(route.path[route.path.length - 1]).addTo(routesMap)
-        .bindPopup(`<b>${route.name}</b><br>🏁 Điểm cuối`);
-      routeMarkers.push(endMarker);
+    // Draw polyline with full path if available
+    if (routePath.length > 0) {
+      L.polyline(routePath, {
+        color: route.color || '#4a9eff',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '10, 10'
+      }).addTo(routesMap).bindPopup(`<b>${route.name}</b>`);
+
+      // Add start marker (first point)
+      if (routePath.length > 0) {
+        const startMarker = L.marker(routePath[0]).addTo(routesMap)
+          .bindPopup(`<b>${route.code}</b><br>📍 <b>Điểm đầu</b><br>${route.start}`);
+        routeMarkers.push(startMarker);
+      }
+
+      // Add end marker (last point)
+      if (routePath.length > 0) {
+        const endMarker = L.marker(routePath[routePath.length - 1]).addTo(routesMap)
+          .bindPopup(`<b>${route.code}</b><br>🏁 <b>Điểm cuối</b><br>${route.end}`);
+        routeMarkers.push(endMarker);
+      }
     }
   });
-  
+
   // Fit bounds to show all routes
   if (routeMarkers.length > 0) {
     const group = new L.featureGroup(routeMarkers);
