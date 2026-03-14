@@ -531,6 +531,11 @@
         let currentPage = 1;
         let totalPages = 1;
         const perPage = 10; // 10 vi phạm/trang cho tài xế
+        
+        // Warnings pagination variables
+        let warningsCurrentPage = 1;
+        let warningsTotalPages = 1;
+        let warningsPerPage = 10; // Mặc định, sẽ cập nhật từ API
 
         // Switch tab
         function switchTab(tabName) {
@@ -549,6 +554,8 @@
             // Reset pagination when switching tabs
             currentPage = 1;
             totalPages = 1;
+            warningsCurrentPage = 1;
+            warningsTotalPages = 1;
 
             // Load data for tab
             if (tabName === 'violations') {
@@ -639,6 +646,42 @@
             
             paginationDiv.innerHTML = html;
             violationsTab.appendChild(paginationDiv);
+        }
+
+        function updateWarningsPagination() {
+            // Remove old pagination
+            const oldPagination = document.querySelector('.warnings-pagination');
+            if (oldPagination) oldPagination.remove();
+            
+            if (warningsTotalPages <= 1) return;
+            
+            const warningsTab = document.getElementById('warnings');
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'warnings-pagination';
+            paginationDiv.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:10px;margin-top:20px;padding:15px;background:var(--bg-card);border-radius:8px;';
+            
+            const perPageLabel = warningsPerPage === 10 ? '(10 cảnh báo/trang)' : '(15 cảnh báo/trang)';
+            
+            let html = `
+                <button class="btn btn-secondary" onclick="loadWarnings(1)" ${warningsCurrentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    <i class="fa-solid fa-angles-left"></i> Đầu
+                </button>
+                <button class="btn btn-secondary" onclick="loadWarnings(${warningsCurrentPage - 1})" ${warningsCurrentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    <i class="fa-solid fa-angle-left"></i> Trước
+                </button>
+                <span style="color:var(--text-secondary);margin:0 10px;">
+                    Trang ${warningsCurrentPage}/${warningsTotalPages} ${perPageLabel}
+                </span>
+                <button class="btn btn-secondary" onclick="loadWarnings(${warningsCurrentPage + 1})" ${warningsCurrentPage === warningsTotalPages ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    Sau <i class="fa-solid fa-angle-right"></i>
+                </button>
+                <button class="btn btn-secondary" onclick="loadWarnings(${warningsTotalPages})" ${warningsCurrentPage === warningsTotalPages ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''} style="padding:8px 16px;">
+                    Cuối <i class="fa-solid fa-angles-right"></i>
+                </button>
+            `;
+            
+            paginationDiv.innerHTML = html;
+            warningsTab.appendChild(paginationDiv);
         }
 
         function createViolationCard(alert) {
@@ -775,23 +818,29 @@
         }
 
         // Load warnings from admin
-        function loadWarnings() {
+        function loadWarnings(page = 1) {
             const loading = document.getElementById('warnings-loading');
             const content = document.getElementById('warnings-content');
-            
+
             loading.style.display = 'block';
             content.innerHTML = '';
 
-            fetch('/api/admin-warnings')
+            fetch(`/api/admin-warnings?page=${page}`)
                 .then(res => res.json())
                 .then(data => {
                     loading.style.display = 'none';
-                    
+
                     if (data.success && data.warnings && data.warnings.length > 0) {
                         data.warnings.forEach(warning => {
                             const card = createWarningCard(warning);
                             content.appendChild(card);
                         });
+                        
+                        // Update pagination
+                        warningsCurrentPage = data.page;
+                        warningsTotalPages = data.total_pages;
+                        warningsPerPage = data.per_page;
+                        updateWarningsPagination();
                     } else {
                         content.innerHTML = `
                             <div class="empty-state">
@@ -799,6 +848,9 @@
                                 <p>Không có cảnh báo từ admin</p>
                             </div>
                         `;
+                        // Remove pagination if no data
+                        const oldPagination = document.querySelector('.warnings-pagination');
+                        if (oldPagination) oldPagination.remove();
                     }
                 })
                 .catch(err => {

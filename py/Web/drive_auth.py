@@ -567,37 +567,79 @@ def get_videos():
 @app.route('/api/admin-warnings')
 @login_required
 def get_admin_warnings():
-    """Lấy danh sách cảnh báo từ admin"""
+    """Lấy danh sách cảnh báo từ admin - Chỉ lấy của tài xế đăng nhập"""
     try:
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
 
-        # Phân trang: 15 cảnh báo/trang
-        page = request.args.get('page', 1, type=int)
-        per_page = 15
-        offset = (page - 1) * per_page
+        # Lấy tai_xe_id và vehicle_id từ session
+        tai_xe_id = session.get('tai_xe_id')
+        user_role = session.get('role')
+        
+        # Nếu là admin, lấy tất cả; nếu là user, chỉ lấy của user đó
+        if user_role == 'admin':
+            # Admin xem tất cả cảnh báo - 15 cảnh báo/trang
+            page = request.args.get('page', 1, type=int)
+            per_page = 15
+            offset = (page - 1) * per_page
 
-        cur = conn.cursor()
+            cur = conn.cursor()
 
-        # Đếm tổng số cảnh báo
-        cur.execute('SELECT COUNT(*) as total FROM thong_bao_admin')
-        total = cur.fetchone()['total']
-        total_pages = (total + per_page - 1) // per_page
+            # Đếm tổng số cảnh báo
+            cur.execute('SELECT COUNT(*) as total FROM thong_bao_admin')
+            total = cur.fetchone()['total']
+            total_pages = (total + per_page - 1) // per_page
 
-        # Lấy cảnh báo theo trang, JOIN thêm để lấy tên tài xế
-        cur.execute('''
-            SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
-                   w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
-                   u.ho_ten as admin_name,
-                   t.ho_ten as driver_name
-            FROM thong_bao_admin w
-            LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
-            LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
-            LEFT JOIN nguoi_dung u ON w.id_admin = u.id
-            ORDER BY w.ngay_tao DESC
-            LIMIT %s OFFSET %s
-        ''', (per_page, offset))
+            # Lấy tất cả cảnh báo
+            cur.execute('''
+                SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
+                       w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
+                       u.ho_ten as admin_name,
+                       t.ho_ten as driver_name
+                FROM thong_bao_admin w
+                LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
+                LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+                LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+                ORDER BY w.ngay_tao DESC
+                LIMIT %s OFFSET %s
+            ''', (per_page, offset))
+        else:
+            # User chỉ xem cảnh báo của mình - 10 cảnh báo/trang
+            if not tai_xe_id:
+                return jsonify({'success': False, 'message': 'Không tìm thấy thông tin tài xế'}), 400
+
+            page = request.args.get('page', 1, type=int)
+            per_page = 10
+            offset = (page - 1) * per_page
+
+            cur = conn.cursor()
+
+            # Đếm tổng số cảnh báo của tài xế này
+            cur.execute('''
+                SELECT COUNT(*) as total 
+                FROM thong_bao_admin w
+                LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
+                WHERE p.id_tai_xe = %s
+            ''', (tai_xe_id,))
+            total = cur.fetchone()['total']
+            total_pages = (total + per_page - 1) // per_page
+
+            # Lấy cảnh báo theo trang, chỉ lấy của tài xế đăng nhập
+            cur.execute('''
+                SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
+                       w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
+                       u.ho_ten as admin_name,
+                       t.ho_ten as driver_name
+                FROM thong_bao_admin w
+                LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
+                LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
+                LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+                WHERE p.id_tai_xe = %s
+                ORDER BY w.ngay_tao DESC
+                LIMIT %s OFFSET %s
+            ''', (tai_xe_id, per_page, offset))
+        
         warnings = cur.fetchall()
         cur.close()
         conn.close()
@@ -612,7 +654,7 @@ def get_admin_warnings():
                 'is_read': bool(warning['is_read']),
                 'created_at': warning['created_at'].isoformat() if warning['created_at'] else None,
                 'admin_name': warning['admin_name'],
-                'driver_name': warning['driver_name']  # Thêm tên tài xế
+                'driver_name': warning['driver_name']
             })
 
         return jsonify({
