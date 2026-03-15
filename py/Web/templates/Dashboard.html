@@ -5496,6 +5496,11 @@ function sendWarning(plate, alertId = null) {
         <button class="btn btn-secondary" onclick="closeWarningModal()">
           <i class="fa-solid fa-xmark"></i> Hủy
         </button>
+        <button class="btn btn-success" onclick="makePhoneCall()">
+          <i class="fa-solid fa-phone"></i> Gọi điện
+          <a href="https://play.google.com/store/apps/details?id=co.kitetech.dialer&hl=vi">
+              </a>
+        </button>
         <button class="btn btn-primary" onclick="submitWarning()">
           <i class="fa-solid fa-paper-plane"></i> Gửi cảnh báo
         </button>
@@ -5518,6 +5523,27 @@ function closeWarningModal() {
   }
   currentWarningPlate = '';
   currentAlertId = null;
+}
+
+function makePhoneCall() {
+  // Find the vehicle phone number
+  const vehicle = vehicles.find(v => v.plate === currentWarningPlate);
+  const phoneNumber = vehicle ? vehicle.phone : '';
+  
+  if (phoneNumber) {
+    // Show toast notification
+    showToast('success', 'Đang gọi...', `Số điện thoại: ${phoneNumber}`);
+    
+    // Use tel: protocol to initiate phone call
+    window.location.href = `tel:${phoneNumber}`;
+    
+    // Close the modal after initiating the call
+    setTimeout(() => {
+      closeWarningModal();
+    }, 1000);
+  } else {
+    showToast('warning', 'Không tìm thấy', 'Không có số điện thoại của tài xế');
+  }
 }
 
 function submitWarning() {
