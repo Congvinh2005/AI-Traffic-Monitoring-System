@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: localhost
--- Thời gian đã tạo: Th3 15, 2026 lúc 04:48 AM
+-- Thời gian đã tạo: Th3 15, 2026 lúc 05:03 AM
 -- Phiên bản máy phục vụ: 10.4.27-MariaDB
 -- Phiên bản PHP: 7.4.33
 
@@ -125,13 +125,41 @@ INSERT INTO `canh_bao_vi_pham` (`id`, `loai_vi_pham`, `noi_dung_vi_pham`, `muc_d
 (80, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:07:45', 5, 5, 7, 0),
 (81, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:07:46', 5, 5, 7, 0),
 (82, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:01', 5, 5, NULL, 0),
-(83, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
+(83, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 1),
 (84, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
 (85, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
 (86, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
 (87, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
-(88, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:03', 5, 5, NULL, 0),
-(89, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:08', 5, 5, NULL, 1);
+(88, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:03', 5, 5, NULL, 1),
+(89, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:08', 5, 5, NULL, 1),
+(90, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 10:52:26', 5, 5, NULL, 1),
+(91, 'hand', 'CẢNH BÁO: KHÔNG CẦM VÔ LĂNG!', 'warning', '2026-03-15 10:52:29', 5, 5, NULL, 1),
+(92, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:00:33', 5, 5, NULL, 0),
+(93, 'hand', 'CẢNH BÁO: KHÔNG CẦM VÔ LĂNG!', 'warning', '2026-03-15 11:00:42', 5, 5, 8, 0),
+(94, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-15 11:00:53', 5, 5, 8, 0),
+(95, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-15 11:00:56', 5, 5, 8, 0),
+(96, 'phone', 'Tài xế đang dùng điện thoại!', 'critical', '2026-03-15 11:00:58', 5, 5, 8, 0),
+(97, 'head', 'Tài xế mất tập trung (quay đầu/ngửa đầu)!', 'warning', '2026-03-15 11:01:10', 5, 5, 9, 0),
+(98, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-15 11:01:36', 5, 5, 10, 0),
+(99, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-15 11:01:41', 5, 5, 10, 0),
+(100, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-15 11:01:47', 5, 5, 10, 0),
+(101, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-15 11:01:50', 5, 5, 10, 0),
+(102, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:29', 5, 5, NULL, 0),
+(103, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:31', 5, 5, 11, 0),
+(104, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:31', 5, 5, 11, 0),
+(105, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:32', 5, 5, 11, 0),
+(106, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:32', 5, 5, 11, 0),
+(107, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:34', 5, 5, 11, 0),
+(108, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:34', 5, 5, 11, 0),
+(109, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:37', 5, 5, 11, 0),
+(110, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:41', 5, 5, 11, 0),
+(111, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:42', 5, 5, 11, 0),
+(112, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:43', 5, 5, 11, 0),
+(113, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:44', 5, 5, 11, 0),
+(114, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:44', 5, 5, 11, 0),
+(115, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:45', 5, 5, 11, 0),
+(116, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:46', 5, 5, 11, 0),
+(117, 'seatbelt', 'Tài xế không đeo dây an toàn!', 'critical', '2026-03-15 11:02:51', 5, 5, 11, 0);
 
 -- --------------------------------------------------------
 
@@ -251,7 +279,10 @@ CREATE TABLE `thong_bao_admin` (
 --
 
 INSERT INTO `thong_bao_admin` (`id`, `id_admin`, `id_vi_pham`, `bien_so_xe`, `noi_dung_thong_bao`, `muc_do_uu_tien`, `da_doc`, `ngay_tao`, `ngay_doc`) VALUES
-(7, 1, NULL, '15B-555.55', 'hhhh', 'high', 0, '2026-03-15 03:45:28', NULL);
+(8, 1, NULL, '15B-555.55', 'ngu', 'high', 0, '2026-03-15 03:49:31', NULL),
+(9, 1, NULL, '15B-555.55', 'nguuu', 'high', 0, '2026-03-15 03:51:45', NULL),
+(10, 1, NULL, '15B-555.55', 'dốt', 'high', 0, '2026-03-15 03:52:42', NULL),
+(11, 1, 90, '15B-555.55', 'llll', 'high', 0, '2026-03-15 03:55:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -348,7 +379,11 @@ CREATE TABLE `video_ghi_hinh` (
 --
 
 INSERT INTO `video_ghi_hinh` (`id`, `id_camera`, `ten_file_video`, `duong_dan_file`, `thoi_gian_bat_dau`, `thoi_gian_ket_thuc`, `kich_thuoc_file`) VALUES
-(7, 1, 'output_20260314_230740.mp4', '/recordings/output_20260314_230740.mp4', '2026-03-14 23:07:40', '2026-03-14 23:07:47', 974530);
+(7, 1, 'output_20260314_230740.mp4', '/recordings/output_20260314_230740.mp4', '2026-03-14 23:07:40', '2026-03-14 23:07:47', 974530),
+(8, 1, 'output_20260315_110049.mp4', '/recordings/output_20260315_110049.mp4', '2026-03-15 11:00:49', '2026-03-15 11:01:02', 586633),
+(9, 1, 'output_20260315_110119.mp4', '/recordings/output_20260315_110119.mp4', '2026-03-15 11:01:19', '2026-03-15 11:01:31', 1380063),
+(10, 1, 'output_20260315_110145.mp4', '/recordings/output_20260315_110145.mp4', '2026-03-15 11:01:45', '2026-03-15 11:01:54', 754634),
+(11, 1, 'output_20260315_110239.mp4', '/recordings/output_20260315_110239.mp4', '2026-03-15 11:02:39', '2026-03-15 11:02:52', 633483);
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -450,7 +485,7 @@ ALTER TABLE `camera_xe`
 -- AUTO_INCREMENT cho bảng `canh_bao_vi_pham`
 --
 ALTER TABLE `canh_bao_vi_pham`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
 
 --
 -- AUTO_INCREMENT cho bảng `nguoi_dung`
@@ -474,7 +509,7 @@ ALTER TABLE `tai_xe`
 -- AUTO_INCREMENT cho bảng `thong_bao_admin`
 --
 ALTER TABLE `thong_bao_admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT cho bảng `tuyen_duong_path`
@@ -486,7 +521,7 @@ ALTER TABLE `tuyen_duong_path`
 -- AUTO_INCREMENT cho bảng `video_ghi_hinh`
 --
 ALTER TABLE `video_ghi_hinh`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
