@@ -4253,6 +4253,10 @@ function viewAlert(index) {
             <span>${alert.driver_name || 'Không rõ'}</span>
           </div>
           <div class="warning-info-item">
+            <label>Loại cảnh báo:</label>
+            <span>${alert.violationType || alert.typeLabel || 'Không rõ'}</span>
+          </div>
+          <div class="warning-info-item">
             <label>Mức độ ưu tiên:</label>
             <span style="background: ${priorityStyle.bg}; color: ${priorityStyle.color}; padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid ${priorityStyle.color};">${priorityText}</span>
           </div>
@@ -5561,7 +5565,8 @@ function submitWarning() {
     body: JSON.stringify({
       plate: currentWarningPlate,
       content: content,
-      priority: 'high'  // Mặc định là high priority
+      priority: 'high',  // Mặc định là high priority
+      alert_id: currentAlertId // Gửi thêm id vi phạm
     })
   })
   .then(r => r.json())

@@ -388,12 +388,13 @@ def dashboard():
                 DATE_FORMAT(tb.ngay_tao, '%H:%i') as time,
                 nd.ho_ten as admin,
                 'Không xác định' as location,
-                'Vi phạm hệ thống' as violationType,
+                COALESCE(c.noi_dung_vi_pham, 'Vi phạm hệ thống') as violationType,
                 IF(tb.da_doc = 1, 'processed', 'pending') as status
             FROM thong_bao_admin tb
             LEFT JOIN phuong_tien p ON tb.bien_so_xe = p.bien_so
             LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
             LEFT JOIN nguoi_dung nd ON tb.id_admin = nd.id
+            LEFT JOIN canh_bao_vi_pham c ON tb.id_vi_pham = c.id
             ORDER BY tb.ngay_tao DESC
             LIMIT 50
         ''')
@@ -599,11 +600,13 @@ def get_admin_warnings():
                 SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
                        w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
                        u.ho_ten as admin_name,
-                       t.ho_ten as driver_name
+                       t.ho_ten as driver_name,
+                       c.noi_dung_vi_pham as violationType
                 FROM thong_bao_admin w
                 LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
                 LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
                 LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+                LEFT JOIN canh_bao_vi_pham c ON w.id_vi_pham = c.id
                 ORDER BY w.ngay_tao DESC
                 LIMIT %s OFFSET %s
             ''', (per_page, offset))
@@ -633,11 +636,13 @@ def get_admin_warnings():
                 SELECT w.id, w.bien_so_xe as vehicle_plate, w.noi_dung_thong_bao as message,
                        w.muc_do_uu_tien as priority, w.da_doc as is_read, w.ngay_tao as created_at,
                        u.ho_ten as admin_name,
-                       t.ho_ten as driver_name
+                       t.ho_ten as driver_name,
+                       c.noi_dung_vi_pham as violationType
                 FROM thong_bao_admin w
                 LEFT JOIN phuong_tien p ON w.bien_so_xe = p.bien_so
                 LEFT JOIN tai_xe t ON p.id_tai_xe = t.id
                 LEFT JOIN nguoi_dung u ON w.id_admin = u.id
+                LEFT JOIN canh_bao_vi_pham c ON w.id_vi_pham = c.id
                 WHERE p.id_tai_xe = %s
                 ORDER BY w.ngay_tao DESC
                 LIMIT %s OFFSET %s
@@ -657,7 +662,8 @@ def get_admin_warnings():
                 'is_read': bool(warning['is_read']),
                 'created_at': warning['created_at'].isoformat() if warning['created_at'] else None,
                 'admin_name': warning['admin_name'],
-                'driver_name': warning['driver_name']
+                'driver_name': warning['driver_name'],
+                'violationType': warning['violationType'] if warning['violationType'] else 'Không rõ'
             })
 
         return jsonify({
@@ -814,6 +820,7 @@ def send_warning_to_vehicle():
         bien_so = data.get('plate', '').strip()
         noi_dung = data.get('content', '').strip()
         muc_do = data.get('priority', 'medium')  # low, medium, high
+        alert_id = data.get('alert_id') # Lấy id_vi_pham
 
         if not bien_so or not noi_dung:
             return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'}), 400
@@ -830,9 +837,9 @@ def send_warning_to_vehicle():
         # Insert cảnh báo mới vào database
         cur.execute('''
             INSERT INTO thong_bao_admin 
-            (id_admin, bien_so_xe, noi_dung_thong_bao, muc_do_uu_tien, da_doc, ngay_tao)
-            VALUES (%s, %s, %s, %s, 0, NOW())
-        ''', (admin_id, bien_so, noi_dung, muc_do))
+            (id_admin, id_vi_pham, bien_so_xe, noi_dung_thong_bao, muc_do_uu_tien, da_doc, ngay_tao)
+            VALUES (%s, %s, %s, %s, %s, 0, NOW())
+        ''', (admin_id, alert_id, bien_so, noi_dung, muc_do))
         
         warning_id = cur.lastrowid
         conn.commit()

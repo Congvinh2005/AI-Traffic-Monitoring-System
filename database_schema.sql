@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: localhost
--- Thời gian đã tạo: Th3 14, 2026 lúc 05:35 PM
+-- Thời gian đã tạo: Th3 15, 2026 lúc 04:48 AM
 -- Phiên bản máy phục vụ: 10.4.27-MariaDB
 -- Phiên bản PHP: 7.4.33
 
@@ -131,7 +131,7 @@ INSERT INTO `canh_bao_vi_pham` (`id`, `loai_vi_pham`, `noi_dung_vi_pham`, `muc_d
 (86, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
 (87, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:02', 5, 5, NULL, 0),
 (88, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:03', 5, 5, NULL, 0),
-(89, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:08', 5, 5, NULL, 0);
+(89, 'yawn', 'Tài xế đang ngáp ngủ!', 'warning', '2026-03-14 23:08:08', 5, 5, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -189,12 +189,12 @@ CREATE TABLE `phuong_tien` (
 
 INSERT INTO `phuong_tien` (`id`, `bien_so`, `loai_xe`, `hinh_anh_xe`, `id_tai_xe`, `id_tuyen_duong`, `vi_tri`, `trang_thai_hoat_dong`, `toc_do_hien_tai`, `lat`, `lng`) VALUES
 (1, '29A-111.11', 'car', 'car1.jpg', 1, 'T001', 'Hải phòng', 'Đang chạy', 45, 21.045, 105.81),
-(2, '29B-222.22', 'bus', 'bus1.jpg', 2, 'T002', '', 'Đang dừng', 0, 21.03, 105.78),
-(3, '30E-333.33', 'car', 'car2.jpg', 3, 'T003', '', 'Đang chạy', 30, 21.04, 105.835),
-(4, '29H-444.44', 'truck', 'truck1.jpg', 4, 'T004', '', 'Đang chạy', 50, 21.025, 105.86),
-(5, '15B-555.55', 'bus', 'bus2.jpg', 5, 'T005', '', 'Đang chạy', 40, 21.035, 105.82),
-(6, '30G-666.66', 'car', 'car3.jpg', 6, 'T003', '', 'Đang chạy', 40, 21.015, 105.83),
-(7, '29LD-777.77', 'bus', 'bus3.jpg', 7, 'T002', '', 'Đang chạy', 60, 21.0285, 105.8542);
+(2, '29B-222.22', 'bus', 'bus1.jpg', 2, 'T002', 'Đông Anh', 'Đang dừng', 0, 21.03, 105.78),
+(3, '30E-333.33', 'car', 'car2.jpg', 3, 'T003', 'Phan Đình Phùng', 'Đang chạy', 30, 21.04, 105.835),
+(4, '29H-444.44', 'truck', 'truck1.jpg', 4, 'T004', 'Thuỵ Khê', 'Đang chạy', 50, 21.025, 105.86),
+(5, '15B-555.55', 'bus', 'bus2.jpg', 5, 'T005', 'Thanh Xuân', 'Đang chạy', 40, 21.035, 105.82),
+(6, '30G-666.66', 'car', 'car3.jpg', 6, 'T003', 'Hùng Vương', 'Đang chạy', 40, 21.015, 105.83),
+(7, '29LD-777.77', 'bus', 'bus3.jpg', 7, 'T002', 'Cầu Thăng Long', 'Đang chạy', 60, 21.0285, 105.8542);
 
 -- --------------------------------------------------------
 
@@ -237,6 +237,7 @@ INSERT INTO `tai_xe` (`id`, `ma_tai_xe`, `ho_ten`, `so_dien_thoai`, `so_giay_phe
 CREATE TABLE `thong_bao_admin` (
   `id` int(11) NOT NULL,
   `id_admin` int(11) NOT NULL,
+  `id_vi_pham` int(11) DEFAULT NULL,
   `bien_so_xe` varchar(20) NOT NULL,
   `noi_dung_thong_bao` text NOT NULL,
   `muc_do_uu_tien` enum('low','medium','high') DEFAULT 'low',
@@ -249,8 +250,8 @@ CREATE TABLE `thong_bao_admin` (
 -- Đang đổ dữ liệu cho bảng `thong_bao_admin`
 --
 
-INSERT INTO `thong_bao_admin` (`id`, `id_admin`, `bien_so_xe`, `noi_dung_thong_bao`, `muc_do_uu_tien`, `da_doc`, `ngay_tao`, `ngay_doc`) VALUES
-(6, 1, '15B-555.55', 'đi chậm thôi bạn ơi', 'high', 1, '2026-03-14 16:06:35', '2026-03-14 16:06:42');
+INSERT INTO `thong_bao_admin` (`id`, `id_admin`, `id_vi_pham`, `bien_so_xe`, `noi_dung_thong_bao`, `muc_do_uu_tien`, `da_doc`, `ngay_tao`, `ngay_doc`) VALUES
+(7, 1, NULL, '15B-555.55', 'hhhh', 'high', 0, '2026-03-15 03:45:28', NULL);
 
 -- --------------------------------------------------------
 
@@ -280,7 +281,7 @@ CREATE TABLE `tuyen_duong` (
 --
 
 INSERT INTO `tuyen_duong` (`id`, `ten_tuyen`, `mo_ta`, `start_lat`, `start_lng`, `end_lat`, `end_lng`, `toa_do_lat`, `toa_do_lng`, `distance`, `duration`, `vehicles`, `route_color`, `trang_thai`) VALUES
-('T001', 'Mỹ Đình - Hải Phòng', 'Tuyến đường từ bến xe Mỹ Đình đến bến xe Hải Phòng', '21.03000000', '105.78000000', '20.95000000', '106.10000000', NULL, NULL, '102.00', 120, '12 xe/ngày', '#4a9eff', 'active'),
+('T001', 'Mỹ Đình -> Hải Phòng', 'Tuyến đường từ bến xe Mỹ Đình đến bến xe Hải Phòng', '21.03000000', '105.78000000', '20.95000000', '106.10000000', NULL, NULL, '102.00', 120, '12 xe/ngày', '#4a9eff', 'active'),
 ('T002', 'Nội Bài - Trung tâm Hà Nội', 'Tuyến đường từ sân bay Nội Bài vào trung tâm Hà Nội', '21.22000000', '105.80000000', '21.02850000', '105.85420000', NULL, NULL, '28.00', 45, '45 xe/ngày', '#00c853', 'active'),
 ('T003', 'Hồ Tây - Lăng Bác', 'Tuyến đường du lịch từ Hồ Tây đến Lăng Bác', '21.04500000', '105.81500000', '21.03500000', '105.83500000', NULL, NULL, '8.00', 25, '28 xe/ngày', '#ffc107', 'active'),
 ('T004', 'Cầu Giấy - Long Biên', 'Tuyến đường nối quận Cầu Giấy và Long Biên', '21.03500000', '105.79000000', '21.02000000', '105.85000000', NULL, NULL, '15.00', 40, '20 xe/ngày', '#ff5252', 'active'),
@@ -405,7 +406,8 @@ ALTER TABLE `tai_xe`
 --
 ALTER TABLE `thong_bao_admin`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `id_admin` (`id_admin`);
+  ADD KEY `id_admin` (`id_admin`),
+  ADD KEY `fk_thong_bao_vp` (`id_vi_pham`);
 
 --
 -- Chỉ mục cho bảng `tuyen_duong`
@@ -472,7 +474,7 @@ ALTER TABLE `tai_xe`
 -- AUTO_INCREMENT cho bảng `thong_bao_admin`
 --
 ALTER TABLE `thong_bao_admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `tuyen_duong_path`
@@ -527,6 +529,7 @@ ALTER TABLE `tai_xe`
 -- Các ràng buộc cho bảng `thong_bao_admin`
 --
 ALTER TABLE `thong_bao_admin`
+  ADD CONSTRAINT `fk_thong_bao_vp` FOREIGN KEY (`id_vi_pham`) REFERENCES `canh_bao_vi_pham` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `thong_bao_admin_ibfk_1` FOREIGN KEY (`id_admin`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE;
 
 --
